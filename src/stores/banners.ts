@@ -65,12 +65,7 @@ export const useBannerStore = defineStore('banners', () => {
   const activeBannerId = ref<string | null>(null)
   const selectedElementId = ref<string | null>(null)
 
-  // Debug logging for DevTools
-  console.log('🎨 Banner Store Initialized')
-  console.log(
-    `📑 Loaded ${availableTemplates.value.length} banner templates:`,
-    availableTemplates.value.map((t) => `${t.name} (${t.dimensions.width}x${t.dimensions.height})`),
-  )
+  // Templates will be logged during initializeStore()
 
   // History for undo/redo (limited to property changes)
   const history = ref<BannerGroup[]>([])
@@ -455,14 +450,23 @@ export const useBannerStore = defineStore('banners', () => {
     return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
   }
 
-  // Initialize with default responsive banner group
+  // Initialize with all available templates
   const initializeStore = () => {
+    console.log('🎨 Initializing Banner Store...')
+    console.log(`📑 Found ${availableTemplates.value.length} banner templates:`)
+
+    // Log all available templates for debugging
+    availableTemplates.value.forEach((template, index) => {
+      console.log(
+        `  ${index + 1}. ${template.name} - ${template.dimensions.width}x${template.dimensions.height} (${template.category})`,
+      )
+    })
+
     if (!currentBannerGroup.value && availableTemplates.value.length > 0) {
-      // Create a responsive banner group with multiple sizes
-      const templateIds = availableTemplates.value.slice(0, 2).map((t) => t.id) // Take first 2 templates
-      if (templateIds.length > 0) {
-        createBannerGroup(templateIds, 'Default Ad Campaign')
-      }
+      // Create a banner group with ALL available templates
+      const allTemplateIds = availableTemplates.value.map((t) => t.id)
+      createBannerGroup(allTemplateIds, 'Complete Ad Campaign Set')
+      console.log(`🚀 Created banner group with ${allTemplateIds.length} responsive formats`)
     }
   }
 
