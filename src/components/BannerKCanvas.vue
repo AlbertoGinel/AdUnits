@@ -1,5 +1,5 @@
 <template>
-  <div class="banner-canvas-container">
+  <div class="banner-kcanvas-container">
     <div class="canvas-header">
       <h3>{{ bannerGroup?.name || 'Banner Group' }}</h3>
       <div class="canvas-controls">
@@ -43,7 +43,7 @@
               @click="() => selectElement(element.id)"
               @tap="() => selectElement(element.id)"
               @dragstart="handleElementDragStart"
-              @dragend="(e: KonvaDragEvent) => handleElementDragEnd(e, element.id)"
+              @dragend="(e: KCanvasDragEvent) => handleElementDragEnd(e, element.id)"
             >
               <!-- Text elements -->
               <v-text v-if="element.type === 'text'" :config="getTextConfig(element)" />
@@ -88,7 +88,7 @@
 import { ref, computed, nextTick, onMounted, watch } from 'vue'
 import { useBannerStore } from '@/stores/banners'
 import type { WorkingBanner, WorkingElement } from '@/stores/banners'
-import type { KonvaEvent, KonvaDragEvent } from '@/types/konva'
+import type { KCanvasEvent, KCanvasDragEvent } from '@/types/kcanvas'
 
 const bannerStore = useBannerStore()
 
@@ -231,11 +231,11 @@ const getTextConfig = (element: WorkingElement) => {
     text: String(element.properties.content || 'Text'),
     width: element.dimensions.width,
     height: element.dimensions.height,
-    fontSize: font?.size || 14,
-    fontFamily: font?.family || 'Arial, sans-serif',
-    fill: font?.color || '#333333',
-    fontStyle: font?.weight || 'normal',
-    align: font?.alignment || 'left',
+    fontSize: Number(font?.size || 14),
+    fontFamily: String(font?.family || 'Arial, sans-serif'),
+    fill: String(font?.color || '#333333'),
+    fontStyle: String(font?.weight || 'normal'),
+    align: String(font?.alignment || 'left'),
     verticalAlign: 'middle',
     listening: true,
   }
@@ -321,7 +321,7 @@ const selectElement = (elementId: string) => {
   bannerStore.setSelectedElement(elementId)
 }
 
-const handleStageMouseDown = (e: KonvaEvent) => {
+const handleStageMouseDown = (e: KCanvasEvent) => {
   if (e.target === e.target.getStage()) {
     bannerStore.setSelectedElement(null)
   }
@@ -339,7 +339,7 @@ const handleElementDragStart = () => {
   // Optional: handle drag start
 }
 
-const handleElementDragEnd = (e: KonvaDragEvent, elementId: string) => {
+const handleElementDragEnd = (e: KCanvasDragEvent, elementId: string) => {
   const node = e.target.getParent()
   if (!node) return
 
@@ -351,7 +351,7 @@ const handleElementDragEnd = (e: KonvaDragEvent, elementId: string) => {
   bannerStore.updateElementProperty(elementId, 'position.center_y', newY)
 }
 
-const handleWheel = (e: KonvaEvent) => {
+const handleWheel = (e: KCanvasEvent) => {
   e.evt.preventDefault()
 
   const scaleBy = 1.1
@@ -451,7 +451,7 @@ watch(
 </script>
 
 <style scoped>
-.banner-canvas-container {
+.banner-kcanvas-container {
   width: 100%;
   height: 100%;
   display: flex;

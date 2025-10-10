@@ -1,11 +1,11 @@
 <template>
   <section class="central-area">
-    <BannerKonvaCanvas />
+    <BannerKCanvas />
   </section>
 </template>
 
 <script setup lang="ts">
-import BannerKonvaCanvas from './BannerKonvaCanvas.vue'
+import BannerKCanvas from './BannerKCanvas.vue'
 </script>
 
 <style scoped>

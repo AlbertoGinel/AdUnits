@@ -1,21 +1,29 @@
 <template>
   <div class="tools-bar">
-    <div
-      class="tool-icon"
-      v-for="tool in tools"
-      :key="tool.id"
-      :class="{ active: tool.id === activeToolId }"
-      @click="selectTool(tool.id)"
-      :title="tool.name"
-    >
-      <span class="icon">{{ tool.icon }}</span>
-      <span class="tool-name">{{ tool.name }}</span>
-    </div>
+    <!-- Render each tool's button (component-based or config-based) -->
+    <template v-for="tool in availableTools" :key="tool.id">
+      <!-- Component-based button (new way) -->
+      <component
+        v-if="tool.getButtonComponent"
+        :is="tool.getButtonComponent()"
+        :tool-id="tool.id"
+        :is-active="activeToolId === tool.id"
+        @click="selectTool"
+      />
+
+      <!-- Config-based button (legacy support) -->
+      <ToolsBarButton
+        v-else-if="tool.getButtonConfig"
+        :config="tool.getButtonConfig()"
+        :is-active="tool.id === activeToolId"
+        @click="selectTool"
+      />
+    </template>
 
     <!-- Spacer to push extra button to bottom -->
     <div class="spacer"></div>
 
-    <!-- Extra button at bottom -->
+    <!-- Settings button at bottom -->
     <div class="extra-button" @click="handleExtraAction" title="Settings">
       <span class="icon">⚙️</span>
     </div>
@@ -23,22 +31,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed } from 'vue'
+import ToolsBarButton from './ToolsBarButton.vue'
+import { toolRegistry } from '@/services/toolRegistry'
 
-const activeToolId = ref('images')
+// Get all registered tools
+const availableTools = computed(() => toolRegistry.getAllTools())
 
-const tools = [
-  { id: 'images', name: 'Images', icon: '🖼️' },
-  { id: 'shapes', name: 'Shapes', icon: '⬜' },
-  { id: 'text', name: 'Text', icon: '📝' },
-  { id: 'elements', name: 'Elements', icon: '🧩' },
-  { id: 'templates', name: 'Templates', icon: '📄' },
-  { id: 'background', name: 'Background', icon: '🎨' },
-]
+// Get active tool ID
+const activeToolId = computed(() => toolRegistry.getActiveToolId())
 
-const selectTool = (toolId: string) => {
-  activeToolId.value = toolId
-  // Tool selection logic will be handled by the banner store
+const selectTool = async (toolId: string) => {
+  console.log('🎯 Tool selected:', toolId)
+  await toolRegistry.setActiveTool(toolId)
 }
 
 const handleExtraAction = () => {
