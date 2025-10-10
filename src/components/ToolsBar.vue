@@ -24,9 +24,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useToolsStore } from '@/stores/tools'
 
-const toolsStore = useToolsStore()
 const activeToolId = ref('images')
 
 const tools = [
@@ -40,16 +38,13 @@ const tools = [
 
 const selectTool = (toolId: string) => {
   activeToolId.value = toolId
-  toolsStore.setActiveTool(toolId)
+  // Tool selection logic will be handled by the banner store
 }
 
 const handleExtraAction = () => {
   console.log('Extra button clicked!')
   // Add your custom logic here
 }
-
-// Set initial active tool
-toolsStore.setActiveTool(activeToolId.value)
 </script>
 
 <style scoped>
