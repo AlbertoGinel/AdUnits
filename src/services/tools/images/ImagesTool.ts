@@ -44,10 +44,7 @@ export class ImagesTool implements IToolService {
   // =====================================================================
   // 📊 INTERNAL STATE
   // =====================================================================
-  private currentPage = 1
-  private totalPages = 3
-
-  // =====================================================================
+  private currentPage = 'edit' // 'edit', 'upload', 'change'  // =====================================================================
   // 🧩 COMPONENT PROVIDERS
   // =====================================================================
 
@@ -72,11 +69,11 @@ export class ImagesTool implements IToolService {
   // =====================================================================
 
   /**
-   * Handle tool activation - Reset to first page
+   * Handle tool activation - Reset to edit page
    */
   async onActivate(): Promise<void> {
     console.log('🖼️ Images tool activated')
-    this.currentPage = 1
+    this.currentPage = 'edit'
   }
 
   /**
@@ -97,23 +94,20 @@ export class ImagesTool implements IToolService {
     console.log('🖼️ Images tool executing action:', action.type)
 
     switch (action.type) {
-      case 'nextPage':
-        return this.handlePageNavigation()
-
-      case 'search':
-        return this.handleSearch(action.payload?.data as Record<string, unknown>)
-
-      case 'selectImage':
-        return this.handleSelectImage(action.payload?.data as Record<string, unknown>)
-
-      case 'openUpload':
-        return this.handleOpenUpload()
+      case 'navigate':
+        return this.handleNavigation(action.payload?.data as Record<string, unknown>)
 
       case 'uploadFiles':
         return this.handleUploadFiles(action.payload?.data as Record<string, unknown>)
 
-      case 'selectEffect':
-        return this.handleSelectEffect(action.payload?.data as Record<string, unknown>)
+      case 'insertImages':
+        return this.handleInsertImages(action.payload?.data as Record<string, unknown>)
+
+      case 'selectImage':
+        return this.handleSelectImage(action.payload?.data as Record<string, unknown>)
+
+      case 'changeMainImage':
+        return this.handleChangeMainImage(action.payload?.data as Record<string, unknown>)
 
       default:
         return {
@@ -128,23 +122,26 @@ export class ImagesTool implements IToolService {
   // =====================================================================
 
   /**
-   * Handle page navigation (circular: Library → Upload → Effects → Library)
+   * Handle navigation between pages
    */
-  private handlePageNavigation(): ToolActionResult {
+  private handleNavigation(data: Record<string, unknown>): ToolActionResult {
     const previousPage = this.currentPage
+    const newPage = data.page as string
 
-    // Circular navigation: 1 → 2 → 3 → 1
-    this.currentPage = (this.currentPage % this.totalPages) + 1
+    if (['edit', 'upload', 'change'].includes(newPage)) {
+      this.currentPage = newPage
+      console.log(`📄 Page navigation: ${previousPage} → ${this.currentPage}`)
 
-    console.log(`📄 Page navigation: ${previousPage} → ${this.currentPage}`)
-
-    // Emit event to update menu UI
-    this.emitPageChange()
+      return {
+        success: true,
+        message: `Navigated to ${this.currentPage} page`,
+        data: { currentPage: this.currentPage, previousPage },
+      }
+    }
 
     return {
-      success: true,
-      message: `Navigated to page ${this.currentPage}`,
-      data: { currentPage: this.currentPage, previousPage },
+      success: false,
+      message: `Invalid page: ${newPage}`,
     }
   }
 
@@ -160,7 +157,31 @@ export class ImagesTool implements IToolService {
   }
 
   /**
-   * 🔍 Handle image search functionality
+   * � Handle inserting uploaded images
+   */
+  private handleInsertImages(data: Record<string, unknown>): ToolActionResult {
+    console.log('📤 Inserting images:', data.files)
+    return {
+      success: true,
+      message: 'Images inserted successfully',
+      data: { files: data.files, altText: data.altText },
+    }
+  }
+
+  /**
+   * 🔄 Handle changing the main image
+   */
+  private handleChangeMainImage(data: Record<string, unknown>): ToolActionResult {
+    console.log('🔄 Changing main image:', data.image)
+    return {
+      success: true,
+      message: 'Main image changed successfully',
+      data: { image: data.image, altText: data.altText },
+    }
+  }
+
+  /**
+   * �🔍 Handle image search functionality
    */
   private handleSearch(data: Record<string, unknown>): ToolActionResult {
     console.log('🔍 Searching images:', data.query)
@@ -228,7 +249,6 @@ export class ImagesTool implements IToolService {
   getState(): Record<string, unknown> {
     return {
       currentPage: this.currentPage,
-      totalPages: this.totalPages,
     }
   }
 
@@ -236,11 +256,8 @@ export class ImagesTool implements IToolService {
    * Set tool state - Used for restoring tool state
    */
   setState(state: Record<string, unknown>): void {
-    if (typeof state.currentPage === 'number') {
+    if (typeof state.currentPage === 'string') {
       this.currentPage = state.currentPage
-    }
-    if (typeof state.totalPages === 'number') {
-      this.totalPages = state.totalPages
     }
   }
 
@@ -253,12 +270,11 @@ export class ImagesTool implements IToolService {
    */
   canExecuteAction(action: ToolAction): boolean {
     const allowedActions = [
-      'nextPage',
-      'search',
-      'selectImage',
-      'openUpload',
+      'navigate',
       'uploadFiles',
-      'selectEffect',
+      'insertImages',
+      'selectImage',
+      'changeMainImage',
     ]
     return allowedActions.includes(action.type)
   }

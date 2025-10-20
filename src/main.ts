@@ -4,7 +4,7 @@ import VueKonva from 'vue-konva'
 
 import App from './App.vue'
 import router from './router'
-import { useBannerStore } from './stores/banners'
+import { useAdUnitsStore } from './stores/adUnits'
 import { initializeTools, activateDefaultTool } from './services/toolInitializer'
 
 const app = createApp(App)
@@ -14,12 +14,12 @@ app.use(pinia)
 app.use(router)
 app.use(VueKonva)
 
-// Initialize banner store after mounting the app
+// Initialize AdUnits store after mounting the app
 app.mount('#app')
 
-// Initialize the banner store to load templates and create default banner group
-const bannerStore = useBannerStore()
-bannerStore.initializeStore()
+// Initialize the AdUnits store to load Creative Frames
+const adUnitsStore = useAdUnitsStore()
+adUnitsStore.initializeStore()
 
 // Initialize modular tools system
 initializeTools()
@@ -28,7 +28,3 @@ initializeTools()
 setTimeout(() => {
   activateDefaultTool()
 }, 100)
-
-// Debug: Log templates for DevTools visibility
-console.log('📋 Available Banner Templates:', bannerStore.availableTemplates)
-console.log('🏗️ Current Banner Group:', bannerStore.currentBannerGroup)

@@ -1,23 +1,17 @@
 <template>
-  <div 
+  <div
     class="images-tool-button"
-    :class="{ 'active': isActive }"
+    :class="{ active: isActive }"
     @click="handleClick"
     :title="tooltip"
   >
     <div class="icon">🖼️</div>
     <div class="label">Images</div>
-    
-    <!-- Badge for active page indicator -->
-    <div v-if="isActive && toolState.currentPage" class="page-badge">
-      {{ toolState.currentPage }}
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { toolRegistry } from '@/services/toolRegistry'
 
 interface Props {
   toolId: string
@@ -25,7 +19,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  isActive: false
+  isActive: false,
 })
 
 const emit = defineEmits<{
@@ -33,11 +27,6 @@ const emit = defineEmits<{
 }>()
 
 const tooltip = computed(() => `Images Tool - Add and manage images`)
-
-const toolState = computed(() => {
-  const tool = toolRegistry.getTool(props.toolId)
-  return tool?.getState?.() || {}
-})
 
 const handleClick = () => {
   emit('click', props.toolId)
@@ -84,21 +73,5 @@ const handleClick = () => {
 .images-tool-button.active .label {
   color: #0066cc;
   font-weight: 600;
-}
-
-.page-badge {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  background: #0066cc;
-  color: white;
-  border-radius: 50%;
-  width: 16px;
-  height: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  font-weight: bold;
 }
 </style>

@@ -1,40 +1,24 @@
 <template>
   <div class="images-tool-menu">
-    <!-- Header with tool info -->
-    <div class="menu-header">
-      <h4>🖼️ Images</h4>
-      <div class="page-indicator">
-        <span class="page-dots">
-          <span
-            v-for="page in totalPages"
-            :key="page"
-            class="dot"
-            :class="{ active: page === currentPage }"
-          ></span>
-        </span>
-        <span class="page-text">{{ currentPage }} / {{ totalPages }}</span>
-      </div>
-    </div>
-
     <!-- Dynamic page content using Vue's component system -->
     <div class="menu-content">
       <Transition name="slide" mode="out-in">
-        <ImagesPage1
-          v-if="currentPage === 1"
-          key="page1"
-          @next-page="handleNextPage"
+        <EditMainImage
+          v-if="currentPage === 'edit'"
+          key="edit"
+          @navigate-to="handleNavigation"
           @action="handleAction"
         />
-        <ImagesPage2
-          v-else-if="currentPage === 2"
-          key="page2"
-          @next-page="handleNextPage"
+        <UploadImages
+          v-else-if="currentPage === 'upload'"
+          key="upload"
+          @navigate-to="handleNavigation"
           @action="handleAction"
         />
-        <ImagesPage3
-          v-else-if="currentPage === 3"
-          key="page3"
-          @back-to-start="handleBackToStart"
+        <ChangeImage
+          v-else-if="currentPage === 'change'"
+          key="change"
+          @navigate-to="handleNavigation"
           @action="handleAction"
         />
       </Transition>
@@ -45,9 +29,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { toolRegistry } from '@/services/toolRegistry'
-import ImagesPage1 from '../menuPages/ImagesPage1.vue'
-import ImagesPage2 from '../menuPages/ImagesPage2.vue'
-import ImagesPage3 from '../menuPages/ImagesPage3.vue'
+import EditMainImage from '../menuPages/editMainImage.vue'
+import UploadImages from '../menuPages/UploadImages.vue'
+import ChangeImage from '../menuPages/ChangeImage.vue'
 
 interface Props {
   toolId: string
@@ -61,8 +45,7 @@ const emit = defineEmits<{
 }>()
 
 // Reactive tool state
-const currentPage = ref(1)
-const totalPages = ref(3)
+const currentPage = ref('edit') // 'edit', 'upload', 'change'
 
 // Get tool instance
 const tool = computed(() => toolRegistry.getTool(props.toolId))
@@ -71,21 +54,23 @@ const tool = computed(() => toolRegistry.getTool(props.toolId))
 watch(
   () => tool.value?.getState?.(),
   (newState) => {
-    if (newState) {
-      currentPage.value = (newState.currentPage as number) || 1
-      totalPages.value = (newState.totalPages as number) || 3
+    if (newState && newState.currentPage) {
+      currentPage.value = (newState.currentPage as string) || 'edit'
     }
   },
   { deep: true, immediate: true },
 )
 
-// Event handlers
-const handleNextPage = async () => {
-  await executeToolAction('nextPage')
-}
+// Navigation handler
+const handleNavigation = (page: string) => {
+  currentPage.value = page
 
-const handleBackToStart = async () => {
-  await executeToolAction('nextPage') // Circular navigation
+  // Update tool state
+  if (tool.value && tool.value.setState) {
+    tool.value.setState({ currentPage: page })
+  }
+
+  emit('action', 'navigate', { page })
 }
 
 const handleAction = async (action: string, data?: Record<string, unknown>) => {
@@ -103,7 +88,7 @@ const executeToolAction = async (actionType: string, data?: Record<string, unkno
     // Update local state
     const newState = tool.value.getState?.()
     if (newState) {
-      currentPage.value = (newState.currentPage as number) || 1
+      currentPage.value = (newState.currentPage as string) || 'edit'
       emit('state-change', newState)
     }
 
@@ -116,7 +101,7 @@ onMounted(() => {
   if (tool.value) {
     const state = tool.value.getState?.()
     if (state) {
-      currentPage.value = (state.currentPage as number) || 1
+      currentPage.value = (state.currentPage as string) || 'edit'
     }
   }
 })

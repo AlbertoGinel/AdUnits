@@ -105,12 +105,12 @@ export interface ToolEvent {
 }
 
 /**
- * Tool context - provides access to banner store and other services
+ * Tool context - provides access to AdUnits store and other services
  */
 export interface ToolContext {
-  bannerStore: Record<string, unknown> // Will be properly typed when integrated
+  adUnitsStore: Record<string, unknown> // Will be properly typed when integrated
   emit: (event: ToolEvent) => void
-  getCurrentElement: () => Record<string, unknown> | null
-  getCurrentBanner: () => Record<string, unknown> | null
-  getBannerGroup: () => Record<string, unknown> | null
+  getCurrentAdUnit: () => Record<string, unknown> | null
+  getActiveAdUnit: () => Record<string, unknown> | null
+  getCreativeFrameGroup: () => Record<string, unknown> | null
 }

@@ -1,4 +1,8 @@
-// Banner templates - predefined at application startup
+/**
+ * Banner templates - predefined at application startup
+ * These are the master templates that get copied to working banners
+ */
+
 export interface BannerTemplate {
   id: string
   name: string
@@ -20,7 +24,8 @@ export interface BannerTemplate {
 
 export interface TemplateElement {
   id: string
-  type: 'text' | 'image' | 'button' | 'shape' | 'logo'
+  layer: string // Which layer this element belongs to
+  tool?: string // Optional: Which tool manages this element (can be determined by tool registry)
   position: {
     center_x: number
     center_y: number
@@ -46,7 +51,7 @@ export interface TemplateElement {
 export const BANNER_TEMPLATES: BannerTemplate[] = [
   {
     id: 'Skyline-Desktop592x25',
-    name: 'Skyline Desktop',
+    name: 'Skyline Desktop 592 x 25',
     description: 'Compact horizontal banner for desktop skyline placement',
     category: 'skyline',
     dimensions: {
@@ -57,7 +62,8 @@ export const BANNER_TEMPLATES: BannerTemplate[] = [
     elements: {
       logo: {
         id: 'logo',
-        type: 'logo',
+        layer: 'logo',
+        tool: 'Logos',
         position: { center_x: 30, center_y: 12.5 },
         dimensions: { width: 40, height: 20 },
         locked_properties: ['type', 'position', 'dimensions'],
@@ -73,8 +79,9 @@ export const BANNER_TEMPLATES: BannerTemplate[] = [
       },
       headline: {
         id: 'headline',
-        type: 'text',
-        position: { center_x: 200, center_y: 12.5 },
+        layer: 'headline',
+        tool: 'Texts',
+        position: { center_x: 430, center_y: 30 },
         dimensions: { width: 250, height: 20 },
         locked_properties: ['type', 'position', 'dimensions'],
         editable_properties: ['content', 'font.color', 'font.weight'],
@@ -94,7 +101,8 @@ export const BANNER_TEMPLATES: BannerTemplate[] = [
       },
       cta_button: {
         id: 'cta_button',
-        type: 'button',
+        layer: 'CTA',
+        tool: 'Texts',
         position: { center_x: 450, center_y: 12.5 },
         dimensions: { width: 80, height: 20 },
         locked_properties: ['type', 'position', 'dimensions', 'background.border_radius'],
@@ -144,7 +152,8 @@ export const BANNER_TEMPLATES: BannerTemplate[] = [
     elements: {
       logo: {
         id: 'logo',
-        type: 'logo',
+        layer: 'logo',
+        tool: 'Logos',
         position: { center_x: 35, center_y: 15 },
         dimensions: { width: 50, height: 25 },
         locked_properties: ['type', 'position', 'dimensions'],
@@ -160,7 +169,8 @@ export const BANNER_TEMPLATES: BannerTemplate[] = [
       },
       headline: {
         id: 'headline',
-        type: 'text',
+        layer: 'headline',
+        tool: 'Texts',
         position: { center_x: 250, center_y: 15 },
         dimensions: { width: 300, height: 25 },
         locked_properties: ['type', 'position', 'dimensions'],
@@ -180,9 +190,10 @@ export const BANNER_TEMPLATES: BannerTemplate[] = [
         },
       },
       cta_button: {
-        id: 'cta_button',
-        type: 'button',
-        position: { center_x: 520, center_y: 15 },
+        id: 'cta-button',
+        layer: 'CTA',
+        tool: 'Texts',
+        position: { center_x: 430, center_y: 285 },
         dimensions: { width: 100, height: 24 },
         locked_properties: ['type', 'position', 'dimensions', 'background.border_radius'],
         editable_properties: ['text.content', 'background.color', 'text.font.color'],
@@ -231,7 +242,8 @@ export const BANNER_TEMPLATES: BannerTemplate[] = [
     elements: {
       logo: {
         id: 'logo',
-        type: 'logo',
+        layer: 'logo',
+        tool: 'Logos',
         position: { center_x: 40, center_y: 47.5 },
         dimensions: { width: 60, height: 30 },
         locked_properties: ['type', 'position', 'dimensions'],
@@ -247,7 +259,8 @@ export const BANNER_TEMPLATES: BannerTemplate[] = [
       },
       headline: {
         id: 'headline',
-        type: 'text',
+        layer: 'headline',
+        tool: 'Texts',
         position: { center_x: 200, center_y: 35 },
         dimensions: { width: 200, height: 25 },
         locked_properties: ['type', 'position', 'dimensions'],
@@ -267,9 +280,10 @@ export const BANNER_TEMPLATES: BannerTemplate[] = [
         },
       },
       subhead: {
-        id: 'subhead',
-        type: 'text',
-        position: { center_x: 200, center_y: 60 },
+        id: 'subheading',
+        layer: 'subheading',
+        tool: 'Texts',
+        position: { center_x: 430, center_y: 70 },
         dimensions: { width: 200, height: 20 },
         locked_properties: ['type', 'position', 'dimensions', 'font.family', 'font.size'],
         editable_properties: ['content', 'font.color'],
@@ -289,7 +303,8 @@ export const BANNER_TEMPLATES: BannerTemplate[] = [
       },
       cta_button: {
         id: 'cta_button',
-        type: 'button',
+        layer: 'CTA',
+        tool: 'Texts',
         position: { center_x: 350, center_y: 60 },
         dimensions: { width: 80, height: 28 },
         locked_properties: ['type', 'position', 'dimensions', 'background.border_radius'],
@@ -339,7 +354,8 @@ export const BANNER_TEMPLATES: BannerTemplate[] = [
     elements: {
       logo: {
         id: 'logo',
-        type: 'logo',
+        layer: 'logo',
+        tool: 'Logos',
         position: { center_x: 30, center_y: 34.5 },
         dimensions: { width: 40, height: 20 },
         locked_properties: ['type', 'position', 'dimensions'],
@@ -355,7 +371,8 @@ export const BANNER_TEMPLATES: BannerTemplate[] = [
       },
       headline: {
         id: 'headline',
-        type: 'text',
+        layer: 'headline',
+        tool: 'Texts',
         position: { center_x: 120, center_y: 25 },
         dimensions: { width: 120, height: 20 },
         locked_properties: ['type', 'position', 'dimensions'],
@@ -376,7 +393,8 @@ export const BANNER_TEMPLATES: BannerTemplate[] = [
       },
       cta_button: {
         id: 'cta_button',
-        type: 'button',
+        layer: 'CTA',
+        tool: 'Texts',
         position: { center_x: 120, center_y: 50 },
         dimensions: { width: 70, height: 22 },
         locked_properties: ['type', 'position', 'dimensions', 'background.border_radius'],
@@ -426,7 +444,8 @@ export const BANNER_TEMPLATES: BannerTemplate[] = [
     elements: {
       logo: {
         id: 'logo',
-        type: 'logo',
+        layer: 'logo',
+        tool: 'Logos',
         position: { center_x: 26.54, center_y: 34.5 },
         dimensions: { width: 40, height: 40 },
         locked_properties: ['type', 'position', 'dimensions'],
@@ -461,7 +480,8 @@ export const BANNER_TEMPLATES: BannerTemplate[] = [
     elements: {
       logo: {
         id: 'logo',
-        type: 'logo',
+        layer: 'logo',
+        tool: 'Logos',
         position: { center_x: 122.5, center_y: 30 },
         dimensions: { width: 60, height: 30 },
         locked_properties: ['type', 'position', 'dimensions'],
@@ -477,7 +497,8 @@ export const BANNER_TEMPLATES: BannerTemplate[] = [
       },
       headline: {
         id: 'headline',
-        type: 'text',
+        layer: 'headline',
+        tool: 'Texts',
         position: { center_x: 122.5, center_y: 70 },
         dimensions: { width: 200, height: 25 },
         locked_properties: ['type', 'position', 'dimensions', 'font.alignment'],
@@ -498,7 +519,8 @@ export const BANNER_TEMPLATES: BannerTemplate[] = [
       },
       cta_button: {
         id: 'cta_button',
-        type: 'button',
+        layer: 'CTA',
+        tool: 'Texts',
         position: { center_x: 122.5, center_y: 100 },
         dimensions: { width: 100, height: 28 },
         locked_properties: ['type', 'position', 'dimensions', 'background.border_radius'],
@@ -548,7 +570,8 @@ export const BANNER_TEMPLATES: BannerTemplate[] = [
     elements: {
       logo: {
         id: 'logo',
-        type: 'logo',
+        layer: 'logo',
+        tool: 'Logos',
         position: { center_x: 100, center_y: 30 },
         dimensions: { width: 50, height: 25 },
         locked_properties: ['type', 'position', 'dimensions'],
@@ -564,7 +587,8 @@ export const BANNER_TEMPLATES: BannerTemplate[] = [
       },
       headline: {
         id: 'headline',
-        type: 'text',
+        layer: 'headline',
+        tool: 'Texts',
         position: { center_x: 100, center_y: 65 },
         dimensions: { width: 180, height: 25 },
         locked_properties: ['type', 'position', 'dimensions', 'font.alignment'],
@@ -585,7 +609,8 @@ export const BANNER_TEMPLATES: BannerTemplate[] = [
       },
       cta_button: {
         id: 'cta_button',
-        type: 'button',
+        layer: 'CTA',
+        tool: 'Texts',
         position: { center_x: 100, center_y: 95 },
         dimensions: { width: 90, height: 26 },
         locked_properties: ['type', 'position', 'dimensions', 'background.border_radius'],
@@ -635,7 +660,8 @@ export const BANNER_TEMPLATES: BannerTemplate[] = [
     elements: {
       logo: {
         id: 'logo',
-        type: 'logo',
+        layer: 'logo',
+        tool: 'Logos',
         position: { center_x: 25, center_y: 25 },
         dimensions: { width: 40, height: 40 },
         locked_properties: ['type', 'position', 'dimensions'],
@@ -657,12 +683,156 @@ export const BANNER_TEMPLATES: BannerTemplate[] = [
       tags: ['brandbox', 'logo-only', 'minimal'],
     },
   },
+  {
+    id: 'Marquee-Desktop860x95',
+    name: 'Marquee Desktop',
+    description: 'Desktop-optimized marquee banner with centered layout',
+    category: 'marquee',
+    dimensions: {
+      width: 860,
+      height: 95,
+      unit: 'px',
+    },
+    elements: {
+      logo: {
+        id: 'logo',
+        layer: 'logo',
+        tool: 'Logos',
+        position: { center_x: 70, center_y: 47.5 },
+        dimensions: { width: 80, height: 40 },
+        locked_properties: ['type', 'position', 'dimensions'],
+        editable_properties: ['source', 'alt_text'],
+        properties: {
+          source: 'placeholder-logo.png',
+          alt_text: 'Company Logo',
+        },
+        constraints: {
+          max_width: 100,
+          max_height: 50,
+        },
+      },
+      headline: {
+        id: 'headline',
+        layer: 'headline',
+        tool: 'Texts',
+        position: { center_x: 250, center_y: 35 },
+        dimensions: { width: 200, height: 25 },
+        locked_properties: ['type', 'position', 'dimensions'],
+        editable_properties: ['content', 'font.color', 'font.weight'],
+        properties: {
+          content: 'Desktop Headline',
+          font: {
+            family: 'Arial, sans-serif',
+            size: 18,
+            weight: 'bold',
+            color: '#333333',
+            alignment: 'left',
+          },
+        },
+        constraints: {
+          max_content_length: 40,
+        },
+      },
+      subheading: {
+        id: 'subheading',
+        layer: 'subheading',
+        tool: 'Texts',
+        position: { center_x: 260, center_y: 60 },
+        dimensions: { width: 220, height: 20 },
+        locked_properties: ['type', 'position', 'dimensions', 'font.family', 'font.size'],
+        editable_properties: ['content', 'font.color'],
+        properties: {
+          content: 'Supporting subheadline text',
+          font: {
+            family: 'Arial, sans-serif',
+            size: 14,
+            weight: 'normal',
+            color: '#666666',
+            alignment: 'left',
+          },
+        },
+        constraints: {
+          max_content_length: 60,
+        },
+      },
+      cta_button: {
+        id: 'cta_button',
+        layer: 'CTA',
+        tool: 'Texts',
+        position: { center_x: 250, center_y: 80 },
+        dimensions: { width: 100, height: 28 },
+        locked_properties: ['type', 'position', 'dimensions', 'background.border_radius'],
+        editable_properties: ['text.content', 'background.color', 'text.font.color'],
+        properties: {
+          text: {
+            content: 'Learn More',
+            font: {
+              family: 'Arial, sans-serif',
+              size: 12,
+              weight: 'bold',
+              color: '#ffffff',
+            },
+          },
+          background: {
+            color: '#007bff',
+            border_radius: 4,
+            border: { width: 0, color: 'transparent' },
+          },
+          hover: {
+            background_color: '#0056b3',
+            text_color: '#ffffff',
+          },
+        },
+        constraints: {
+          max_content_length: 12,
+        },
+      },
+      image: {
+        id: 'image',
+        layer: 'lifestyleImage',
+        tool: 'Images',
+        position: { center_x: 670, center_y: 47.5 },
+        dimensions: { width: 350, height: 85 },
+        locked_properties: ['type', 'position', 'dimensions'],
+        editable_properties: ['source', 'alt_text', 'opacity'],
+        properties: {
+          source: 'placeholder-image.jpg',
+          alt_text: 'Promotional Image',
+          opacity: 1,
+        },
+        constraints: {
+          max_width: 400,
+          max_height: 90,
+        },
+      },
+    },
+    metadata: {
+      version: '1.0',
+      created_date: '2025-10-14',
+      author: 'Banner Editor',
+      tags: ['marquee', 'desktop', 'wide', 'image-right'],
+    },
+  },
 ]
+
+// Banner positioning configuration - controls where each banner appears on canvas
+export const BANNER_TEMP_POSITION: Record<string, { x: number; y: number }> = {
+  'Skyline-Desktop592x25': { x: 0, y: 0 },
+  'Skyline-Logo': { x: 3087.5, y: 0 },
+  'SkylineV2-Desktop676x30': { x: 0, y: 43.55 },
+  'Marquee-Tablet449x95': { x: 0, y: 194.05 },
+  'Marquee-Mobile210x69': { x: 2367, y: 194.05 },
+  'Marquee-Logo53x69': { x: 3536.5, y: 194.05 },
+  'Brandbox-Desktop245x118': { x: 0, y: 294.4 },
+  'Brandbox-Tablet200x115': { x: 1314, y: 294.4 },
+  'Brandbox-Logo50x50': { x: 2449, y: 294.4 },
+  'Marquee-Desktop860x95': { x: 0, y: 95.95 },
+}
 
 // User can add these additional elements to any banner
 export const ADDABLE_ELEMENTS = {
   shape: {
-    type: 'shape',
+    layer: 'shape',
     default_properties: {
       shape_type: 'rectangle',
       fill_color: '#3498db',
@@ -679,7 +849,8 @@ export const ADDABLE_ELEMENTS = {
     ],
   },
   extra_text: {
-    type: 'text',
+    layer: 'subheading',
+    tool: 'Texts',
     default_properties: {
       content: 'New text',
       font: {
@@ -693,7 +864,7 @@ export const ADDABLE_ELEMENTS = {
     editable_properties: ['content', 'position', 'dimensions', 'font'],
   },
   extra_image: {
-    type: 'image',
+    layer: 'lifestyleImage',
     default_properties: {
       source: 'placeholder.jpg',
       alt_text: 'Image',

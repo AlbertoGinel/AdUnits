@@ -14,9 +14,9 @@
  * - components/ImagesToolMenu.vue     # Main menu container with smooth transitions
  *
  * 📱 Menu Pages:
- * - menuPages/ImagesPage1.vue         # Image Library - Search, browse, select images
- * - menuPages/ImagesPage2.vue         # Upload Center - Drag & drop with settings
- * - menuPages/ImagesPage3.vue         # Effects Studio - Filters and adjustments
+ * - menuPages/editMainImage.vue       # Edit Main Image - Primary editing interface
+ * - menuPages/UploadImages.vue        # Upload Images - Add new images with drag & drop
+ * - menuPages/ChangeImage.vue         # Change Image - Select different image from library
  *
  * 🎯 Features:
  * ✅ Multi-page navigation with smooth transitions
@@ -28,10 +28,10 @@
  * ✅ Custom styling with hover states and animations
  *
  * 🎮 User Journey:
- * 1. 📁 Library Page - Browse existing images, search functionality
- * 2. 📤 Upload Page - Add new images with drag & drop or file browser
- * 3. 🎨 Effects Page - Apply filters and adjustments with live preview
- * 4. 🔄 Circular Navigation - Seamless flow between all pages
+ * 1. �️ Edit Main Image - Primary editing interface (default page)
+ * 2. 📤 Upload Images - Add new images with drag & drop or file browser
+ * 3. 🔄 Change Image - Select different image from library
+ * 4. ↩️ Navigation - Add Images → Upload, Change → Change Image, Back to Edit Main Image
  *
  * 💡 Architecture:
  * - Service-based modular design
@@ -59,6 +59,6 @@ export { ImagesTool } from './ImagesTool'
 // Export components for advanced usage (optional)
 export { default as ImagesToolButton } from './components/ImagesToolButton.vue'
 export { default as ImagesToolMenu } from './components/ImagesToolMenu.vue'
-export { default as ImagesPage1 } from './menuPages/ImagesPage1.vue'
-export { default as ImagesPage2 } from './menuPages/ImagesPage2.vue'
-export { default as ImagesPage3 } from './menuPages/ImagesPage3.vue'
+export { default as EditMainImage } from './menuPages/editMainImage.vue'
+export { default as UploadImages } from './menuPages/UploadImages.vue'
+export { default as ChangeImage } from './menuPages/ChangeImage.vue'

@@ -1,10 +1,5 @@
 <template>
   <div class="logos-tool-menu">
-    <!-- Header -->
-    <div class="menu-header">
-      <h4>🏢 Logos</h4>
-    </div>
-
     <!-- Simple content -->
     <div class="menu-content">
       <div class="logos-section">
