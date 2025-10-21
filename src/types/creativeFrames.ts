@@ -16,9 +16,13 @@ export interface TextStyle {
   fontSize: number
   fontFamily: string
   fill: string
+  fontWeight?: number
 }
 
-export interface ImageAsset {
+// Import BaseImage from creativeTypes
+import { type BaseImage } from './creativeTypes'
+
+export interface ImageAsset extends BaseImage {
   position: Position
   name: string
   assetId: string
@@ -31,9 +35,9 @@ export interface AdUnit {
   headline: TextStyle
   subhead: TextStyle
   cta: TextStyle
+  legalDisclaimerText: TextStyle
   imageAltText: string
   logoAltText: string
-  legalDisclaimerText: string
   variantId: string
   rollBackPos: Position
   rollScale: number
@@ -68,6 +72,11 @@ export interface CreativeFrames {
     bottom: number
     left: number
   }
+  AdUnitTitle: {
+    fontSize: number
+    fontFamily: string
+    fill: string
+  }
   adUnits: {
     marqueeDesktop: AdUnit
     marqueeApp: AdUnit
@@ -93,63 +102,96 @@ export const CREATIVE_FRAMES: CreativeFrames = {
     templateId: 'frames-template-v1',
   },
   framePadding: {
-    top: 0, // Space for header with name and edit button
-    right: 0,
-    bottom: 0,
-    left: 0,
+    top: 10, // Space for header with name and edit button
+    right: 10,
+    bottom: 10,
+    left: 10,
+  },
+  AdUnitTitle: {
+    fontSize: 20,
+    fontFamily: 'Arial',
+    fill: '#000000',
   },
   adUnits: {
     marqueeDesktop: {
       name: 'Marquee Desktop: 728x90px',
       dimensions: { width: 728, height: 90 },
-      position: { x: 100, y: 100 },
+      position: { x: 0, y: 31 },
       headline: {
-        text: 'Summer Collection 2024',
-        x: 120,
-        y: 25,
-        fontSize: 20,
-        fontFamily: 'Arial',
-        fill: '#000000',
+        text: 'Headline goes here',
+        x: 103,
+        y: 14,
+        fontSize: 14,
+        fontFamily: 'sans-serif',
+        fill: '#000080',
+        fontWeight: 100,
       },
       subhead: {
-        text: 'Discover our new arrivals!',
-        x: 120,
-        y: 50,
-        fontSize: 14,
-        fontFamily: 'Arial',
-        fill: '#666666',
+        text: 'Subhead goes here',
+        x: 103,
+        y: 31,
+        fontSize: 9,
+        fontFamily: 'sans-serif',
+        fill: '#000080',
+        fontWeight: 100,
       },
       cta: {
-        text: 'Shop now',
-        x: 600,
-        y: 35,
-        fontSize: 14,
-        fontFamily: 'Arial',
-        fill: '#FFFFFF',
+        text: 'CTA button',
+        x: 114,
+        y: 67,
+        fontSize: 9,
+        fontFamily: 'sans-serif',
+        fill: '#00d4aa',
+        fontWeight: 100,
       },
+      legalDisclaimerText: {
+        text: 'Legal disclaimer Legal disclaimer Legal disclaimer Legal disclaimer Legal disclaimer Legal discl',
+        x: 387,
+        y: 79,
+        fontSize: 8,
+        fontFamily: 'sans-serif',
+        fill: '#fabada',
+        fontWeight: 100,
+      },
+
       imageAltText: 'Desktop marquee showcasing summer fashion collection',
       logoAltText: 'Brand logo for desktop',
-      legalDisclaimerText: 'Limited time offer. Terms and conditions apply.',
       variantId: '436',
       rollBackPos: { x: 0, y: 0 },
       rollScale: 1,
       images: [
         {
-          position: { x: 10, y: 10 },
+          position: { x: 364, y: 0 },
           name: 'desktopImage',
           assetId: '550e8400-e29b-41d4-a716-446655440001',
+          crop: {
+            rectangular: {
+              x: 0,
+              y: 0,
+              w: 364,
+              h: 90,
+            },
+          },
         },
         {
-          position: { x: 650, y: 60 },
+          position: { x: 0, y: 0 },
           name: 'desktopLogo',
           assetId: '550e8400-e29b-41d4-a716-446655440002',
+          crop: {
+            rectangular: {
+              x: 0,
+              y: 0,
+              w: 90,
+              h: 90,
+            },
+          },
         },
       ],
     },
     marqueeApp: {
-      name: 'Marquee Mobile: 300x250px',
+      name: 'Marquee App: 300x250px',
       dimensions: { width: 300, height: 250 },
-      position: { x: 100, y: 290 },
+      position: { x: 320, y: 995 },
       headline: {
         text: 'Summer Collection 2024',
         x: 20,
@@ -157,6 +199,7 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontSize: 18,
         fontFamily: 'Arial',
         fill: '#000000',
+        fontWeight: 100,
       },
       subhead: {
         text: 'Discover our new arrivals!',
@@ -165,6 +208,7 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontSize: 12,
         fontFamily: 'Arial',
         fill: '#666666',
+        fontWeight: 100,
       },
       cta: {
         text: 'Shop now',
@@ -173,10 +217,17 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontSize: 12,
         fontFamily: 'Arial',
         fill: '#FFFFFF',
+        fontWeight: 400,
       },
-      imageAltText: 'Mobile marquee showcasing summer fashion collection',
-      logoAltText: 'Brand logo for mobile',
-      legalDisclaimerText: 'Limited time offer. Terms apply.',
+      legalDisclaimerText: {
+        text: 'Limited time offer. Terms apply.',
+        x: 20,
+        y: 230,
+        fontSize: 8,
+        fontFamily: 'Arial',
+        fill: '#666666',
+        fontWeight: 300,
+      },
       variantId: '436',
       rollBackPos: { x: 0, y: 0 },
       rollScale: 1,
@@ -192,11 +243,13 @@ export const CREATIVE_FRAMES: CreativeFrames = {
           assetId: '550e8400-e29b-41d4-a716-446655440004',
         },
       ],
+      imageAltText: 'Desktop marquee showcasing summer fashion collection',
+      logoAltText: 'Brand logo for desktop',
     },
     skylineDesktop: {
       name: 'Skyline Desktop: 300x600px',
       dimensions: { width: 300, height: 600 },
-      position: { x: 928, y: 100 },
+      position: { x: 0, y: 333 },
       headline: {
         text: 'Premium Quality',
         x: 40,
@@ -204,6 +257,7 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontSize: 24,
         fontFamily: 'Arial',
         fill: '#000000',
+        fontWeight: 400,
       },
       subhead: {
         text: 'Experience the difference today!',
@@ -212,6 +266,7 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontSize: 16,
         fontFamily: 'Arial',
         fill: '#666666',
+        fontWeight: 300,
       },
       cta: {
         text: 'Learn more',
@@ -220,10 +275,17 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontSize: 14,
         fontFamily: 'Arial',
         fill: '#FFFFFF',
+        fontWeight: 400,
       },
-      imageAltText: 'Desktop skyline showcasing premium product features',
-      logoAltText: 'Premium brand logo for desktop',
-      legalDisclaimerText: 'Results may vary by individual.',
+      legalDisclaimerText: {
+        text: 'Results may vary by individual.',
+        x: 40,
+        y: 570,
+        fontSize: 8,
+        fontFamily: 'Arial',
+        fill: '#666666',
+        fontWeight: 300,
+      },
       variantId: '436',
       rollBackPos: { x: 0, y: 0 },
       rollScale: 1,
@@ -239,11 +301,13 @@ export const CREATIVE_FRAMES: CreativeFrames = {
           assetId: '550e8400-e29b-41d4-a716-446655440006',
         },
       ],
+      imageAltText: 'Desktop marquee showcasing summer fashion collection',
+      logoAltText: 'Brand logo for desktop',
     },
     skylineApp: {
-      name: 'Skyline Mobile: 300x250px',
+      name: 'Skyline App: 300x250px',
       dimensions: { width: 300, height: 250 },
-      position: { x: 500, y: 290 },
+      position: { x: 641, y: 995 },
       headline: {
         text: 'Premium Quality',
         x: 20,
@@ -251,6 +315,7 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontSize: 18,
         fontFamily: 'Arial',
         fill: '#000000',
+        fontWeight: 400,
       },
       subhead: {
         text: 'Experience the difference!',
@@ -259,6 +324,7 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontSize: 14,
         fontFamily: 'Arial',
         fill: '#666666',
+        fontWeight: 300,
       },
       cta: {
         text: 'Learn more',
@@ -267,10 +333,17 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontSize: 12,
         fontFamily: 'Arial',
         fill: '#FFFFFF',
+        fontWeight: 400,
       },
-      imageAltText: 'Mobile skyline showcasing premium product',
-      logoAltText: 'Premium brand logo for mobile',
-      legalDisclaimerText: 'Results may vary by individual.',
+      legalDisclaimerText: {
+        text: 'Results may vary by individual.',
+        x: 20,
+        y: 220,
+        fontSize: 8,
+        fontFamily: 'Arial',
+        fill: '#666666',
+        fontWeight: 300,
+      },
       variantId: '436',
       rollBackPos: { x: 0, y: 0 },
       rollScale: 1,
@@ -286,11 +359,13 @@ export const CREATIVE_FRAMES: CreativeFrames = {
           assetId: '550e8400-e29b-41d4-a716-446655440008',
         },
       ],
+      imageAltText: 'Desktop marquee showcasing summer fashion collection',
+      logoAltText: 'Brand logo for desktop',
     },
     brandboxDesktop: {
       name: 'Brandbox Desktop: 300x250px',
       dimensions: { width: 300, height: 250 },
-      position: { x: 928, y: 800 },
+      position: { x: 0, y: 993 },
       headline: {
         text: 'Brand Stories',
         x: 80,
@@ -298,6 +373,7 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontSize: 20,
         fontFamily: 'Arial',
         fill: '#000000',
+        fontWeight: 400,
       },
       subhead: {
         text: 'Explore our heritage!',
@@ -306,6 +382,7 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontSize: 14,
         fontFamily: 'Arial',
         fill: '#666666',
+        fontWeight: 300,
       },
       cta: {
         text: 'Read story',
@@ -314,10 +391,19 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontSize: 14,
         fontFamily: 'Arial',
         fill: '#FFFFFF',
+        fontWeight: 400,
+      },
+      legalDisclaimerText: {
+        text: 'Founded in 1975 with quality values.',
+        x: 80,
+        y: 220,
+        fontSize: 8,
+        fontFamily: 'Arial',
+        fill: '#666666',
+        fontWeight: 300,
       },
       imageAltText: 'Desktop brandbox showing company heritage',
       logoAltText: 'Heritage brand logo for desktop',
-      legalDisclaimerText: 'Founded in 1975 with quality values.',
       variantId: '436',
       rollBackPos: { x: 0, y: 0 },
       rollScale: 1,
@@ -335,9 +421,9 @@ export const CREATIVE_FRAMES: CreativeFrames = {
       ],
     },
     brandboxApp: {
-      name: 'Brandbox Mobile: 300x250px',
+      name: 'Brandbox App: 300x250px',
       dimensions: { width: 300, height: 250 },
-      position: { x: 100, y: 640 },
+      position: { x: 641, y: 1305 },
       headline: {
         text: 'Brand Stories',
         x: 100,
@@ -364,7 +450,14 @@ export const CREATIVE_FRAMES: CreativeFrames = {
       },
       imageAltText: 'Mobile brandbox showing company values',
       logoAltText: 'Heritage brand logo for mobile',
-      legalDisclaimerText: 'Founded in 1975 with quality.',
+      legalDisclaimerText: {
+        text: 'Read story',
+        x: 100,
+        y: 200,
+        fontSize: 12,
+        fontFamily: 'Arial',
+        fill: '#FFFFFF',
+      },
       variantId: '436',
       rollBackPos: { x: 0, y: 0 },
       rollScale: 1,
@@ -384,7 +477,7 @@ export const CREATIVE_FRAMES: CreativeFrames = {
     galleryDesktop: {
       name: 'Gallery Desktop: 728x90px',
       dimensions: { width: 728, height: 90 },
-      position: { x: 100, y: 990 },
+      position: { x: 0, y: 181 },
       headline: {
         text: 'Product Gallery',
         x: 120,
@@ -411,7 +504,14 @@ export const CREATIVE_FRAMES: CreativeFrames = {
       },
       imageAltText: 'Desktop gallery with multiple product categories',
       logoAltText: 'Gallery brand logo for desktop',
-      legalDisclaimerText: 'Products may vary by location.',
+      legalDisclaimerText: {
+        text: 'Read story',
+        x: 100,
+        y: 200,
+        fontSize: 12,
+        fontFamily: 'Arial',
+        fill: '#FFFFFF',
+      },
       variantId: '436',
       rollBackPos: { x: 0, y: 0 },
       rollScale: 1,
@@ -429,9 +529,9 @@ export const CREATIVE_FRAMES: CreativeFrames = {
       ],
     },
     galleryApp: {
-      name: 'Gallery Mobile: 300x250px',
+      name: 'Gallery App: 300x250px',
       dimensions: { width: 300, height: 250 },
-      position: { x: 500, y: 640 },
+      position: { x: 321, y: 1305 },
       headline: {
         text: 'Mobile Gallery',
         x: 50,
@@ -458,7 +558,14 @@ export const CREATIVE_FRAMES: CreativeFrames = {
       },
       imageAltText: 'Touch-friendly gallery of product images and videos',
       logoAltText: 'Gallery icon for mobile app',
-      legalDisclaimerText: 'Swipe left or right to navigate.',
+      legalDisclaimerText: {
+        text: 'Read story',
+        x: 100,
+        y: 200,
+        fontSize: 12,
+        fontFamily: 'Arial',
+        fill: '#FFFFFF',
+      },
       variantId: '436',
       rollBackPos: { x: 0, y: 43.55 },
       rollScale: 1,
@@ -478,7 +585,7 @@ export const CREATIVE_FRAMES: CreativeFrames = {
     skylineDesktopV2: {
       name: 'Skyline Desktop V2: 300x600px',
       dimensions: { width: 300, height: 600 },
-      position: { x: 1328, y: 100 },
+      position: { x: 642, y: 333 },
       headline: {
         text: 'Enhanced Experience',
         x: 40,
@@ -505,7 +612,14 @@ export const CREATIVE_FRAMES: CreativeFrames = {
       },
       imageAltText: 'Desktop skyline v2 with enhanced features',
       logoAltText: 'Updated brand logo version 2',
-      legalDisclaimerText: 'Free trial limited to 30 days.',
+      legalDisclaimerText: {
+        text: 'Read story',
+        x: 100,
+        y: 200,
+        fontSize: 12,
+        fontFamily: 'Arial',
+        fill: '#FFFFFF',
+      },
       variantId: '436',
       rollBackPos: { x: 0, y: 0 },
       rollScale: 1,
@@ -522,11 +636,10 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         },
       ],
     },
-    /*
     skylineAppV2: {
       name: 'Skyline App V2: 300x250px',
       dimensions: { width: 300, height: 250 },
-      position: { x: 1328, y: 750 },
+      position: { x: 0, y: 1307 },
       headline: {
         text: 'Enhanced Experience',
         x: 20,
@@ -553,7 +666,14 @@ export const CREATIVE_FRAMES: CreativeFrames = {
       },
       imageAltText: 'Mobile skyline v2 with enhanced features',
       logoAltText: 'Updated mobile logo version 2',
-      legalDisclaimerText: 'Free trial limited to 30 days.',
+      legalDisclaimerText: {
+        text: 'Read story',
+        x: 100,
+        y: 200,
+        fontSize: 12,
+        fontFamily: 'Arial',
+        fill: '#FFFFFF',
+      },
       variantId: '436',
       rollBackPos: { x: 0, y: 0 },
       rollScale: 1,
@@ -570,11 +690,11 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         },
       ],
     },
-    */
+
     skylineDesktopV3: {
       name: 'Skyline Desktop V3: 300x600px',
       dimensions: { width: 300, height: 600 },
-      position: { x: 1328, y: 800 },
+      position: { x: 320, y: 333 },
       headline: {
         text: 'Modern Design',
         x: 40,
@@ -601,7 +721,14 @@ export const CREATIVE_FRAMES: CreativeFrames = {
       },
       imageAltText: 'Modern desktop skyline with dark theme',
       logoAltText: 'Modern brand logo version 3',
-      legalDisclaimerText: 'Available in select markets.',
+      legalDisclaimerText: {
+        text: 'Read story',
+        x: 100,
+        y: 200,
+        fontSize: 12,
+        fontFamily: 'Arial',
+        fill: '#FFFFFF',
+      },
       variantId: '436',
       rollBackPos: { x: 0, y: 0 },
       rollScale: 1,
@@ -618,11 +745,10 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         },
       ],
     },
-    /*
     skylineAppV3: {
       name: 'Skyline App V3: 300x250px',
       dimensions: { width: 300, height: 250 },
-      position: { x: 1328, y: 1100 },
+      position: { x: 751, y: 21 },
       headline: {
         text: 'Modern Design',
         x: 20,
@@ -649,7 +775,14 @@ export const CREATIVE_FRAMES: CreativeFrames = {
       },
       imageAltText: 'Modern mobile skyline with dark theme',
       logoAltText: 'Modern mobile logo version 3',
-      legalDisclaimerText: 'Available in select markets.',
+      legalDisclaimerText: {
+        text: 'Read story',
+        x: 100,
+        y: 200,
+        fontSize: 12,
+        fontFamily: 'Arial',
+        fill: '#FFFFFF',
+      },
       variantId: '436',
       rollBackPos: { x: 0, y: 0 },
       rollScale: 1,
@@ -666,6 +799,5 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         },
       ],
     },
-    */
   },
 }

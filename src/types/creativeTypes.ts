@@ -7,9 +7,9 @@ export enum TextColor {
 // Regex for valid hex color
 export const HEX_COLOR_REGEX = /^#[0-9A-Fa-f]{6}$/
 
-interface BaseImage {
+export interface BaseImage {
   assetId: string
-  crop?: CropSettings // Can be added/updated/removed later
+  crop?: CropSettings
 }
 
 type CropSettings =

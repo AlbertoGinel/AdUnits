@@ -1,7 +1,7 @@
 <template>
   <div class="creative-konva-canvas-container">
     <div class="canvas-header">
-      <h3>{{ adUnitGroup?.name || 'AdUnit Group' }}</h3>
+      <h3>{{ adUnits.length ? `${adUnits.length} AdUnits` : 'No AdUnits' }}</h3>
       <div class="canvas-controls">
         <button @click="fitToScreen" class="control-btn">Fit to Screen</button>
         <button @click="resetZoom" class="control-btn">Reset Zoom</button>
@@ -31,7 +31,7 @@ adUnitsStore.initializeStore()
 const canvasContainer = ref<HTMLDivElement>()
 
 // Computed properties
-const adUnitGroup = computed(() => adUnitsStore.adUnitGroup)
+const adUnits = computed(() => adUnitsStore.adUnits)
 
 // Get scale from AdUnitsCanvasService for display
 const currentScale = computed(() => {
@@ -58,10 +58,10 @@ onMounted(() => {
       devLogger.component('Initializing AdUnits canvas service...')
       canvasService.initializeCanvas(canvasContainer.value)
 
-      // Render AdUnit group if available
-      if (adUnitGroup.value) {
-        devLogger.component('Rendering initial AdUnit group...')
-        canvasService.renderAdUnitGroup(adUnitGroup.value)
+      // Render AdUnits if available
+      if (adUnits.value.length > 0) {
+        devLogger.component('Rendering initial AdUnits...')
+        canvasService.renderAdUnits(adUnits.value)
       }
     }
   })
@@ -73,13 +73,13 @@ onUnmounted(() => {
   canvasService.destroy()
 })
 
-// Optimized watch - watch for AdUnit group changes
+// Optimized watch - watch for AdUnits changes
 watch(
-  () => adUnitGroup.value,
-  (newAdUnitGroup) => {
-    if (newAdUnitGroup && canvasContainer.value) {
-      devLogger.component('AdUnit group changed, updating canvas...')
-      canvasService.renderAdUnitGroup(newAdUnitGroup)
+  () => adUnits.value,
+  (newAdUnits) => {
+    if (newAdUnits.length > 0 && canvasContainer.value) {
+      devLogger.component('AdUnits changed, updating canvas...')
+      canvasService.renderAdUnits(newAdUnits)
     }
   },
   { deep: true },
