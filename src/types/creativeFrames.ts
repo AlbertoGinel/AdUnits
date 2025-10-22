@@ -16,7 +16,18 @@ export interface TextStyle {
   fontSize: number
   fontFamily: string
   fill: string
-  fontWeight?: number
+  fontStyle?: 'normal' | 'bold' | 'italic'
+}
+
+export interface ButtonStyle {
+  x: number
+  y: number
+  width: number
+  height: number
+  cornerRadius: number
+  fill: string
+  stroke: string
+  strokeWidth: number
 }
 
 // Import BaseImage from creativeTypes
@@ -36,6 +47,7 @@ export interface AdUnit {
   subhead: TextStyle
   cta: TextStyle
   legalDisclaimerText: TextStyle
+  ctaButton: ButtonStyle
   imageAltText: string
   logoAltText: string
   variantId: string
@@ -124,7 +136,7 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontSize: 14,
         fontFamily: 'sans-serif',
         fill: '#000080',
-        fontWeight: 100,
+        fontStyle: 'bold',
       },
       subhead: {
         text: 'Subhead goes here',
@@ -133,7 +145,7 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontSize: 9,
         fontFamily: 'sans-serif',
         fill: '#000080',
-        fontWeight: 100,
+        fontStyle: 'normal',
       },
       cta: {
         text: 'CTA button',
@@ -142,7 +154,17 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontSize: 9,
         fontFamily: 'sans-serif',
         fill: '#00d4aa',
-        fontWeight: 100,
+        fontStyle: 'normal',
+      },
+      ctaButton: {
+        x: 101.21859,
+        y: 59.897015,
+        width: 73.702164,
+        height: 21.953838,
+        cornerRadius: 10.976919,
+        fill: 'none',
+        stroke: '#000080',
+        strokeWidth: 0.72697,
       },
       legalDisclaimerText: {
         text: 'Legal disclaimer Legal disclaimer Legal disclaimer Legal disclaimer Legal disclaimer Legal discl',
@@ -151,7 +173,7 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontSize: 8,
         fontFamily: 'sans-serif',
         fill: '#fabada',
-        fontWeight: 100,
+        fontStyle: 'normal',
       },
 
       imageAltText: 'Desktop marquee showcasing summer fashion collection',
@@ -165,9 +187,10 @@ export const CREATIVE_FRAMES: CreativeFrames = {
           name: 'desktopImage',
           assetId: '550e8400-e29b-41d4-a716-446655440001',
           crop: {
+            focal: { x: 0.5, y: 0.5 },
             rectangular: {
-              x: 0,
-              y: 0,
+              x: 1051,
+              y: 687,
               w: 364,
               h: 90,
             },
@@ -178,9 +201,10 @@ export const CREATIVE_FRAMES: CreativeFrames = {
           name: 'desktopLogo',
           assetId: '550e8400-e29b-41d4-a716-446655440002',
           crop: {
+            focal: { x: 20, y: 20 },
             rectangular: {
-              x: 0,
-              y: 0,
+              x: 50,
+              y: 50,
               w: 90,
               h: 90,
             },
@@ -199,7 +223,7 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontSize: 18,
         fontFamily: 'Arial',
         fill: '#000000',
-        fontWeight: 100,
+        fontStyle: 'normal',
       },
       subhead: {
         text: 'Discover our new arrivals!',
@@ -208,7 +232,7 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontSize: 12,
         fontFamily: 'Arial',
         fill: '#666666',
-        fontWeight: 100,
+        fontStyle: 'normal',
       },
       cta: {
         text: 'Shop now',
@@ -217,7 +241,17 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontSize: 12,
         fontFamily: 'Arial',
         fill: '#FFFFFF',
-        fontWeight: 400,
+        fontStyle: 'bold',
+      },
+      ctaButton: {
+        x: 101.21859,
+        y: 59.897015,
+        width: 73.702164,
+        height: 21.953838,
+        cornerRadius: 10.976919,
+        fill: 'none',
+        stroke: '#000080',
+        strokeWidth: 0.72697,
       },
       legalDisclaimerText: {
         text: 'Limited time offer. Terms apply.',
@@ -226,7 +260,7 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontSize: 8,
         fontFamily: 'Arial',
         fill: '#666666',
-        fontWeight: 300,
+        fontStyle: 'normal',
       },
       variantId: '436',
       rollBackPos: { x: 0, y: 0 },
@@ -257,7 +291,7 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontSize: 24,
         fontFamily: 'Arial',
         fill: '#000000',
-        fontWeight: 400,
+        fontStyle: 'bold',
       },
       subhead: {
         text: 'Experience the difference today!',
@@ -266,7 +300,17 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontSize: 16,
         fontFamily: 'Arial',
         fill: '#666666',
-        fontWeight: 300,
+        fontStyle: 'normal',
+      },
+      ctaButton: {
+        x: 101.21859,
+        y: 59.897015,
+        width: 73.702164,
+        height: 21.953838,
+        cornerRadius: 10.976919,
+        fill: 'none',
+        stroke: '#000080',
+        strokeWidth: 0.72697,
       },
       cta: {
         text: 'Learn more',
@@ -275,7 +319,7 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontSize: 14,
         fontFamily: 'Arial',
         fill: '#FFFFFF',
-        fontWeight: 400,
+        fontStyle: 'bold',
       },
       legalDisclaimerText: {
         text: 'Results may vary by individual.',
@@ -284,7 +328,7 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontSize: 8,
         fontFamily: 'Arial',
         fill: '#666666',
-        fontWeight: 300,
+        fontStyle: 'normal',
       },
       variantId: '436',
       rollBackPos: { x: 0, y: 0 },
@@ -315,7 +359,7 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontSize: 18,
         fontFamily: 'Arial',
         fill: '#000000',
-        fontWeight: 400,
+        fontStyle: 'bold',
       },
       subhead: {
         text: 'Experience the difference!',
@@ -324,7 +368,7 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontSize: 14,
         fontFamily: 'Arial',
         fill: '#666666',
-        fontWeight: 300,
+        fontStyle: 'normal',
       },
       cta: {
         text: 'Learn more',
@@ -333,7 +377,17 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontSize: 12,
         fontFamily: 'Arial',
         fill: '#FFFFFF',
-        fontWeight: 400,
+        fontStyle: 'bold',
+      },
+      ctaButton: {
+        x: 101.21859,
+        y: 59.897015,
+        width: 73.702164,
+        height: 21.953838,
+        cornerRadius: 10.976919,
+        fill: 'none',
+        stroke: '#000080',
+        strokeWidth: 0.72697,
       },
       legalDisclaimerText: {
         text: 'Results may vary by individual.',
@@ -342,7 +396,7 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontSize: 8,
         fontFamily: 'Arial',
         fill: '#666666',
-        fontWeight: 300,
+        fontStyle: 'normal',
       },
       variantId: '436',
       rollBackPos: { x: 0, y: 0 },
@@ -373,7 +427,7 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontSize: 20,
         fontFamily: 'Arial',
         fill: '#000000',
-        fontWeight: 400,
+        fontStyle: 'bold',
       },
       subhead: {
         text: 'Explore our heritage!',
@@ -382,7 +436,7 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontSize: 14,
         fontFamily: 'Arial',
         fill: '#666666',
-        fontWeight: 300,
+        fontStyle: 'normal',
       },
       cta: {
         text: 'Read story',
@@ -391,7 +445,17 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontSize: 14,
         fontFamily: 'Arial',
         fill: '#FFFFFF',
-        fontWeight: 400,
+        fontStyle: 'bold',
+      },
+      ctaButton: {
+        x: 101.21859,
+        y: 59.897015,
+        width: 73.702164,
+        height: 21.953838,
+        cornerRadius: 10.976919,
+        fill: 'none',
+        stroke: '#000080',
+        strokeWidth: 0.72697,
       },
       legalDisclaimerText: {
         text: 'Founded in 1975 with quality values.',
@@ -400,7 +464,7 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontSize: 8,
         fontFamily: 'Arial',
         fill: '#666666',
-        fontWeight: 300,
+        fontStyle: 'normal',
       },
       imageAltText: 'Desktop brandbox showing company heritage',
       logoAltText: 'Heritage brand logo for desktop',
@@ -447,6 +511,16 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontSize: 12,
         fontFamily: 'Arial',
         fill: '#FFFFFF',
+      },
+      ctaButton: {
+        x: 101.21859,
+        y: 59.897015,
+        width: 73.702164,
+        height: 21.953838,
+        cornerRadius: 10.976919,
+        fill: 'none',
+        stroke: '#000080',
+        strokeWidth: 0.72697,
       },
       imageAltText: 'Mobile brandbox showing company values',
       logoAltText: 'Heritage brand logo for mobile',
@@ -502,6 +576,16 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontFamily: 'Arial',
         fill: '#FFFFFF',
       },
+      ctaButton: {
+        x: 101.21859,
+        y: 59.897015,
+        width: 73.702164,
+        height: 21.953838,
+        cornerRadius: 10.976919,
+        fill: 'none',
+        stroke: '#000080',
+        strokeWidth: 0.72697,
+      },
       imageAltText: 'Desktop gallery with multiple product categories',
       logoAltText: 'Gallery brand logo for desktop',
       legalDisclaimerText: {
@@ -555,6 +639,16 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontSize: 12,
         fontFamily: 'Arial',
         fill: '#000000',
+      },
+      ctaButton: {
+        x: 101.21859,
+        y: 59.897015,
+        width: 73.702164,
+        height: 21.953838,
+        cornerRadius: 10.976919,
+        fill: 'none',
+        stroke: '#000080',
+        strokeWidth: 0.72697,
       },
       imageAltText: 'Touch-friendly gallery of product images and videos',
       logoAltText: 'Gallery icon for mobile app',
@@ -610,6 +704,16 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontFamily: 'Arial',
         fill: '#FFFFFF',
       },
+      ctaButton: {
+        x: 101.21859,
+        y: 59.897015,
+        width: 73.702164,
+        height: 21.953838,
+        cornerRadius: 10.976919,
+        fill: 'none',
+        stroke: '#000080',
+        strokeWidth: 0.72697,
+      },
       imageAltText: 'Desktop skyline v2 with enhanced features',
       logoAltText: 'Updated brand logo version 2',
       legalDisclaimerText: {
@@ -663,6 +767,16 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontSize: 12,
         fontFamily: 'Arial',
         fill: '#FFFFFF',
+      },
+      ctaButton: {
+        x: 101.21859,
+        y: 59.897015,
+        width: 73.702164,
+        height: 21.953838,
+        cornerRadius: 10.976919,
+        fill: 'none',
+        stroke: '#000080',
+        strokeWidth: 0.72697,
       },
       imageAltText: 'Mobile skyline v2 with enhanced features',
       logoAltText: 'Updated mobile logo version 2',
@@ -719,6 +833,16 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontFamily: 'Arial',
         fill: '#FFFFFF',
       },
+      ctaButton: {
+        x: 101.21859,
+        y: 59.897015,
+        width: 73.702164,
+        height: 21.953838,
+        cornerRadius: 10.976919,
+        fill: 'none',
+        stroke: '#000080',
+        strokeWidth: 0.72697,
+      },
       imageAltText: 'Modern desktop skyline with dark theme',
       logoAltText: 'Modern brand logo version 3',
       legalDisclaimerText: {
@@ -772,6 +896,16 @@ export const CREATIVE_FRAMES: CreativeFrames = {
         fontSize: 12,
         fontFamily: 'Arial',
         fill: '#FFFFFF',
+      },
+      ctaButton: {
+        x: 101.21859,
+        y: 59.897015,
+        width: 73.702164,
+        height: 21.953838,
+        cornerRadius: 10.976919,
+        fill: 'none',
+        stroke: '#000080',
+        strokeWidth: 0.72697,
       },
       imageAltText: 'Modern mobile skyline with dark theme',
       logoAltText: 'Modern mobile logo version 3',
