@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="449"
+   height="250"
+   viewBox="0 0 449 250"
+   fill="none"
+   version="1.1"
+   id="svg11"
+   sodipodi:docname="empty_Frames.svg"
+   xml:space="preserve"
+   inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><defs
+   id="defs13">
+    
+    
+    
+    
+    
+    
+  
+      
+      
+      
+      
+
+      
+
+<defs
+   id="defs2">
+  <clipPath
+   id="Brandbox-Desktop-Body-image-clip"
+   clipPathUnits="userSpaceOnUse">
+    <rect
+   data-crop-focal-x="0"
+   data-crop-focal-y="0"
+   x="0"
+   y="132.27408"
+   width="244.80786"
+   height="47.065678"
+   id="brandbox-desktop-image-crop" />
+  </clipPath>
+</defs>
+
+
+      
+      
+
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+    
+    
+    
+    
+    
+    
+    
+  
+      
+      
+      
+      <defs
+   id="defs7">
+        <clipPath
+   clipPathUnits="userSpaceOnUse"
+   id="marquee-app-image-crop">
+          <rect
+   data-crop-focal-x="0"
+   data-crop-focal-y="0"
+   x="159.81137"
+   y="-35"
+   width="289"
+   height="206"
+   id="rect4" />
+        </clipPath>
+      </defs>
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+    </defs>
+  <!-- Inkscape Named View -->
+  <sodipodi:namedview
+   id="namedview11"
+   pagecolor="#505050"
+   bordercolor="#eeeeee"
+   borderopacity="1"
+   inkscape:showpageshadow="0"
+   inkscape:pageopacity="0"
+   inkscape:pagecheckerboard="0"
+   inkscape:deskcolor="#505050"
+   inkscape:zoom="2.5370802"
+   inkscape:cx="111.54555"
+   inkscape:cy="162.78555"
+   inkscape:window-width="2799"
+   inkscape:window-height="1459"
+   inkscape:window-x="2185"
+   inkscape:window-y="746"
+   inkscape:window-maximized="0"
+   inkscape:current-layer="svg11"
+   showguides="true" />
+  <rect
+   width="449"
+   height="94.999992"
+   fill="#ffffff"
+   x="-4.4509767e-07"
+   y="16.000004"
+   style="stroke-width:0.448041"
+   inkscape:label="background"
+   id="rect7" /><!-- ==================================================================== -->
+  <!-- BRANDBOX DESKTOP AD UNIT: 245x117px -->
+  <!-- ==================================================================== -->
+
+  <text
+   xml:space="preserve"
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:10.9416px;line-height:1.25;font-family:Sans;-inkscape-font-specification:Sans;fill:#74767c;fill-opacity:1;stroke-width:0.273541"
+   x="6.3754115"
+   y="125.85734"
+   id="text12-2"><tspan
+   sodipodi:role="line"
+   id="tspan12-3"
+   x="6.3754115"
+   y="125.85734"
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Sans;-inkscape-font-specification:Sans;stroke-width:0.273541">Brandbox Desktop: 245x117</tspan>    </text><rect
+   y="132.21153"
+   width="245"
+   height="117.78846"
+   fill="#ffffff"
+   x="0"
+   style="stroke-width:0.330523"
+   id="rect1" /><rect
+   x="8.4006548"
+   y="224.53885"
+   width="49.075855"
+   height="15.948393"
+   rx="7.974185"
+   stroke="#001e60"
+   stroke-width="0.541994"
+   id="rect2" />
+  <!-- ==================================================================== -->
+  <!-- MARQUEE App AD UNIT: 450x95px -->
+  <!-- ==================================================================== -->
+  <text
+   xml:space="preserve"
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:10.9416px;line-height:1.25;font-family:Sans;-inkscape-font-specification:Sans;fill:#74767c;fill-opacity:1;stroke-width:0.273541"
+   x="2.4762113"
+   y="11.503305"
+   id="text12"
+   inkscape:label="adUnit title"><tspan
+     sodipodi:role="line"
+     id="tspan12"
+     x="2.4762113"
+     y="11.503305"
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Sans;-inkscape-font-specification:Sans;stroke-width:0.273541">Marquee App: 450x95px</tspan></text><image
+   style="stroke-width:2.05139"
+   id="Marquee-App-image"
+   width="290"
+   height="94.938004"
+   x="159.81137"
+   y="16.000174"
+   preserveAspectRatio="xMidYMid slice"
+   clip-path="url(#marquee-app-image-crop)"
+   inkscape:label="desktopImage"
+   transform="translate(0.18862871,-1.6975403e-4)" /><rect
+   x="13.537872"
+   y="79.818108"
+   width="55.591545"
+   height="18.065825"
+   rx="9.0328989"
+   stroke="#001e60"
+   stroke-width="0.613953"
+   inkscape:label="CTA button background"
+   id="rect8" />
+</svg>

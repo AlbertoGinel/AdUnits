@@ -4,7 +4,7 @@ import VueKonva from 'vue-konva'
 
 import App from './App.vue'
 import router from './router'
-import { useBannerStore } from './stores/banners'
+import { useCanvasStore } from './stores/konva'
 import { initializeTools, activateDefaultTool } from './services/toolInitializer'
 
 const app = createApp(App)
@@ -14,12 +14,14 @@ app.use(pinia)
 app.use(router)
 app.use(VueKonva)
 
-// Initialize banner store after mounting the app
+// Initialize app after mounting
 app.mount('#app')
 
-// Initialize the banner store to load templates and create default banner group
-const bannerStore = useBannerStore()
-bannerStore.initializeStore()
+// Load SVG background (delayed to ensure stage is ready)
+import { SVGService } from './services/svg/SVGService'
+setTimeout(() => {
+  SVGService.loadSVGBackground()
+}, 200) // Small delay to ensure stage is mounted
 
 // Initialize modular tools system
 initializeTools()
@@ -28,7 +30,3 @@ initializeTools()
 setTimeout(() => {
   activateDefaultTool()
 }, 100)
-
-// Debug: Log templates for DevTools visibility
-console.log('📋 Available Banner Templates:', bannerStore.availableTemplates)
-console.log('🏗️ Current Banner Group:', bannerStore.currentBannerGroup)
