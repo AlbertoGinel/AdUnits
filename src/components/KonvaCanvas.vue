@@ -124,16 +124,6 @@ const drawFromNodes = async () => {
               },
             })
           }
-          const imageConfig: Konva.ImageConfig = {
-            id: node.id,
-            x: node.x || 0,
-            y: node.y || 0,
-            image: imageObj,
-            width: displayWidth,
-            height: displayHeight,
-            draggable: node.draggable || false,
-          }
-
           // ✅ Always add crop - neutral if not specified
           let finalCrop = node.crop
           if (!finalCrop) {
@@ -158,14 +148,34 @@ const drawFromNodes = async () => {
           } else {
             console.log(`✂️ Using existing crop for ${node.id}:`, node.crop)
           }
-          imageConfig.crop = {
-            x: finalCrop.x,
-            y: finalCrop.y,
-            width: finalCrop.width,
-            height: finalCrop.height,
-          }
 
-          const img = new Konva.Image(imageConfig)
+          // ✅ Create Konva Image with proper crop
+          const img = new Konva.Image({
+            id: node.id,
+            x: node.x || 0,
+            y: node.y || 0,
+            image: imageObj,
+            // ✅ Display dimensions (how big to show on canvas)
+            width: displayWidth,
+            height: displayHeight,
+            draggable: node.draggable || false,
+          })
+
+          // ✅ Set crop using Konva's crop method
+          img.crop({
+            x: finalCrop.x, // Crop start X in original image
+            y: finalCrop.y, // Crop start Y in original image
+            width: finalCrop.width, // Crop width from original image
+            height: finalCrop.height, // Crop height from original image
+          })
+
+          console.log(`🖼️ Creating Konva image for ${node.id}:`)
+          console.log(`   📍 Canvas position: (${img.x()}, ${img.y()})`)
+          console.log(`   📐 Display size: ${img.width()}×${img.height()}`)
+          console.log(
+            `   ✂️ Crop from original: (${finalCrop.x}, ${finalCrop.y}) ${finalCrop.width}×${finalCrop.height}`,
+          )
+          console.log(`   🔍 Konva crop():`, img.crop())
           resolve(img)
         }
         imageObj.src = node.src!

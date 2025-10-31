@@ -28,3 +28,7 @@ coverage
 *.sw?
 
 *.tsbuildinfo
+
+# SVG files - ignore all except empty_Frames.svg
+/public/svg/*.svg
+!/public/svg/empty_Frames.svg
