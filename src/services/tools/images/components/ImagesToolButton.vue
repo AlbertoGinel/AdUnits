@@ -1,13 +1,13 @@
 <template>
-  <div 
+  <div
     class="images-tool-button"
-    :class="{ 'active': isActive }"
+    :class="{ active: isActive }"
     @click="handleClick"
     :title="tooltip"
   >
     <div class="icon">🖼️</div>
     <div class="label">Images</div>
-    
+
     <!-- Badge for active page indicator -->
     <div v-if="isActive && toolState.currentPage" class="page-badge">
       {{ toolState.currentPage }}
@@ -25,7 +25,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  isActive: false
+  isActive: false,
 })
 
 const emit = defineEmits<{

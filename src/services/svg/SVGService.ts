@@ -16,7 +16,7 @@ export class SVGService {
         return
       }
 
-      console.log('🔍 Stage found, loading from: /svg/Frames.svg')
+      console.log('🔍 Stage found, loading from: /svg/empty_Frames.svg')
 
       // Load SVG as Konva Image with better error handling
       const image = await new Promise<Konva.Image>((resolve, reject) => {
