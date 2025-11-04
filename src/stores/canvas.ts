@@ -49,7 +49,7 @@ export const useCanvasStore = defineStore('canvas', () => {
   const adUnits = ref<AdUnit[]>([])
 
   // ✅ View management
-  const currentView = ref<'overview' | 'edit'>('overview')
+  const currentView = ref<'bulkMode' | 'focusMode'>('bulkMode')
   const currentAdUnitId = ref<string | null>(null)
 
   const getCurrentAdUnit = (): AdUnit | null => {
@@ -57,62 +57,34 @@ export const useCanvasStore = defineStore('canvas', () => {
     return adUnits.value.find((unit) => unit.id === currentAdUnitId.value) || null
   }
 
-  const switchToEdit = (adUnitId: string) => {
+  const switchToFocusMode = (adUnitId: string) => {
     currentAdUnitId.value = adUnitId
-    currentView.value = 'edit'
-    console.log(`🔧 Switching to edit mode for: ${adUnitId}`)
+    currentView.value = 'focusMode'
+    console.log(`🔧 Switching to focus mode for: ${adUnitId}`)
   }
 
-  const switchToOverview = () => {
+  const switchToBulkMode = () => {
     currentAdUnitId.value = null
-    currentView.value = 'overview'
-    console.log('📋 Switching to overview mode')
+    currentView.value = 'bulkMode'
+    console.log('📋 Switching to bulk mode')
   }
 
   const loadInitialTemplate = async (): Promise<void> => {
-    // ✅ Load ad units, frames, and service
-    const { getMarqueeAdUnit, marqueeFrameConfig } = await import(
-      '@/services/templates/marqueeTemplate'
-    )
-    const { getBrandboxAdUnit, brandboxFrameConfig } = await import(
-      '@/services/templates/brandboxTemplate'
-    )
-    const { AdUnitFrameService } = await import('@/services/templates/adUnitFrame')
+    // ✅ Load all ad units using agnostic system
+    const { getAllAdUnitDefinitions } = await import('@/services/templates/registry')
+    const { AdUnitLoader } = await import('@/services/templates/adUnitLoader')
 
-    // ✅ Get pure ad unit content
-    const marqueeAdUnit = getMarqueeAdUnit()
-    const brandboxAdUnit = getBrandboxAdUnit()
+    // Get all registered ad unit definitions
+    const definitions = getAllAdUnitDefinitions()
 
-    // ✅ Create framed ad units using imported frame configs
-    const framedMarqueeElements = AdUnitFrameService.createFramedAdUnit(
-      marqueeFrameConfig,
-      marqueeAdUnit,
-      { x: 0, y: 16 }, // Content offset from frame top
-    )
+    // Load all ad units
+    adUnits.value = await AdUnitLoader.loadMultiple(definitions)
 
-    const framedBrandboxElements = AdUnitFrameService.createFramedAdUnit(
-      brandboxFrameConfig,
-      brandboxAdUnit,
-      { x: 0, y: 15 }, // Content offset from frame top
-    )
-
-    // ✅ Create structured ad unit objects
-    const marqueeAdUnitObject: AdUnit = {
-      id: marqueeFrameConfig.id,
-      title: marqueeFrameConfig.title,
-      frameConfig: marqueeFrameConfig,
-      elements: framedMarqueeElements,
-    }
-
-    const brandboxAdUnitObject: AdUnit = {
-      id: brandboxFrameConfig.id,
-      title: brandboxFrameConfig.title,
-      frameConfig: brandboxFrameConfig,
-      elements: framedBrandboxElements,
-    }
-
-    // ✅ Store as structured ad units
-    adUnits.value = [marqueeAdUnitObject, brandboxAdUnitObject]
+    console.log('📋 Loaded ad units:', {
+      adUnits: adUnits.value.length,
+      totalElements: adUnits.value.reduce((sum, unit) => sum + unit.elements.length, 0),
+      units: adUnits.value.map((unit) => ({ id: unit.id, elements: unit.elements.length })),
+    })
   }
 
   return {
@@ -120,8 +92,8 @@ export const useCanvasStore = defineStore('canvas', () => {
     currentView,
     currentAdUnitId,
     getCurrentAdUnit,
-    switchToEdit,
-    switchToOverview,
+    switchToFocusMode,
+    switchToBulkMode,
     loadInitialTemplate,
   }
 })

@@ -7,7 +7,6 @@
           <KonvaText v-if="element.type === 'text'" :element="element" />
           <KonvaRect v-else-if="element.type === 'rect'" :element="element" />
           <KonvaImage v-else-if="element.type === 'image'" :element="element" />
-          <!-- Hide edit button in edit mode, show other buttons -->
           <KonvaButton
             v-if="element.type === 'button' && !element.id?.includes('edit-button')"
             :element="element"
@@ -56,9 +55,9 @@ const editStageConfig = computed(() => ({
 
 onMounted(() => {
   renderKey.value++
-  console.log(`✏️ EditCanvas mounted for: ${props.adUnit.title}`)
+  console.log(`🎯 FocusMode Canvas mounted for: ${props.adUnit.title}`)
   console.log(`📏 Canvas size: ${editStageConfig.value.width}×${editStageConfig.value.height}`)
-  console.log(`🧩 Editing ${editElements.value.length} elements`)
+  console.log(`🧩 Focusing on ${editElements.value.length} elements`)
 })
 </script>
 

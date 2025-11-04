@@ -14,7 +14,7 @@ export const getBrandboxAdUnit = (): CanvasElement[] => {
   return [
     // Background
     {
-      id: 'background',
+      id: 'brandbox-desktop-background',
       type: 'rect',
       x: 0,
       y: 0,

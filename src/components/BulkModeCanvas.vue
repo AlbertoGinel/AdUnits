@@ -1,6 +1,6 @@
 <template>
-  <div class="overview-canvas">
-    <v-stage :config="{ width: 600, height: 400 }" :key="renderKey">
+  <div class="bulkmode-canvas">
+    <v-stage :config="{ width: 1000, height: 400, pixelRatio: 3 }" :key="renderKey">
       <v-layer>
         <!-- Show ALL ad unit elements -->
         <template v-for="adUnit in adUnits" :key="adUnit.id">
@@ -31,7 +31,7 @@ import type { CanvasElement } from '@/stores/canvas'
 
 const canvasStore = useCanvasStore()
 const { adUnits } = storeToRefs(canvasStore)
-const { switchToEdit } = canvasStore
+const { switchToFocusMode } = canvasStore
 
 const renderKey = ref(0)
 
@@ -41,7 +41,7 @@ const handleButtonClick = (element: CanvasElement) => {
   if (element.id?.includes('edit-button')) {
     const adUnitId = element.id.replace('-edit-button', '')
     console.log('🔧 Edit button clicked for:', adUnitId)
-    switchToEdit(adUnitId)
+    switchToFocusMode(adUnitId)
   }
 }
 
@@ -51,14 +51,14 @@ onMounted(async () => {
   // Force re-render after images are loaded
   await nextTick()
   renderKey.value++
-  console.log('🔄 Overview canvas re-rendered after image loading')
+  console.log('🔄 Bulk mode canvas re-rendered after image loading')
 })
 
-console.log('📋 OverviewCanvas mounted')
+console.log('📋 BulkMode Canvas mounted')
 </script>
 
 <style scoped>
-.overview-canvas {
+.bulkmode-canvas {
   border: 2px solid #ccc;
   padding: 20px;
   border-radius: 8px;

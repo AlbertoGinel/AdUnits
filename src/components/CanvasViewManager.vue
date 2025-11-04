@@ -1,21 +1,24 @@
 <template>
   <div class="canvas-view-manager">
-    <!-- Simple header - only shows breadcrumb when editing -->
-    <div class="canvas-header" v-if="currentView === 'edit'">
+    <!-- Simple header - only shows breadcrumb when in focus mode -->
+    <div class="canvas-header" v-if="currentView === 'focusMode'">
       <div class="breadcrumb">
-        <button @click="switchToOverview" class="back-btn">← Back to Overview</button>
+        <button @click="switchToBulkMode" class="back-btn">← Back to Bulk Mode</button>
         <span class="separator">→</span>
-        <span class="current-unit">✏️ {{ currentAdUnit?.title }}</span>
+        <span class="current-unit">🎯 {{ currentAdUnit?.title }}</span>
       </div>
     </div>
 
     <!-- Canvas Area -->
     <div class="canvas-area">
-      <!-- Overview: All Ad Units -->
-      <OverviewCanvas v-if="currentView === 'overview'" />
+      <!-- Bulk Mode: All Ad Units -->
+      <BulkModeCanvas v-if="currentView === 'bulkMode'" />
 
-      <!-- Edit: Single Ad Unit -->
-      <EditCanvas v-else-if="currentView === 'edit' && currentAdUnit" :ad-unit="currentAdUnit" />
+      <!-- Focus Mode: Single Ad Unit -->
+      <FocusModeCanvas
+        v-else-if="currentView === 'focusMode' && currentAdUnit"
+        :ad-unit="currentAdUnit"
+      />
     </div>
   </div>
 </template>
@@ -24,11 +27,11 @@
 import { computed } from 'vue'
 import { useCanvasStore } from '@/stores/canvas'
 import { storeToRefs } from 'pinia'
-import OverviewCanvas from './OverviewCanvas.vue'
-import EditCanvas from './EditCanvas.vue'
+import BulkModeCanvas from './BulkModeCanvas.vue'
+import FocusModeCanvas from './FocusModeCanvas.vue'
 
 const canvasStore = useCanvasStore()
-const { getCurrentAdUnit, switchToOverview } = canvasStore
+const { getCurrentAdUnit, switchToBulkMode } = canvasStore
 const { currentView } = storeToRefs(canvasStore)
 
 const currentAdUnit = computed(() => getCurrentAdUnit())
