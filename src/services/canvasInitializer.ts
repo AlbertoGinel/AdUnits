@@ -11,10 +11,11 @@ export class CanvasInitializer {
     // ✅ Load initial template and wait for it to complete
     await canvasStore.loadInitialTemplate()
 
-    console.log(`📋 Template loaded with ${canvasStore.elements.length} elements`)
+    console.log(`📋 Template loaded with ${canvasStore.adUnits.length} ad units`)
 
-    // Extract all image URLs from elements
-    const imageUrls = this.extractImageUrls(canvasStore.elements)
+    // Extract all image URLs from ad units
+    const allElements = canvasStore.adUnits.flatMap((adUnit) => adUnit.elements)
+    const imageUrls = this.extractImageUrls(allElements)
     console.log('🖼️ Found image URLs:', imageUrls)
 
     // Preload all images

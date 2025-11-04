@@ -106,7 +106,18 @@
       
       
       
-    </defs>
+    <clipPath
+   id="Brandbox-Desktop-Body-image-clip-4"
+   clipPathUnits="userSpaceOnUse">
+    <rect
+   data-crop-focal-x="0"
+   data-crop-focal-y="0"
+   x="0"
+   y="132.27408"
+   width="244.80786"
+   height="47.065678"
+   id="brandbox-desktop-image-crop-5" />
+  </clipPath></defs>
   <!-- Inkscape Named View -->
   <sodipodi:namedview
    id="namedview11"
@@ -117,9 +128,9 @@
    inkscape:pageopacity="0"
    inkscape:pagecheckerboard="0"
    inkscape:deskcolor="#505050"
-   inkscape:zoom="4.8276482"
-   inkscape:cx="338.36351"
-   inkscape:cy="169.12997"
+   inkscape:zoom="3.0199556"
+   inkscape:cx="268.21586"
+   inkscape:cy="176.98936"
    inkscape:window-width="1920"
    inkscape:window-height="1094"
    inkscape:window-x="-11"
@@ -174,7 +185,17 @@
    inkscape:label="desktopImage"
    id="brandbox-desktop-image"
    href="..%5Cexample.png"
-   transform="matrix(1.0034483,0,0,1,0.09585597,-0.06254578)" /><text
+   transform="matrix(1.0034483,0,0,1,0.09585597,-0.06254578)" /><image
+   x="0.062551737"
+   y="132.27408"
+   width="244"
+   height="47.065678"
+   preserveAspectRatio="xMidYMid slice"
+   clip-path="url(#Brandbox-Desktop-Body-image-clip-4)"
+   inkscape:label="desktopImage"
+   id="brandbox-desktop-image-1"
+   href="..%5Cexample.png"
+   transform="matrix(1.0034483,0,0,1,191.50775,-218.34144)" /><text
    xml:space="preserve"
    style="font-size:7.48462px;line-height:0;font-family:sans-serif;-inkscape-font-specification:sans-serif;text-align:start;letter-spacing:0.143593px;word-spacing:-1.16163px;writing-mode:lr-tb;direction:ltr;text-anchor:start;fill:#001e60;fill-opacity:1;stroke-width:1.24744"
    x="8.1105547"
@@ -253,16 +274,31 @@
    id="text4"
    style="font-size:4.61095px;line-height:1.25;font-family:sans-serif;text-align:end;text-anchor:end;white-space:pre;display:inline;fill:#552200;stroke-width:0.115274"
    x="459.21564"
-   y="175.26143"
+   y="175.60373"
    inkscape:label="disclaimer"><tspan
      sodipodi:role="line"
      x="242.98752"
-     y="175.26143"
+     y="175.60373"
      id="tspan5"
      style="fill:#552200;stroke-width:0.115274"><tspan
        x="242.98752"
-       y="175.26143"
+       y="175.60373"
        id="brandbox-desktop-disclaimer"
+       style="text-align:end;text-anchor:end;fill:#552200;stroke-width:0.115274">This is placeholder disclaimer text and does not constitute legal advice. Use at your own risk.</tspan></tspan></text><text
+   xml:space="preserve"
+   id="text4-1"
+   style="font-size:4.61095px;line-height:1.25;font-family:sans-serif;text-align:end;text-anchor:end;white-space:pre;display:inline;fill:#552200;stroke-width:0.115274"
+   x="661.93945"
+   y="103.52232"
+   inkscape:label="disclaimer"><tspan
+     sodipodi:role="line"
+     x="445.7113"
+     y="103.52232"
+     id="tspan5-4"
+     style="fill:#552200;stroke-width:0.115274"><tspan
+       x="445.7113"
+       y="103.52232"
+       id="brandbox-desktop-disclaimer-2"
        style="text-align:end;text-anchor:end;fill:#552200;stroke-width:0.115274">This is placeholder disclaimer text and does not constitute legal advice. Use at your own risk.</tspan></tspan></text>
   <!-- ==================================================================== -->
   <!-- MARQUEE App AD UNIT: 450x95px -->
@@ -398,7 +434,7 @@
    id="text11"><tspan
      x="0"
      y="0"
-     id="tspan1">Th  aouaouaouaouao</tspan></text>
+     id="tspan2">Th  aouaouaouaouao</tspan></text>
 <text
    xml:space="preserve"
    id="text5"
@@ -408,10 +444,4 @@
    width="224.5"
    height="95"
    x="224.5"
-   y="16.000004" /><rect
-   style="fill:#808080;stroke-width:3.10708"
-   id="rect11"
-   width="217.36183"
-   height="6.4773564"
-   x="227.76607"
-   y="101.88846" /></svg>
+   y="16.000004" /></svg>

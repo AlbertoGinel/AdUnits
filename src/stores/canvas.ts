@@ -31,19 +31,97 @@ export interface CanvasElement {
   }
 }
 
+export interface AdUnit {
+  id: string
+  title: string
+  frameConfig: {
+    id: string
+    title: string
+    dimensions: { width: number; height: number }
+    position: { x: number; y: number }
+    editButtonOffset?: { x: number; y: number }
+  }
+  elements: CanvasElement[]
+}
+
 export const useCanvasStore = defineStore('canvas', () => {
-  // ✅ Clean store - no hardcoded elements
-  const elements = ref<CanvasElement[]>([])
+  // ✅ Store ad units as structured objects
+  const adUnits = ref<AdUnit[]>([])
+
+  // ✅ View management
+  const currentView = ref<'overview' | 'edit'>('overview')
+  const currentAdUnitId = ref<string | null>(null)
+
+  const getCurrentAdUnit = (): AdUnit | null => {
+    if (!currentAdUnitId.value) return null
+    return adUnits.value.find((unit) => unit.id === currentAdUnitId.value) || null
+  }
+
+  const switchToEdit = (adUnitId: string) => {
+    currentAdUnitId.value = adUnitId
+    currentView.value = 'edit'
+    console.log(`🔧 Switching to edit mode for: ${adUnitId}`)
+  }
+
+  const switchToOverview = () => {
+    currentAdUnitId.value = null
+    currentView.value = 'overview'
+    console.log('📋 Switching to overview mode')
+  }
 
   const loadInitialTemplate = async (): Promise<void> => {
-    // Dynamic import to avoid circular dependencies
-    const { getInitialElements } = await import('@/services/initialTemplate')
-    elements.value = getInitialElements()
-    console.log('📋 Loaded initial template with', elements.value.length, 'elements')
+    // ✅ Load ad units, frames, and service
+    const { getMarqueeAdUnit, marqueeFrameConfig } = await import(
+      '@/services/templates/marqueeTemplate'
+    )
+    const { getBrandboxAdUnit, brandboxFrameConfig } = await import(
+      '@/services/templates/brandboxTemplate'
+    )
+    const { AdUnitFrameService } = await import('@/services/templates/adUnitFrame')
+
+    // ✅ Get pure ad unit content
+    const marqueeAdUnit = getMarqueeAdUnit()
+    const brandboxAdUnit = getBrandboxAdUnit()
+
+    // ✅ Create framed ad units using imported frame configs
+    const framedMarqueeElements = AdUnitFrameService.createFramedAdUnit(
+      marqueeFrameConfig,
+      marqueeAdUnit,
+      { x: 0, y: 16 }, // Content offset from frame top
+    )
+
+    const framedBrandboxElements = AdUnitFrameService.createFramedAdUnit(
+      brandboxFrameConfig,
+      brandboxAdUnit,
+      { x: 0, y: 15 }, // Content offset from frame top
+    )
+
+    // ✅ Create structured ad unit objects
+    const marqueeAdUnitObject: AdUnit = {
+      id: marqueeFrameConfig.id,
+      title: marqueeFrameConfig.title,
+      frameConfig: marqueeFrameConfig,
+      elements: framedMarqueeElements,
+    }
+
+    const brandboxAdUnitObject: AdUnit = {
+      id: brandboxFrameConfig.id,
+      title: brandboxFrameConfig.title,
+      frameConfig: brandboxFrameConfig,
+      elements: framedBrandboxElements,
+    }
+
+    // ✅ Store as structured ad units
+    adUnits.value = [marqueeAdUnitObject, brandboxAdUnitObject]
   }
 
   return {
-    elements,
+    adUnits,
+    currentView,
+    currentAdUnitId,
+    getCurrentAdUnit,
+    switchToEdit,
+    switchToOverview,
     loadInitialTemplate,
   }
 })

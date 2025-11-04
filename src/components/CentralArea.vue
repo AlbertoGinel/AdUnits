@@ -1,11 +1,11 @@
 <template>
   <section class="central-area">
-    <KonvaCanvas />
+    <CanvasViewManager />
   </section>
 </template>
 
 <script setup lang="ts">
-import KonvaCanvas from './KonvaCanvas.vue'
+import CanvasViewManager from './CanvasViewManager.vue'
 </script>
 
 <style scoped>

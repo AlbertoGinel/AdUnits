@@ -17,33 +17,47 @@ interface Props {
 
 const props = defineProps<Props>()
 
+const emit = defineEmits<{
+  click: [element: CanvasElement]
+}>()
+
 const handleClick = () => {
-  console.log('Button clicked!', props.element.text)
-  // Your click action here
+  console.log('🔘 Button clicked:', props.element.text, props.element.id)
+  emit('click', props.element)
 }
 
-const handleMouseOver = (event: any) => {
+const handleMouseOver = (event: {
+  target: { getStage(): { container(): { style: { cursor: string } } } }
+}) => {
+  console.log('🖱️ Mouse over button:', props.element.text)
   event.target.getStage().container().style.cursor = 'pointer'
 }
 
-const handleMouseOut = (event: any) => {
+const handleMouseOut = (event: {
+  target: { getStage(): { container(): { style: { cursor: string } } } }
+}) => {
+  console.log('🖱️ Mouse out button:', props.element.text)
   event.target.getStage().container().style.cursor = 'default'
 }
 
 const buttonConfig = computed(() => ({
   x: props.element.x,
   y: props.element.y,
-  text: props.element.text,
-  fontSize: props.element.fontSize,
-  fontFamily: props.element.fontFamily,
-  fontStyle: props.element.fontStyle,
-  fill: props.element.fill,
-  align: props.element.align,
-  width: props.element.width,
-  height: props.element.height,
-  cornerRadius: props.element.cornerRadius,
-  stroke: props.element.strokeColor,
-  strokeWidth: props.element.strokeWidth,
-  verticalAlign: props.element.verticalAlign,
+  text: props.element.text || 'Button',
+  fontSize: props.element.fontSize || 12,
+  fontFamily: props.element.fontFamily || 'Arial',
+  fontStyle: props.element.fontStyle || 'normal',
+  fill: props.element.fill || '#0066cc',
+  align: props.element.align || 'left',
+  width: props.element.width || 50,
+  height: props.element.height || 20,
+  cornerRadius: props.element.cornerRadius || 0,
+  stroke: props.element.strokeColor || 'transparent',
+  strokeWidth: props.element.strokeWidth || 0,
+  verticalAlign: props.element.verticalAlign || 'top',
+  // ✅ Essential for events
+  listening: true,
+  // ✅ Make sure it's interactive
+  perfectDrawEnabled: false,
 }))
 </script>
