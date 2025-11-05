@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type { LayerDefinition } from '@/services/templates/registry'
 
 export interface CanvasElement {
@@ -107,6 +107,102 @@ export const useCanvasStore = defineStore('canvas', () => {
       .map((adUnit) => adUnit.title) // Return the ad unit names
   }
 
+  // ✅ Computed properties for always-available locked element lists
+  const lockedTextAdUnits = computed(() => getAdUnitsWithLockedElementsByType('text'))
+  const lockedImageAdUnits = computed(() => getAdUnitsWithLockedElementsByType('image'))
+
+  // ✅ Bulk change function - updates all elements with specific tag (except locked ones)
+  const bulkChange = (tag: string, newValue: string): void => {
+    let updatedCount = 0
+    let skippedCount = 0
+
+    adUnits.value.forEach((adUnit) => {
+      adUnit.elements.forEach((element) => {
+        // Only update elements that match the tag and are not locked
+        if (element.tag === tag && element.locked !== true) {
+          // Update text or image value based on element type
+          if (element.type === 'text') {
+            element.text = newValue
+            updatedCount++
+          } else if (element.type === 'image') {
+            element.image = newValue
+            updatedCount++
+          }
+        } else if (element.tag === tag && element.locked === true) {
+          // Count skipped locked elements
+          skippedCount++
+        }
+      })
+    })
+
+    console.log(`🔄 Bulk changed tag "${tag}" to "${newValue}":`, {
+      updated: updatedCount,
+      skipped: skippedCount,
+      total: updatedCount + skippedCount,
+    })
+  }
+
+  // ✅ Watch individual layer defaultValues
+  watch(
+    () => layers.value.headline?.defaultValue,
+    (newValue, oldValue) => {
+      if (adUnits.value.length > 0 && newValue !== oldValue && newValue) {
+        console.log(`🎯 Headline changed: "${oldValue}" → "${newValue}"`)
+        bulkChange('headline', newValue)
+      }
+    },
+  )
+
+  watch(
+    () => layers.value.subhead?.defaultValue,
+    (newValue, oldValue) => {
+      if (adUnits.value.length > 0 && newValue !== oldValue && newValue) {
+        console.log(`🎯 Subhead changed: "${oldValue}" → "${newValue}"`)
+        bulkChange('subhead', newValue)
+      }
+    },
+  )
+
+  watch(
+    () => layers.value.cta?.defaultValue,
+    (newValue, oldValue) => {
+      if (adUnits.value.length > 0 && newValue !== oldValue && newValue) {
+        console.log(`🎯 CTA changed: "${oldValue}" → "${newValue}"`)
+        bulkChange('cta', newValue)
+      }
+    },
+  )
+
+  watch(
+    () => layers.value.logo?.defaultValue,
+    (newValue, oldValue) => {
+      if (adUnits.value.length > 0 && newValue !== oldValue && newValue) {
+        console.log(`🎯 Logo changed: "${oldValue}" → "${newValue}"`)
+        bulkChange('logo', newValue)
+      }
+    },
+  )
+
+  watch(
+    () => layers.value.image?.defaultValue,
+    (newValue, oldValue) => {
+      if (adUnits.value.length > 0 && newValue !== oldValue && newValue) {
+        console.log(`🎯 Image changed: "${oldValue}" → "${newValue}"`)
+        bulkChange('image', newValue)
+      }
+    },
+  )
+
+  watch(
+    () => layers.value.disclaimer?.defaultValue,
+    (newValue, oldValue) => {
+      if (adUnits.value.length > 0 && newValue !== oldValue && newValue) {
+        console.log(`🎯 Disclaimer changed: "${oldValue}" → "${newValue}"`)
+        bulkChange('disclaimer', newValue)
+      }
+    },
+  )
+
   const loadInitialTemplate = async (): Promise<void> => {
     // ✅ Load all ad units using agnostic system
     const { getAllAdUnitDefinitions, LAYERS } = await import('@/services/templates/registry')
@@ -120,6 +216,15 @@ export const useCanvasStore = defineStore('canvas', () => {
 
     // Load all ad units
     adUnits.value = await AdUnitLoader.loadMultiple(definitions)
+
+    // Initialize lock state for text and image elements
+    adUnits.value.forEach((adUnit) => {
+      adUnit.elements.forEach((element) => {
+        if (element.type === 'text' || element.type === 'image') {
+          element.locked = false
+        }
+      })
+    })
 
     // Apply default values from layers to tagged text and image elements
     adUnits.value.forEach((adUnit) => {
@@ -176,5 +281,8 @@ export const useCanvasStore = defineStore('canvas', () => {
     isLocked,
     lock,
     getAdUnitsWithLockedElementsByType,
+    lockedTextAdUnits,
+    lockedImageAdUnits,
+    bulkChange,
   }
 })

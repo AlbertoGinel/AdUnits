@@ -16,6 +16,14 @@
         />
       </div>
 
+      <!-- Locked text units info -->
+      <div v-if="lockedTextAdUnits.length > 0" class="locked-info">
+        <p class="locked-message">
+          <span class="locked-icon">🔒</span>
+          Does not apply on: {{ lockedTextAdUnits.join(', ') }}
+        </p>
+      </div>
+
       <!-- Sub headline -->
       <div class="text-section">
         <h4 class="section-title">Sub headline</h4>
@@ -110,7 +118,7 @@ interface Props {
 defineProps<Props>()
 
 const canvasStore = useCanvasStore()
-const { layers } = storeToRefs(canvasStore)
+const { layers, lockedTextAdUnits } = storeToRefs(canvasStore)
 
 // Headline value that directly connects to layers store
 const headlineValue = computed({
@@ -326,5 +334,27 @@ const handleInputDisclaimer = () => {
 
 .toggle-switch input:checked + .toggle-slider:before {
   transform: translateX(20px);
+}
+
+/* Locked info styles */
+.locked-info {
+  margin: 8px 0 16px 0;
+  padding: 8px 12px;
+  background-color: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 4px;
+}
+
+.locked-message {
+  margin: 0;
+  font-size: 12px;
+  color: #856404;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.locked-icon {
+  font-size: 14px;
 }
 </style>
