@@ -9,6 +9,47 @@ export interface AdUnitDefinition {
   loader: () => Promise<CanvasElement[]>
 }
 
+export interface LayerDefinition {
+  name: string
+  defaultValue: string
+  type: 'text' | 'image'
+}
+
+// ✅ Layer definitions as object with tag as key (more efficient lookups)
+export const LAYERS: Record<string, LayerDefinition> = {
+  headline: {
+    name: 'Headline',
+    defaultValue: 'Headline goes here',
+    type: 'text',
+  },
+  logo: {
+    name: 'Logo',
+    defaultValue: '/logo.png',
+    type: 'image',
+  },
+  subhead: {
+    name: 'Subhead',
+    defaultValue: 'Your subhead goes here',
+    type: 'text',
+  },
+  cta: {
+    name: 'CTA',
+    defaultValue: 'CTA button',
+    type: 'text',
+  },
+  image: {
+    name: 'Image',
+    defaultValue: '/image.png',
+    type: 'image',
+  },
+  disclaimer: {
+    name: 'Disclaimer',
+    defaultValue:
+      'This is placeholder disclaimer text and does not constitute legal advice. Use at your own risk.',
+    type: 'text',
+  },
+}
+
 // ✅ Registry of all available ad units
 export const AD_UNIT_REGISTRY: AdUnitDefinition[] = [
   {

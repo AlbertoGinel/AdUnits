@@ -1,6 +1,6 @@
 <template>
   <div class="bulkmode-canvas">
-    <v-stage :config="{ width: 1000, height: 400, pixelRatio: 3 }" :key="renderKey">
+    <v-stage :config="{ width: 1000, height: 400, pixelRatio: 6 }" :key="renderKey">
       <v-layer>
         <!-- Show ALL ad unit elements -->
         <template v-for="adUnit in adUnits" :key="adUnit.id">

@@ -1,13 +1,13 @@
 <template>
   <main class="main-container">
-    <ToolsSection />
+    <SimpleToolsSection />
     <CentralArea />
     <CanvasArea />
   </main>
 </template>
 
 <script setup lang="ts">
-import ToolsSection from './ToolsSection.vue'
+import SimpleToolsSection from './SimpleToolsSection.vue'
 import CentralArea from './CentralArea.vue'
 import CanvasArea from './CanvasArea.vue'
 </script>
