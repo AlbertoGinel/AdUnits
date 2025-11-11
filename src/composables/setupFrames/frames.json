@@ -1,0 +1,342 @@
+{
+  "adUnits": {
+    "marquee-app": {
+      "id": "marquee-app",
+      "title": "Marquee App",
+      "frameConfig": {
+        "title": "Marquee App",
+        "dimensions": { "width": 450, "height": 95 },
+        "position": { "x": 0, "y": 0 },
+        "contentOffset": { "x": 0, "y": 16 }
+      },
+      "elements": {
+        "background": {
+          "type": "rect",
+          "x": 0,
+          "y": 0,
+          "width": 450,
+          "height": 95,
+          "fill": "#ffffff"
+        },
+        "image": {
+          "type": "image",
+          "x": 225,
+          "y": 0,
+          "width": 225,
+          "height": 95,
+          "image": "",
+          "crop": {
+            "x": 100,
+            "y": 355,
+            "width": 2811,
+            "height": 1187
+          },
+          "tag": "image"
+        },
+        "headline": {
+          "type": "text",
+          "x": 13,
+          "y": 31,
+          "text": "",
+          "fontSize": 11,
+          "fontFamily": "Sans",
+          "fontStyle": "bold",
+          "fill": "#001e60",
+          "align": "left",
+          "tag": "headline"
+        },
+        "logo": {
+          "type": "image",
+          "x": 13,
+          "y": 12,
+          "width": 54,
+          "height": 10.63,
+          "image": "",
+          "tag": "logo"
+        },
+        "cta-background": {
+          "type": "rect",
+          "x": 13.5,
+          "y": 56,
+          "width": 55,
+          "height": 18,
+          "cornerRadius": 9,
+          "strokeColor": "#001e60",
+          "fill": "#ffffffff",
+          "strokeWidth": 0.6
+        },
+        "cta": {
+          "type": "text",
+          "x": 13.5,
+          "y": 56,
+          "width": 55,
+          "height": 18,
+          "text": "",
+          "fontSize": 6.5,
+          "fontFamily": "Sans",
+          "fill": "#001e60",
+          "align": "center",
+          "wrap": "none",
+          "verticalAlign": "middle",
+          "tag": "cta"
+        },
+        "disclaimer": {
+          "type": "text",
+          "x": 229,
+          "y": 88,
+          "width": 220,
+          "height": 6,
+          "text": "",
+          "fontSize": 4.6,
+          "fontFamily": "Sans",
+          "fill": "#ffffff",
+          "align": "right",
+          "wrap": "none",
+          "tag": "disclaimer"
+        }
+      }
+    },
+    "brandbox-desktop": {
+      "id": "brandbox-desktop",
+      "title": "Brandbox Desktop",
+      "frameConfig": {
+        "title": "Brandbox Desktop",
+        "dimensions": { "width": 245, "height": 118 },
+        "position": { "x": 0, "y": 117 },
+        "contentOffset": { "x": 0, "y": 16 }
+      },
+      "elements": {
+        "background": {
+          "type": "rect",
+          "x": 0,
+          "y": 0,
+          "width": 245,
+          "height": 118,
+          "fill": "#ffffff"
+        },
+        "image": {
+          "type": "image",
+          "x": 0,
+          "y": 0,
+          "width": 245,
+          "height": 47,
+          "image": "",
+          "crop": {
+            "x": 15,
+            "y": 459.3,
+            "width": 2440,
+            "height": 470
+          },
+          "tag": "image"
+        },
+        "logo": {
+          "type": "image",
+          "x": 185,
+          "y": 66,
+          "width": 52,
+          "height": 10.2,
+          "image": "",
+          "tag": "logo"
+        },
+        "headline": {
+          "type": "text",
+          "x": 8,
+          "y": 72,
+          "text": "",
+          "fontSize": 7.5,
+          "fontFamily": "Sans",
+          "fontStyle": "bold",
+          "fill": "#001e60",
+          "align": "left",
+          "tag": "headline"
+        },
+        "subhead": {
+          "type": "text",
+          "x": 8,
+          "y": 82,
+          "text": "",
+          "fontSize": 5.4,
+          "fontFamily": "Sans",
+          "fill": "#001e60",
+          "align": "left",
+          "tag": "subhead"
+        },
+        "cta-background": {
+          "type": "rect",
+          "x": 8.4,
+          "y": 92.5,
+          "width": 49,
+          "height": 16,
+          "cornerRadius": 8,
+          "strokeColor": "#001e60",
+          "fill": "#ffffffff",
+          "strokeWidth": 0.54
+        },
+        "cta": {
+          "type": "text",
+          "x": 8.4,
+          "y": 92.5,
+          "text": "",
+          "fontSize": 5.8,
+          "fontFamily": "Sans",
+          "fill": "#001e60",
+          "align": "center",
+          "width": 49,
+          "height": 16,
+          "wrap": "none",
+          "verticalAlign": "middle",
+          "tag": "cta"
+        },
+        "disclaimer": {
+          "type": "text",
+          "x": 22,
+          "y": 40,
+          "width": 220,
+          "height": 6,
+          "text": "",
+          "fontSize": 4.6,
+          "fontFamily": "Sans",
+          "fill": "#ffffff",
+          "align": "right",
+          "wrap": "none",
+          "tag": "disclaimer"
+        }
+      }
+    },
+    "longmarquee": {
+      "id": "longmarquee",
+      "title": "Long Marquee",
+      "frameConfig": {
+        "title": "Long Marquee",
+        "dimensions": { "width": 860, "height": 95 },
+        "position": { "x": 0, "y": 250 },
+        "contentOffset": { "x": 0, "y": 16 }
+      },
+      "elements": {
+        "background": {
+          "type": "rect",
+          "x": 0,
+          "y": 0,
+          "width": 860,
+          "height": 95,
+          "fill": "#ffffff"
+        },
+        "headline": {
+          "type": "text",
+          "x": 92,
+          "y": 12,
+          "text": "",
+          "fontSize": 11,
+          "fontFamily": "Sans",
+          "fontStyle": "bold",
+          "fill": "#001e60",
+          "align": "left",
+          "tag": "headline"
+        },
+        "logo": {
+          "type": "image",
+          "x": 10,
+          "y": 42,
+          "width": 58,
+          "height": 11,
+          "fill": "#808080",
+          "image": "",
+          "tag": "logo"
+        },
+        "subhead": {
+          "type": "text",
+          "x": 91,
+          "y": 29,
+          "text": "",
+          "fontSize": 5.4,
+          "fontFamily": "Sans",
+          "fill": "#001e60",
+          "align": "left",
+          "tag": "subhead"
+        },
+        "cta-background": {
+          "type": "rect",
+          "x": 91,
+          "y": 63,
+          "width": 57,
+          "height": 18,
+          "cornerRadius": 8,
+          "strokeColor": "#001e60",
+          "fill": "#ffffffff",
+          "strokeWidth": 0.54
+        },
+        "cta": {
+          "type": "text",
+          "x": 91,
+          "y": 63,
+          "width": 57,
+          "height": 18,
+          "text": "",
+          "fontSize": 5.8,
+          "fontFamily": "Sans",
+          "align": "center",
+          "wrap": "none",
+          "verticalAlign": "middle",
+          "cornerRadius": 8,
+          "fill": "#001e60",
+          "tag": "cta"
+        },
+        "image": {
+          "type": "image",
+          "x": 430,
+          "y": 0,
+          "image": "",
+          "width": 430,
+          "height": 95,
+          "tag": "image",
+          "crop": {
+            "x": 15,
+            "y": 459.3,
+            "width": 2440,
+            "height": 470
+          }
+        },
+        "disclaimer": {
+          "type": "text",
+          "x": 590,
+          "y": 84,
+          "width": 261,
+          "height": 6,
+          "text": "",
+          "fontSize": 6,
+          "fontFamily": "Sans",
+          "fill": "#ffffff",
+          "align": "right",
+          "wrap": "none",
+          "tag": "disclaimer"
+        }
+      }
+    }
+  },
+  "layers": {
+    "headline": {
+      "type": "text",
+      "defaultValue": "Headline goes here"
+    },
+    "logo": {
+      "type": "image",
+      "defaultValue": "/logo.png"
+    },
+    "subhead": {
+      "type": "text",
+      "defaultValue": "Your subhead goes here"
+    },
+    "cta": {
+      "type": "text",
+      "defaultValue": "CTA button"
+    },
+    "image": {
+      "type": "image",
+      "defaultValue": "/image.png"
+    },
+    "disclaimer": {
+      "type": "text",
+      "defaultValue": "This is placeholder disclaimer text and does not constitute legal advice. Use at your own risk."
+    }
+  }
+}

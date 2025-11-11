@@ -11,30 +11,36 @@
 
     <!-- Canvas Area -->
     <div class="canvas-area">
-      <!-- Bulk Mode: All Ad Units -->
-      <BulkModeCanvas v-if="currentView === 'bulkMode'" />
-
-      <!-- Focus Mode: Single Ad Unit -->
-      <FocusModeCanvas
-        v-else-if="currentView === 'focusMode' && currentAdUnit"
-        :ad-unit="currentAdUnit"
-      />
+      <!-- <UnifiedCanvas /> ✅ Single unified canvas that handles both modes -->
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useCanvasStore } from '@/stores/canvas'
 import { storeToRefs } from 'pinia'
-import BulkModeCanvas from './BulkModeCanvas.vue'
-import FocusModeCanvas from './FocusModeCanvas.vue'
+import UnifiedCanvas from './UnifiedCanvas.vue'
+import { useLoadStore } from '@/composables/setupFrames/useLoadStore'
 
 const canvasStore = useCanvasStore()
 const { getCurrentAdUnit, switchToBulkMode } = canvasStore
 const { currentView } = storeToRefs(canvasStore)
 
 const currentAdUnit = computed(() => getCurrentAdUnit())
+
+// ✅ Load initial data when component mounts
+const { loadLayers } = useLoadStore()
+
+onMounted(async () => {
+  try {
+    console.log('🚀 CanvasViewManager: Loading initial data...')
+    await loadLayers()
+    console.log('✅ CanvasViewManager: Data loaded successfully')
+  } catch (error) {
+    console.error('❌ CanvasViewManager: Failed to load data:', error)
+  }
+})
 
 console.log('🎛️ CanvasViewManager mounted')
 </script>

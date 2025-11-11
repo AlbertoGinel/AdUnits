@@ -3,24 +3,22 @@
     <!-- Text Tool Menu -->
     <div v-if="activeTool === 'text'" class="tool-menu">
       <h3 class="menu-title">Edit texts</h3>
-      <p class="menu-subtitle">Across ad sizes</p>
 
       <!-- Main headline -->
       <div class="text-section">
         <h4 class="section-title">Main headline</h4>
         <input
           v-model="headlineValue"
-          @input="handleInputHeadline"
           class="text-input-area"
           placeholder="The ad's main headline goes into this bar"
         />
       </div>
 
-      <!-- Locked text units info -->
-      <div v-if="lockedTextAdUnits.length > 0" class="locked-info">
+      <!-- Locked headline info -->
+      <div v-if="lockedElementsByTag.headline?.length" class="locked-info">
         <p class="locked-message">
           <span class="locked-icon">🔒</span>
-          Does not apply on: {{ lockedTextAdUnits.join(', ') }}
+          Does not apply on: {{ lockedElementsByTag.headline.join(', ') }}
         </p>
       </div>
 
@@ -29,21 +27,31 @@
         <h4 class="section-title">Sub headline</h4>
         <input
           v-model="subheadValue"
-          @input="handleInputSubhead"
           class="text-input-area"
           placeholder="The ad's sub headline goes into this bar"
         />
       </div>
 
+      <!-- Locked subhead info -->
+      <div v-if="lockedElementsByTag.subhead?.length" class="locked-info">
+        <p class="locked-message">
+          <span class="locked-icon">🔒</span>
+          Does not apply on: {{ lockedElementsByTag.subhead?.join(', ') }}
+        </p>
+      </div>
+
       <!-- Button CTA -->
       <div class="text-section">
         <h4 class="section-title">Button CTA</h4>
-        <input
-          v-model="ctaValue"
-          @input="handleInputCta"
-          class="text-input-area small"
-          placeholder="SHOP NOW"
-        />
+        <input v-model="ctaValue" class="text-input-area small" placeholder="SHOP NOW" />
+      </div>
+
+      <!-- Locked CTA info -->
+      <div v-if="lockedElementsByTag.cta?.length" class="locked-info">
+        <p class="locked-message">
+          <span class="locked-icon">🔒</span>
+          Does not apply on: {{ lockedElementsByTag.cta?.join(', ') }}
+        </p>
       </div>
 
       <hr class="divider" />
@@ -59,7 +67,6 @@
         </div>
         <textarea
           v-model="disclaimerValue"
-          @input="handleInputDisclaimer"
           :disabled="!disclaimerEnabled"
           class="disclaimer-area"
           placeholder="This is placeholder disclaimer text and does not constitute legal advice. Use at your own risk."
@@ -107,8 +114,7 @@
 </template>
 
 <script setup lang="ts">
-import { useCanvasStore } from '@/stores/canvas'
-import { storeToRefs } from 'pinia'
+// import { useDynamicEditText } from '@/composable/useDinamicEditText'  // TODO: Fix path later
 import { ref, computed } from 'vue'
 
 interface Props {
@@ -117,54 +123,24 @@ interface Props {
 
 defineProps<Props>()
 
-const canvasStore = useCanvasStore()
-const { layers, lockedTextAdUnits } = storeToRefs(canvasStore)
+// TODO: Temporarily commented out while fixing composable path
+// const { headlineValue, subheadValue, ctaValue, disclaimerValue, lockedElementsByTag } =
+//   useDynamicEditText()
 
-// Headline value that directly connects to layers store
-const headlineValue = computed({
-  get: () => layers.value.headline?.defaultValue || '',
-  set: (value) => {
-    if (layers.value.headline) {
-      layers.value.headline.defaultValue = value
-    }
-  },
+// Temporary placeholders
+const headlineValue = ref('Headline placeholder')
+const subheadValue = ref('Subhead placeholder')
+const ctaValue = ref('CTA placeholder')
+const disclaimerValue = ref('Disclaimer placeholder')
+const lockedElementsByTag = ref({
+  headline: [] as string[],
+  subhead: [] as string[],
+  cta: [] as string[],
 })
 
-// Other reactive values for other inputs (keep as before)
-const subheadValue = ref('')
-const ctaValue = ref('')
-const disclaimerValue = ref('')
+// Other UI state
 const disclaimerEnabled = ref(true)
-
-// Initialize with default values from layers for other inputs
-const initializeValues = () => {
-  if (layers.value.subhead) subheadValue.value = layers.value.subhead.defaultValue
-  if (layers.value.cta) ctaValue.value = layers.value.cta.defaultValue
-  if (layers.value.disclaimer) disclaimerValue.value = layers.value.disclaimer.defaultValue
-}
-
-// Initialize when component mounts
-initializeValues()
-
-// Character count for disclaimer
 const characterCount = computed(() => disclaimerValue.value.length)
-
-// Input handlers
-const handleInputHeadline = () => {
-  console.log('Headline changed in layers store:', layers.value.headline?.defaultValue)
-}
-
-const handleInputSubhead = () => {
-  console.log('Subhead changed:', subheadValue.value)
-}
-
-const handleInputCta = () => {
-  console.log('CTA changed:', ctaValue.value)
-}
-
-const handleInputDisclaimer = () => {
-  console.log('Disclaimer changed:', disclaimerValue.value)
-}
 </script>
 
 <style scoped>
