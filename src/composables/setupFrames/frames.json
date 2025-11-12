@@ -102,7 +102,7 @@
       "frameConfig": {
         "title": "Brandbox Desktop",
         "dimensions": { "width": 245, "height": 118 },
-        "position": { "x": 0, "y": 117 },
+        "position": { "x": 0, "y": 140 },
         "contentOffset": { "x": 0, "y": 16 }
       },
       "elements": {
@@ -209,7 +209,7 @@
       "frameConfig": {
         "title": "Long Marquee",
         "dimensions": { "width": 860, "height": 95 },
-        "position": { "x": 0, "y": 250 },
+        "position": { "x": 0, "y": 300 },
         "contentOffset": { "x": 0, "y": 16 }
       },
       "elements": {

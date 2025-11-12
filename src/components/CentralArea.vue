@@ -1,18 +1,9 @@
 <template>
-  <section class="central-area">
-    <CanvasViewManager />
-  </section>
+  <CanvasScreen />
 </template>
 
 <script setup lang="ts">
-import CanvasViewManager from './CanvasViewManager.vue'
+import CanvasScreen from '@/components/konva/CanvasScreen.vue'
 </script>
 
-<style scoped>
-.central-area {
-  height: 100%;
-  width: 100%;
-  overflow: hidden;
-  background: #f8f9fa;
-}
-</style>
+<style scoped></style>
