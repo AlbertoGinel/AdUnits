@@ -27,7 +27,7 @@ const stageConfig = computed(() => {
       scaleY: 1,
       x: 0.5,
       y: 25,
-      pixelRatio: 4,
+      pixelRatio: 10,
     }
   } else {
     return {

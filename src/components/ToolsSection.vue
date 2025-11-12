@@ -1,14 +1,14 @@
 <template>
   <div class="tools-section">
-    <SimpleToolBar @tool-selected="selectedTool = $event" :active-tool="selectedTool" />
-    <SimpleToolArea :active-tool="selectedTool" />
+    <ToolsBar @tool-selected="selectedTool = $event" :active-tool="selectedTool" />
+    <ToolsArea :active-tool="selectedTool" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import SimpleToolBar from './SimpleToolBar.vue'
-import SimpleToolArea from './SimpleToolArea.vue'
+import ToolsBar from './ToolsBar.vue'
+import ToolsArea from './ToolsArea.vue'
 
 const selectedTool = ref<string>('text') // Default to text tool
 </script>

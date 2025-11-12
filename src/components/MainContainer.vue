@@ -1,15 +1,15 @@
 <template>
   <main class="main-container">
-    <SimpleToolsSection />
+    <ToolsSection />
     <CentralArea />
     <CanvasArea />
   </main>
 </template>
 
 <script setup lang="ts">
-import SimpleToolsSection from './SimpleToolsSection.vue'
-import CentralArea from './CentralArea.vue'
+import ToolsSection from './ToolsSection.vue'
 import CanvasArea from './CanvasArea.vue'
+import CentralArea from './CentralArea.vue'
 </script>
 
 <style scoped>

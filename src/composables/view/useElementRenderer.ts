@@ -36,7 +36,7 @@ export function useElementRenderer() {
           fill: element.fill || '#ffffff',
           cornerRadius: element.cornerRadius || 0,
           stroke: element.strokeColor || '#000000',
-          strokeWidth: element.strokeWidth || 1,
+          strokeWidth: element.strokeWidth || 0,
         }
 
       case 'image':
