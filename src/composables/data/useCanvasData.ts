@@ -1,6 +1,9 @@
 import { useCanvasStore } from '@/stores/canvas'
 import type { AdUnit, CanvasElement, LayerDefinition } from '@/stores/canvas'
 
+// Re-export types for other composables (maintains clean architecture)
+export type { AdUnit, CanvasElement, LayerDefinition }
+
 /**
  * Pure data CRUD operations - Direct interface to canvas store
  * This is the only composable that should directly access the canvas store
@@ -26,6 +29,27 @@ export function useCanvasData() {
     getAdUnitElements: (adUnitId: string): CanvasElement[] => {
       const adUnit = store.adUnits[adUnitId]
       return adUnit ? Object.values(adUnit.elements) : []
+    },
+
+    // Generic helper functions for business logic
+    getElementsByTag: (adUnitId: string, tag: string): CanvasElement[] => {
+      const adUnit = store.adUnits[adUnitId]
+      if (!adUnit) return []
+      return Object.values(adUnit.elements).filter((element) => element.tag === tag)
+    },
+
+    // Get all ad unit names that have locked elements with specific tag
+    getAdUnitNamesWithLockedTag: (tag: string): string[] => {
+      const result: string[] = []
+      Object.values(store.adUnits).forEach((adUnit) => {
+        const hasLockedElement = Object.values(adUnit.elements).some(
+          (element) => element.tag === tag && element.locked,
+        )
+        if (hasLockedElement) {
+          result.push(adUnit.title)
+        }
+      })
+      return result
     },
 
     // ========== SET OPERATIONS ==========
@@ -66,7 +90,52 @@ export function useCanvasData() {
     updateLayer: (layerId: string, updates: Partial<LayerDefinition>) => {
       if (store.layers[layerId]) {
         store.layers[layerId] = { ...store.layers[layerId], ...updates }
+
+        // Auto-cascade: When layer properties change, update matching elements
+        Object.keys(store.adUnits).forEach((adUnitId) => {
+          const adUnit = store.adUnits[adUnitId]
+          if (adUnit) {
+            Object.entries(adUnit.elements).forEach(([elementId, element]) => {
+              if (element.tag === layerId) {
+                const elementUpdates: Partial<CanvasElement> = {}
+
+                // Text cascade: Update unlocked elements when defaultValue changes
+                if (updates.defaultValue !== undefined && !element.locked) {
+                  elementUpdates.text = updates.defaultValue
+                }
+
+                // Visibility cascade: Update disclaimer elements when visibility changes
+                if (updates.visibility !== undefined && layerId === 'disclaimer') {
+                  elementUpdates.visibility = updates.visibility
+                }
+
+                // Apply updates if any exist
+                if (Object.keys(elementUpdates).length > 0) {
+                  adUnit.elements[elementId] = { ...element, ...elementUpdates }
+                }
+              }
+            })
+          }
+        })
       }
+    },
+
+    // Free all elements with matching tag (unlock them)
+    freeLayer: (layerId: string) => {
+      Object.keys(store.adUnits).forEach((adUnitId) => {
+        const adUnit = store.adUnits[adUnitId]
+        if (adUnit) {
+          Object.entries(adUnit.elements).forEach(([elementId, element]) => {
+            // Unlock all elements that match the layer tag
+            if (element.tag === layerId && element.locked) {
+              adUnit.elements[elementId] = {
+                ...element,
+                locked: false,
+              }
+            }
+          })
+        }
+      })
     },
 
     // ========== DELETE OPERATIONS ==========

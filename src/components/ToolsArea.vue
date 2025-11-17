@@ -15,11 +15,22 @@
       </div>
 
       <!-- Locked headline info -->
-      <div v-if="lockedElementsByTag.headline?.length" class="locked-info">
+      <div v-if="isBulkMode && lockedElementsByTag.headline?.length" class="locked-info">
         <p class="locked-message">
           <span class="locked-icon">🔒</span>
           Does not apply on: {{ lockedElementsByTag.headline.join(', ') }}
         </p>
+        <div class="flex items-center space-x-2 text-[#2c2c54]">
+          <input
+            id="overrideHeadlines"
+            v-model="overrideStates.headlineOverride.value"
+            type="checkbox"
+            class="w-4 h-4 rounded border-gray-400 focus:ring-2 focus:ring-blue-500"
+          />
+          <label for="overrideHeadlines" class="text-[15px] font-medium select-none">
+            Override all headline text
+          </label>
+        </div>
       </div>
 
       <!-- Sub headline -->
@@ -33,11 +44,22 @@
       </div>
 
       <!-- Locked subhead info -->
-      <div v-if="lockedElementsByTag.subhead?.length" class="locked-info">
+      <div v-if="isBulkMode && lockedElementsByTag.subhead?.length" class="locked-info">
         <p class="locked-message">
           <span class="locked-icon">🔒</span>
           Does not apply on: {{ lockedElementsByTag.subhead?.join(', ') }}
         </p>
+        <div class="flex items-center space-x-2 text-[#2c2c54]">
+          <input
+            id="overrideSubheads"
+            v-model="overrideStates.subheadOverride.value"
+            type="checkbox"
+            class="w-4 h-4 rounded border-gray-400 focus:ring-2 focus:ring-blue-500"
+          />
+          <label for="overrideSubheads" class="text-[15px] font-medium select-none">
+            Override all subhead text
+          </label>
+        </div>
       </div>
 
       <!-- Button CTA -->
@@ -47,11 +69,22 @@
       </div>
 
       <!-- Locked CTA info -->
-      <div v-if="lockedElementsByTag.cta?.length" class="locked-info">
+      <div v-if="isBulkMode && lockedElementsByTag.cta?.length" class="locked-info">
         <p class="locked-message">
           <span class="locked-icon">🔒</span>
           Does not apply on: {{ lockedElementsByTag.cta?.join(', ') }}
         </p>
+        <div class="flex items-center space-x-2 text-[#2c2c54]">
+          <input
+            id="overrideCtas"
+            v-model="overrideStates.ctaOverride.value"
+            type="checkbox"
+            class="w-4 h-4 rounded border-gray-400 focus:ring-2 focus:ring-blue-500"
+          />
+          <label for="overrideCtas" class="text-[15px] font-medium select-none">
+            Override all CTA text
+          </label>
+        </div>
       </div>
 
       <hr class="divider" />
@@ -61,17 +94,36 @@
         <div class="section-header">
           <h4 class="section-title">Disclaimer text</h4>
           <label class="toggle-switch">
-            <input type="checkbox" v-model="disclaimerEnabled" />
+            <input type="checkbox" v-model="disclaimerVisibility" />
             <span class="toggle-slider"></span>
           </label>
         </div>
         <textarea
           v-model="disclaimerValue"
-          :disabled="!disclaimerEnabled"
+          :disabled="!disclaimerVisibility"
           class="disclaimer-area"
           placeholder="This is placeholder disclaimer text and does not constitute legal advice. Use at your own risk."
         ></textarea>
         <p class="character-count">Character count: {{ characterCount }}/600</p>
+      </div>
+
+      <!-- Locked disclaimer info -->
+      <div v-if="isBulkMode && lockedElementsByTag.disclaimer?.length" class="locked-info">
+        <p class="locked-message">
+          <span class="locked-icon">🔒</span>
+          Does not apply on: {{ lockedElementsByTag.disclaimer?.join(', ') }}
+        </p>
+        <div class="flex items-center space-x-2 text-[#2c2c54]">
+          <input
+            id="overrideDisclaimers"
+            v-model="overrideStates.disclaimerOverride.value"
+            type="checkbox"
+            class="w-4 h-4 rounded border-gray-400 focus:ring-2 focus:ring-blue-500"
+          />
+          <label for="overrideDisclaimers" class="text-[15px] font-medium select-none">
+            Override all disclaimer text
+          </label>
+        </div>
       </div>
 
       <!-- Dark text background -->
@@ -114,8 +166,9 @@
 </template>
 
 <script setup lang="ts">
-// import { useDynamicEditText } from '@/composable/useDinamicEditText'  // TODO: Fix path later
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
+import { useTools } from '@/composables/Tools/useTools'
+import { useCanvasData } from '@/composables/data/useCanvasData'
 
 interface Props {
   activeTool?: string
@@ -123,24 +176,22 @@ interface Props {
 
 defineProps<Props>()
 
-// TODO: Temporarily commented out while fixing composable path
-// const { headlineValue, subheadValue, ctaValue, disclaimerValue, lockedElementsByTag } =
-//   useDynamicEditText()
+// Smart v-models that automatically switch between bulk/focus mode
+const {
+  headlineValue,
+  subheadValue,
+  ctaValue,
+  disclaimerValue,
+  disclaimerVisibility,
+  overrideStates,
+  lockedElementsByTag,
+} = useTools()
 
-// Temporary placeholders
-const headlineValue = ref('Headline placeholder')
-const subheadValue = ref('Subhead placeholder')
-const ctaValue = ref('CTA placeholder')
-const disclaimerValue = ref('Disclaimer placeholder')
-const lockedElementsByTag = ref({
-  headline: [] as string[],
-  subhead: [] as string[],
-  cta: [] as string[],
-})
+const { getCurrentView } = useCanvasData()
 
 // Other UI state
-const disclaimerEnabled = ref(true)
 const characterCount = computed(() => disclaimerValue.value.length)
+const isBulkMode = computed(() => getCurrentView() === 'bulkMode')
 </script>
 
 <style scoped>
@@ -170,14 +221,8 @@ const characterCount = computed(() => disclaimerValue.value.length)
   padding: 16px;
 }
 
-.menu-content p {
-  margin: 0;
-  color: #6c757d;
-  font-size: 14px;
-}
-
 .under-construction {
-  color: #ffc107 !important;
+  color: #ffc107;
   font-style: italic;
 }
 
@@ -185,23 +230,6 @@ const characterCount = computed(() => disclaimerValue.value.length)
   text-align: center;
   padding: 40px;
   color: #6c757d;
-}
-
-.empty-state h3 {
-  margin: 0 0 8px 0;
-  font-size: 24px;
-}
-
-.empty-state p {
-  margin: 0;
-  font-size: 14px;
-}
-
-/* Text tool styles */
-.menu-subtitle {
-  color: #6c757d;
-  font-size: 12px;
-  margin: 0 0 20px 0;
 }
 
 .text-section {
@@ -322,7 +350,7 @@ const characterCount = computed(() => disclaimerValue.value.length)
 }
 
 .locked-message {
-  margin: 0;
+  margin: 0 0 8px 0;
   font-size: 12px;
   color: #856404;
   display: flex;
@@ -332,5 +360,72 @@ const characterCount = computed(() => disclaimerValue.value.length)
 
 .locked-icon {
   font-size: 14px;
+}
+
+.flex {
+  display: flex;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.space-x-2 > * + * {
+  margin-left: 0.5rem;
+}
+
+.text-\[15px\] {
+  font-size: 15px;
+}
+
+.font-medium {
+  font-weight: 500;
+}
+
+.select-none {
+  user-select: none;
+}
+
+.w-4 {
+  width: 1rem;
+}
+
+.h-4 {
+  height: 1rem;
+}
+
+.rounded {
+  border-radius: 0.25rem;
+}
+
+.border-gray-400 {
+  border-color: #9ca3af;
+}
+
+.focus\:ring-2:focus {
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+.focus\:ring-blue-500:focus {
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+.text-\[#2c2c54\] {
+  color: #2c2c54;
+}
+
+.section-description {
+  font-size: 12px;
+  color: #6c757d;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.toggle-switch.active .toggle-slider {
+  background-color: #007bff;
+}
+
+.toggle-switch.active .toggle-slider:before {
+  transform: translateX(20px);
 }
 </style>

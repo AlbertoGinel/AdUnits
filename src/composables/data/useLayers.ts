@@ -15,7 +15,7 @@ export function useLayers() {
       canvasData.updateLayer(layerName, updates),
     deleteLayer: (layerName: string) => canvasData.deleteLayer(layerName),
 
-    //useLoadStore,
+    // Bulk operations
     setAllLayers: (layers: Record<string, LayerDefinition>) => {
       canvasData.setLayers(layers)
     },

@@ -20,6 +20,8 @@
 import { computed } from 'vue'
 import type { AdUnit } from '@/stores/canvas'
 import AdUnitComponent from '@/components/konva/AdUnit.vue'
+import { useTools } from '@/composables/Tools/useTools'
+import { useCanvasManager } from '@/composables/view/useCanvasManager'
 
 // ✅ Props
 interface Props {
@@ -28,6 +30,8 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const { switchMode } = useTools()
+const canvasManager = useCanvasManager()
 
 // ✅ Title configuration
 const titleConfig = computed(() => ({
@@ -40,13 +44,15 @@ const titleConfig = computed(() => ({
   fontStyle: 'bold',
 }))
 
-// ✅ Edit button - simple blue text
+// ✅ Edit button - conditional text based on view mode
 const editButtonConfig = computed(() => {
   const offset = props.adUnit.frameConfig.editButtonOffset || { x: -60, y: -25 }
+  const isInFocusMode = canvasManager.viewMode.value === 'focusMode'
+
   return {
     x: props.adUnit.frameConfig.dimensions.width + offset.x,
     y: offset.y,
-    text: 'Edit',
+    text: isInFocusMode ? 'Back' : 'Edit',
     fontSize: 12,
     fontFamily: 'Arial, sans-serif',
     fill: '#007bff',
@@ -59,8 +65,16 @@ const contentGroupConfig = computed(() => ({
   y: props.adUnit.frameConfig.contentOffset.y,
 }))
 
-// ✅ Handle edit button click
+// ✅ Handle edit button click - conditional behavior based on current mode
 const handleEditClick = () => {
-  console.log('Edit clicked for ad unit:', props.adUnit.id)
+  const isInFocusMode = canvasManager.viewMode.value === 'focusMode'
+
+  if (isInFocusMode) {
+    // Switch back to bulk mode
+    switchMode('bulkMode', null)
+  } else {
+    // Switch to focus mode for this ad unit
+    switchMode('focusMode', props.adUnit.id)
+  }
 }
 </script>

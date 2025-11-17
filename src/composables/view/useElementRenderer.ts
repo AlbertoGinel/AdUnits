@@ -1,5 +1,5 @@
 // composables/useElementRenderer.ts
-import { type CanvasElement } from '@/stores/canvas'
+import { type CanvasElement } from '@/composables/data/useCanvasData'
 
 export function useElementRenderer() {
   //Purpose: Transforms your raw CanvasElement data into Konva-specific configuration
@@ -33,10 +33,22 @@ export function useElementRenderer() {
           type: 'rect',
           width: element.width || 100,
           height: element.height || 100,
-          fill: element.fill || '#ffffff',
+          opacity: 50,
+          // Only set fill if no gradient is present
+          ...(element.fillLinearGradientStartPoint ? {} : { fill: element.fill || '#ffffff' }),
           cornerRadius: element.cornerRadius || 0,
           stroke: element.strokeColor || '#000000',
           strokeWidth: element.strokeWidth || 0,
+          // Gradient properties
+          ...(element.fillLinearGradientStartPoint && {
+            fillLinearGradientStartPoint: element.fillLinearGradientStartPoint,
+          }),
+          ...(element.fillLinearGradientEndPoint && {
+            fillLinearGradientEndPoint: element.fillLinearGradientEndPoint,
+          }),
+          ...(element.fillLinearGradientColorStops && {
+            fillLinearGradientColorStops: element.fillLinearGradientColorStops,
+          }),
         }
 
       case 'image':

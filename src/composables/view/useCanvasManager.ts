@@ -1,38 +1,39 @@
 // composables/useCanvasManager.ts
-import { useCanvasStore } from '@/stores/canvas'
 import { useCanvasData } from '@/composables/data/useCanvasData'
-
 import { computed } from 'vue'
 
 export function useCanvasManager() {
-  const store = useCanvasStore()
   const canvasData = useCanvasData()
 
-  const viewMode = computed(() => store.currentView)
-  const currentAdUnitId = computed(() => store.currentAdUnitId)
-  const isInitialized = computed(() => store.isInitialized)
+  const viewMode = computed(() => canvasData.getCurrentView())
+  const currentAdUnitId = computed(() => canvasData.getCurrentAdUnitId())
+  const isInitialized = computed(() => canvasData.getIsInitialized())
 
   const visibleAdUnits = computed(() => {
-    if (store.currentView === 'focusMode' && store.currentAdUnitId) {
-      const focusedUnit = store.adUnits[store.currentAdUnitId]
+    const currentView = canvasData.getCurrentView()
+    const currentId = canvasData.getCurrentAdUnitId()
+
+    if (currentView === 'focusMode' && currentId) {
+      const focusedUnit = canvasData.getAdUnit(currentId)
       return focusedUnit ? { [focusedUnit.id]: focusedUnit } : {}
     }
-    return store.adUnits
+    return canvasData.getAdUnits()
   })
 
   const switchToBulkMode = () => {
-    store.currentView = 'bulkMode'
-    store.currentAdUnitId = null
+    canvasData.setCurrentView('bulkMode')
+    canvasData.setCurrentAdUnitId(null)
   }
 
   const switchToFocusMode = (adUnitId: string) => {
-    store.currentView = 'focusMode'
-    store.currentAdUnitId = adUnitId
+    canvasData.setCurrentView('focusMode')
+    canvasData.setCurrentAdUnitId(adUnitId)
   }
 
   const getCurrentAdUnit = () => {
-    if (!currentAdUnitId.value) return null
-    return canvasData.getAdUnit(currentAdUnitId.value)
+    const currentId = canvasData.getCurrentAdUnitId()
+    if (!currentId) return null
+    return canvasData.getAdUnit(currentId)
   }
 
   return {

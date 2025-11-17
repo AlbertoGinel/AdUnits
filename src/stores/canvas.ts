@@ -28,6 +28,11 @@ export interface CanvasElement {
   }
   tag?: string
   locked?: boolean
+  visibility?: boolean
+  // Gradient properties for rectangles
+  fillLinearGradientStartPoint?: { x: number; y: number }
+  fillLinearGradientEndPoint?: { x: number; y: number }
+  fillLinearGradientColorStops?: (string | number)[]
 }
 
 export interface AdUnit {
@@ -46,6 +51,7 @@ export interface AdUnit {
 export interface LayerDefinition {
   type: 'text' | 'image'
   defaultValue: string
+  visibility?: boolean
 }
 
 export const useCanvasStore = defineStore('canvas', () => {

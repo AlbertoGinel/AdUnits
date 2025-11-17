@@ -3,10 +3,24 @@
   <v-group>
     <template v-for="[elementId, element] in adUnitElements" :key="elementId">
       <!-- Text Elements -->
-      <v-text v-if="element.type === 'text'" :config="getElementConfig(element, elementId)" />
+
+      <v-text
+        v-if="element.type === 'text' && element.visibility !== false"
+        :config="getElementConfig(element, elementId)"
+      />
 
       <!-- Rectangle Elements -->
-      <v-rect v-else-if="element.type === 'rect'" :config="getElementConfig(element, elementId)" />
+      <v-rect
+        v-else-if="element.type === 'rect'"
+        :config="{
+          ...getElementConfig(element, elementId),
+          ...(element.fillLinearGradientStartPoint && {
+            fillLinearGradientStartPoint: element.fillLinearGradientStartPoint,
+            fillLinearGradientEndPoint: element.fillLinearGradientEndPoint,
+            fillLinearGradientColorStops: element.fillLinearGradientColorStops,
+          }),
+        }"
+      />
 
       <!-- Image Elements -->
       <template v-else-if="element.type === 'image'">

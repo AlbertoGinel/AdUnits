@@ -59,6 +59,11 @@ export function useAdUnits() {
         if (element.type === 'text' || element.type === 'image') {
           processedElement.locked = false
 
+          // Set visibility to true for disclaimer elements
+          if (element.tag === 'disclaimer') {
+            processedElement.visibility = true
+          }
+
           // Apply default values from layers if element has a tag
           if (element.tag && allLayers[element.tag]) {
             const layerDef = allLayers[element.tag]
@@ -74,6 +79,28 @@ export function useAdUnits() {
         }
 
         processedElements[elementId] = processedElement
+
+        // Auto-generate disclaimerBG element for image elements with tag="image"
+        if (element.type === 'image' && element.tag === 'image') {
+          const disclaimerBG = {
+            type: 'rect' as const,
+            x: element.x || 0,
+            y: (element.y || 0) + (element.height || 0) / 2,
+            width: element.width || 0,
+            height: (element.height || 0) / 2,
+            fillLinearGradientStartPoint: {
+              x: (element.width || 0) / 2,
+              y: 0,
+            },
+            fillLinearGradientEndPoint: {
+              x: (element.width || 0) / 2,
+              y: (element.height || 0) / 2,
+            },
+            fillLinearGradientColorStops: [0, '#ffffff00', 1, '#000000'],
+            tag: 'disclaimerBG',
+          }
+          processedElements['disclaimerBG'] = disclaimerBG
+        }
       })
 
       processedAdUnits[adUnitId] = {

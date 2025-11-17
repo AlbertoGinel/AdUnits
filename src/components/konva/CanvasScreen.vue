@@ -31,8 +31,8 @@ const stageConfig = computed(() => {
     }
   } else {
     return {
-      width: 600,
-      height: 400,
+      width: 1200,
+      height: 800,
       scaleX: 1,
       scaleY: 1,
       x: 0.5,
