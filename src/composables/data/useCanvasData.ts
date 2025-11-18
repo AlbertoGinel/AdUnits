@@ -52,6 +52,20 @@ export function useCanvasData() {
       return result
     },
 
+    // Get all ad unit names that have visibility locked elements with specific tag
+    getAdUnitNamesWithVisibilityLockedTag: (tag: string): string[] => {
+      const result: string[] = []
+      Object.values(store.adUnits).forEach((adUnit) => {
+        const hasVisibilityLockedElement = Object.values(adUnit.elements).some(
+          (element) => element.tag === tag && element.visibilityLock === true,
+        )
+        if (hasVisibilityLockedElement) {
+          result.push(adUnit.title)
+        }
+      })
+      return result
+    },
+
     // ========== SET OPERATIONS ==========
     setAdUnits: (adUnits: Record<string, AdUnit>) => {
       store.adUnits = adUnits
@@ -105,7 +119,20 @@ export function useCanvasData() {
                 }
 
                 // Visibility cascade: Update disclaimer elements when visibility changes
-                if (updates.visibility !== undefined && layerId === 'disclaimer') {
+                if (
+                  updates.visibility !== undefined &&
+                  layerId === 'disclaimer' &&
+                  !element.visibilityLock
+                ) {
+                  elementUpdates.visibility = updates.visibility
+                }
+
+                // Visibility cascade: Update disclaimerBG elements when visibility changes
+                if (
+                  updates.visibility !== undefined &&
+                  layerId === 'disclaimerBG' &&
+                  !element.visibilityLock
+                ) {
                   elementUpdates.visibility = updates.visibility
                 }
 

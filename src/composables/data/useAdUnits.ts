@@ -62,6 +62,7 @@ export function useAdUnits() {
           // Set visibility to true for disclaimer elements
           if (element.tag === 'disclaimer') {
             processedElement.visibility = true
+            processedElement.visibilityLock = false
           }
 
           // Apply default values from layers if element has a tag
@@ -98,6 +99,8 @@ export function useAdUnits() {
             },
             fillLinearGradientColorStops: [0, '#ffffff00', 1, '#000000'],
             tag: 'disclaimerBG',
+            visibility: true,
+            visibilityLock: false,
           }
           processedElements['disclaimerBG'] = disclaimerBG
         }

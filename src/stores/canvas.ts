@@ -29,6 +29,7 @@ export interface CanvasElement {
   tag?: string
   locked?: boolean
   visibility?: boolean
+  visibilityLock?: boolean
   // Gradient properties for rectangles
   fillLinearGradientStartPoint?: { x: number; y: number }
   fillLinearGradientEndPoint?: { x: number; y: number }

@@ -39,7 +39,8 @@ const tools = [
   gap: 12px;
   border-right: 1px solid #dee2e6;
   background: #ffffff;
-  min-width: 120px;
+  min-width: 80px;
+  max-width: 100px;
 }
 
 .tool-button {
@@ -47,12 +48,12 @@ const tools = [
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  padding: 16px 12px;
+  padding: 12px 8px;
   border: 1px solid #ced4da;
   background: #ffffff;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 11px;
   transition: all 0.2s;
 }
 
@@ -68,6 +69,6 @@ const tools = [
 }
 
 .tool-icon {
-  font-size: 16px;
+  font-size: 20px;
 }
 </style>

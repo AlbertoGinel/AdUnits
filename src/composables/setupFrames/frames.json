@@ -339,15 +339,13 @@
     },
     "disclaimer": {
       "type": "text",
-      "defaultValue": "This content is for general informational purposes only and does not constitute professional advice. We make no warranties about the accuracy, completeness, or reliability of this information. Any action you take based on this content is strictly at your own risk. We are not liable for any losses or damages. Always seek advice from a qualified professional.",
+      "defaultValue": "This content is provided solely for general informational purposes and should not be interpreted as professional, legal, financial, or technical advice. We make no guarantees regarding the accuracy, completeness, reliability, or suitability of the information presented. Any actions or decisions you choose to make based on this material are taken strictly at your own risk. We assume no responsibility or liability for any losses, damages, or consequences that may result. Always consult with a qualified and licensed professional for guidance tailored to your specific situation 123412 12412124124.",
       "darkColour": "#000000",
       "lightColour": "#ffffff"
     },
     "disclaimerBG": {
       "type": "rect",
-      "defaultValue": "",
-      "visibility": true,
-      "visibilityLock": false
+      "visibility": true
     }
   }
 }

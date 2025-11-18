@@ -11,7 +11,7 @@
 
       <!-- Rectangle Elements -->
       <v-rect
-        v-else-if="element.type === 'rect'"
+        v-else-if="element.type === 'rect' && element.visibility !== false"
         :config="{
           ...getElementConfig(element, elementId),
           ...(element.fillLinearGradientStartPoint && {

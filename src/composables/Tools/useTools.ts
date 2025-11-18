@@ -11,6 +11,8 @@ export const useTools = () => {
     getCurrentAdUnitId,
     getElementsByTag,
     getAdUnitNamesWithLockedTag,
+    getAdUnitNamesWithVisibilityLockedTag,
+    getAdUnits,
     freeLayer,
   } = useCanvasData()
   const { getAllLayers, updateLayer } = useLayers()
@@ -38,6 +40,8 @@ export const useTools = () => {
     subheadOverride: ref(false),
     ctaOverride: ref(false),
     disclaimerOverride: ref(false),
+    disclaimerVisibilityOverride: ref(false),
+    disclaimerBGVisibilityOverride: ref(false),
   }
 
   // Function overloads for proper TypeScript typing
@@ -78,7 +82,12 @@ export const useTools = () => {
 
         if (currentView === 'focusMode' && currentAdUnitId) {
           // Focus mode: update current ad unit element
-          const elementUpdates: { text?: string; locked?: boolean; visibility?: boolean } = {}
+          const elementUpdates: {
+            text?: string
+            locked?: boolean
+            visibility?: boolean
+            visibilityLock?: boolean
+          } = {}
 
           if (property === 'text') {
             elementUpdates.text = value as string
@@ -89,6 +98,7 @@ export const useTools = () => {
             }
           } else {
             elementUpdates.visibility = value as boolean
+            elementUpdates.visibilityLock = true
           }
 
           updateElement(currentAdUnitId, fieldName, elementUpdates)
@@ -110,8 +120,32 @@ export const useTools = () => {
               updateLayer(fieldName, { defaultValue: value as string })
             }
           } else {
-            // Visibility updates don't use override logic (yet)
-            updateLayer(fieldName, { visibility: value as boolean })
+            // Visibility property
+            const overrideKey = `${fieldName}VisibilityOverride` as keyof typeof overrideStates
+            const isOverrideEnabled = overrideStates[overrideKey]?.value
+
+            if (isOverrideEnabled) {
+              // Override mode: Unlock all visibility locks and update all elements
+              const allAdUnits = getAdUnits()
+              Object.keys(allAdUnits).forEach((adUnitId) => {
+                const elements = getElementsByTag(adUnitId, fieldName)
+                elements.forEach(() => {
+                  updateElement(adUnitId, fieldName, {
+                    visibility: value as boolean,
+                    visibilityLock: false,
+                  })
+                })
+              })
+
+              // Update the layer too
+              updateLayer(fieldName, { visibility: value as boolean })
+
+              // Reset override state
+              overrideStates[overrideKey].value = false
+            } else {
+              // Normal bulk mode: update layer (respects existing visibility locks)
+              updateLayer(fieldName, { visibility: value as boolean })
+            }
           }
         }
       },
@@ -127,12 +161,19 @@ export const useTools = () => {
   // Create visibility model for disclaimer using the same generator
   const disclaimerVisibility = createFieldModel('disclaimer', 'visibility')
 
+  const disclaimerBGVisibility = createFieldModel('disclaimerBG', 'visibility')
   // Computed lists of locked elements by tag
   const lockedElementsByTag = computed(() => ({
     headline: getAdUnitNamesWithLockedTag('headline'),
     subhead: getAdUnitNamesWithLockedTag('subhead'),
     cta: getAdUnitNamesWithLockedTag('cta'),
     disclaimer: getAdUnitNamesWithLockedTag('disclaimer'),
+  }))
+
+  // Computed lists of visibility locked elements by tag
+  const lockedVisibilityElementsByTag = computed(() => ({
+    disclaimer: getAdUnitNamesWithVisibilityLockedTag('disclaimer'),
+    disclaimerBG: getAdUnitNamesWithVisibilityLockedTag('disclaimerBG'),
   }))
 
   return {
@@ -143,10 +184,12 @@ export const useTools = () => {
     ctaValue,
     disclaimerValue,
     disclaimerVisibility,
+    disclaimerBGVisibility,
     // Override states
     overrideStates,
     // Computed locked lists
     lockedElementsByTag,
+    lockedVisibilityElementsByTag,
     // Utility functions
     freeLayer,
   }

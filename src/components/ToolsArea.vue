@@ -15,23 +15,13 @@
       </div>
 
       <!-- Locked headline info -->
-      <div v-if="isBulkMode && lockedElementsByTag.headline?.length" class="locked-info">
-        <p class="locked-message">
-          <span class="locked-icon">🔒</span>
-          Does not apply on: {{ lockedElementsByTag.headline.join(', ') }}
-        </p>
-        <div class="flex items-center space-x-2 text-[#2c2c54]">
-          <input
-            id="overrideHeadlines"
-            v-model="overrideStates.headlineOverride.value"
-            type="checkbox"
-            class="w-4 h-4 rounded border-gray-400 focus:ring-2 focus:ring-blue-500"
-          />
-          <label for="overrideHeadlines" class="text-[15px] font-medium select-none">
-            Override all headline text
-          </label>
-        </div>
-      </div>
+      <LockedInfo
+        field-name="headline"
+        :locked-elements="lockedElementsByTag.headline || []"
+        :override-value="overrideStates.headlineOverride.value"
+        :is-bulk-mode="isBulkMode"
+        @update:override-value="overrideStates.headlineOverride.value = $event"
+      />
 
       <!-- Sub headline -->
       <div class="text-section">
@@ -44,23 +34,13 @@
       </div>
 
       <!-- Locked subhead info -->
-      <div v-if="isBulkMode && lockedElementsByTag.subhead?.length" class="locked-info">
-        <p class="locked-message">
-          <span class="locked-icon">🔒</span>
-          Does not apply on: {{ lockedElementsByTag.subhead?.join(', ') }}
-        </p>
-        <div class="flex items-center space-x-2 text-[#2c2c54]">
-          <input
-            id="overrideSubheads"
-            v-model="overrideStates.subheadOverride.value"
-            type="checkbox"
-            class="w-4 h-4 rounded border-gray-400 focus:ring-2 focus:ring-blue-500"
-          />
-          <label for="overrideSubheads" class="text-[15px] font-medium select-none">
-            Override all subhead text
-          </label>
-        </div>
-      </div>
+      <LockedInfo
+        field-name="subhead"
+        :locked-elements="lockedElementsByTag.subhead || []"
+        :override-value="overrideStates.subheadOverride.value"
+        :is-bulk-mode="isBulkMode"
+        @update:override-value="overrideStates.subheadOverride.value = $event"
+      />
 
       <!-- Button CTA -->
       <div class="text-section">
@@ -69,23 +49,13 @@
       </div>
 
       <!-- Locked CTA info -->
-      <div v-if="isBulkMode && lockedElementsByTag.cta?.length" class="locked-info">
-        <p class="locked-message">
-          <span class="locked-icon">🔒</span>
-          Does not apply on: {{ lockedElementsByTag.cta?.join(', ') }}
-        </p>
-        <div class="flex items-center space-x-2 text-[#2c2c54]">
-          <input
-            id="overrideCtas"
-            v-model="overrideStates.ctaOverride.value"
-            type="checkbox"
-            class="w-4 h-4 rounded border-gray-400 focus:ring-2 focus:ring-blue-500"
-          />
-          <label for="overrideCtas" class="text-[15px] font-medium select-none">
-            Override all CTA text
-          </label>
-        </div>
-      </div>
+      <LockedInfo
+        field-name="cta"
+        :locked-elements="lockedElementsByTag.cta || []"
+        :override-value="overrideStates.ctaOverride.value"
+        :is-bulk-mode="isBulkMode"
+        @update:override-value="overrideStates.ctaOverride.value = $event"
+      />
 
       <hr class="divider" />
 
@@ -98,6 +68,20 @@
             <span class="toggle-slider"></span>
           </label>
         </div>
+      </div>
+
+      <!-- Locked disclaimer visibility info -->
+      <LockedInfo
+        field-name="disclaimer"
+        :locked-elements="lockedVisibilityElementsByTag.disclaimer || []"
+        :override-value="overrideStates.disclaimerVisibilityOverride.value"
+        :is-bulk-mode="isBulkMode"
+        custom-message="Disclaimer visibility does not apply on:"
+        custom-label="Override all disclaimer visibility locks"
+        @update:override-value="overrideStates.disclaimerVisibilityOverride.value = $event"
+      />
+
+      <div>
         <textarea
           v-model="disclaimerValue"
           :disabled="!disclaimerVisibility"
@@ -108,35 +92,39 @@
       </div>
 
       <!-- Locked disclaimer info -->
-      <div v-if="isBulkMode && lockedElementsByTag.disclaimer?.length" class="locked-info">
-        <p class="locked-message">
-          <span class="locked-icon">🔒</span>
-          Does not apply on: {{ lockedElementsByTag.disclaimer?.join(', ') }}
-        </p>
-        <div class="flex items-center space-x-2 text-[#2c2c54]">
-          <input
-            id="overrideDisclaimers"
-            v-model="overrideStates.disclaimerOverride.value"
-            type="checkbox"
-            class="w-4 h-4 rounded border-gray-400 focus:ring-2 focus:ring-blue-500"
-          />
-          <label for="overrideDisclaimers" class="text-[15px] font-medium select-none">
-            Override all disclaimer text
-          </label>
-        </div>
-      </div>
+      <LockedInfo
+        field-name="disclaimer"
+        :locked-elements="lockedElementsByTag.disclaimer || []"
+        :override-value="overrideStates.disclaimerOverride.value"
+        :is-bulk-mode="isBulkMode"
+        @update:override-value="overrideStates.disclaimerOverride.value = $event"
+      />
 
       <!-- Dark text background -->
       <div class="text-section">
         <div class="section-header">
           <h4 class="section-title">Dark text background</h4>
-          <div class="toggle-switch active"></div>
+          <label class="toggle-switch">
+            <input type="checkbox" v-model="disclaimerBGVisibility" />
+            <span class="toggle-slider"></span>
+          </label>
         </div>
-        <p class="section-description">
-          If your message exceeds 600 characters, you must upload images with the disclaimer
-          included in your final jpeg file.
-        </p>
       </div>
+
+      <!-- Locked disclaimerBG visibility info -->
+      <LockedInfo
+        field-name="disclaimerBG"
+        :locked-elements="lockedVisibilityElementsByTag.disclaimerBG || []"
+        :override-value="overrideStates.disclaimerBGVisibilityOverride.value"
+        :is-bulk-mode="isBulkMode"
+        custom-message="Dark text background does not apply on:"
+        custom-label="Override all dark text background visibility locks"
+        @update:override-value="overrideStates.disclaimerBGVisibilityOverride.value = $event"
+      />
+      <p class="section-description">
+        If your message exceeds 600 characters, you must upload images with the disclaimer included
+        in your final jpeg file.
+      </p>
     </div>
 
     <!-- Images Tool Menu -->
@@ -169,6 +157,7 @@
 import { computed } from 'vue'
 import { useTools } from '@/composables/Tools/useTools'
 import { useCanvasData } from '@/composables/data/useCanvasData'
+import LockedInfo from './LockedInfo.vue'
 
 interface Props {
   activeTool?: string
@@ -183,8 +172,10 @@ const {
   ctaValue,
   disclaimerValue,
   disclaimerVisibility,
+  disclaimerBGVisibility,
   overrideStates,
   lockedElementsByTag,
+  lockedVisibilityElementsByTag,
 } = useTools()
 
 const { getCurrentView } = useCanvasData()
@@ -338,80 +329,6 @@ const isBulkMode = computed(() => getCurrentView() === 'bulkMode')
 
 .toggle-switch input:checked + .toggle-slider:before {
   transform: translateX(20px);
-}
-
-/* Locked info styles */
-.locked-info {
-  margin: 8px 0 16px 0;
-  padding: 8px 12px;
-  background-color: #fff3cd;
-  border: 1px solid #ffeaa7;
-  border-radius: 4px;
-}
-
-.locked-message {
-  margin: 0 0 8px 0;
-  font-size: 12px;
-  color: #856404;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.locked-icon {
-  font-size: 14px;
-}
-
-.flex {
-  display: flex;
-}
-
-.items-center {
-  align-items: center;
-}
-
-.space-x-2 > * + * {
-  margin-left: 0.5rem;
-}
-
-.text-\[15px\] {
-  font-size: 15px;
-}
-
-.font-medium {
-  font-weight: 500;
-}
-
-.select-none {
-  user-select: none;
-}
-
-.w-4 {
-  width: 1rem;
-}
-
-.h-4 {
-  height: 1rem;
-}
-
-.rounded {
-  border-radius: 0.25rem;
-}
-
-.border-gray-400 {
-  border-color: #9ca3af;
-}
-
-.focus\:ring-2:focus {
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
-}
-
-.focus\:ring-blue-500:focus {
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
-}
-
-.text-\[#2c2c54\] {
-  color: #2c2c54;
 }
 
 .section-description {
