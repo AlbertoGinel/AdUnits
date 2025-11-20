@@ -16,7 +16,7 @@ import CentralArea from './CentralArea.vue'
 .main-container {
   flex: 1;
   display: grid;
-  grid-template-columns: 280px 1fr 300px;
+  grid-template-columns: 400px 1fr 300px;
   gap: 0;
   overflow: hidden;
   background: #f5f5f5;

@@ -7,7 +7,7 @@
     <div class="image-section">
       <h4 class="section-title">Lifestyle photo</h4>
       <div class="image-preview">
-        <img src="/lifeStyle.png" alt="Lifestyle photo" class="preview-image" />
+        <img :src="lifeStyleImage" alt="Lifestyle photo" class="preview-image" />
         <div class="image-actions">
           <button v-if="!isCropping" class="btn-change" @click="handleStartCrop">Crop</button>
           <button v-else class="btn-save" @click="handleSaveCrop">Save Crop</button>
@@ -31,20 +31,27 @@
       <div class="character-count">Character count: {{ altText.length }}/150</div>
     </div>
 
-    <button class="btn-add-images">
-      <span class="icon">⊕</span>
-      Add images
-    </button>
+    <!-- Upload Images Section -->
+    <UploadImages :show="true" @insert="handleInsertImage" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useCropping } from '@/composables/Tools/useCropping'
+import { useImageManager } from '@/composables/setupImages/useImageManager'
+import UploadImages from './UploadImages.vue'
 
 const { isCropping, startCrop, applyCrop, cancelCrop } = useCropping()
+const { getImage } = useImageManager()
 
 const altText = ref('')
+
+// Get the lifestyle image from store (with fallback)
+const lifeStyleImage = computed(() => {
+  const imageData = getImage('lifeStyle')
+  return imageData?.url || ''
+})
 
 const handleStartCrop = () => {
   startCrop()
@@ -56,6 +63,11 @@ const handleSaveCrop = () => {
 
 const handleCancelCrop = () => {
   cancelCrop()
+}
+
+const handleInsertImage = (imageId: string) => {
+  console.log('Insert image:', imageId)
+  // TODO: Apply uploaded image to current element
 }
 </script>
 
@@ -197,31 +209,5 @@ const handleCancelCrop = () => {
   font-size: 12px;
   color: #6c757d;
   text-align: right;
-}
-
-.btn-add-images {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 14px;
-  background: white;
-  border: 2px solid #007bff;
-  border-radius: 8px;
-  color: #007bff;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-add-images:hover {
-  background: #007bff;
-  color: white;
-}
-
-.btn-add-images .icon {
-  font-size: 20px;
-  line-height: 1;
 }
 </style>

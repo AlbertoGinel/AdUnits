@@ -12,11 +12,13 @@ export interface ImageDimensions {
 export interface ImageAsset {
   id: string
   url: string
+  name?: string
   fallbackUrl?: string
   image?: HTMLImageElement
   dimensions?: ImageDimensions
   loaded: boolean
   error?: string
+  isUploaded?: boolean
 }
 
 interface ImageState {

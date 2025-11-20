@@ -48,7 +48,7 @@ export function useCropping() {
     if (!imageId) return null
 
     const imageData = getImage(imageId)
-    if (!imageData) return null
+    if (!imageData?.dimensions) return null
 
     return {
       naturalWidth: imageData.dimensions.naturalWidth,
@@ -127,8 +127,8 @@ export function useCropping() {
     }
 
     const imageData = getImage(imageId)
-    if (!imageData) {
-      console.warn(`Cannot start crop: Image "${imageId}" not loaded`)
+    if (!imageData?.dimensions) {
+      console.warn(`Cannot start crop: Image "${imageId}" not loaded or missing dimensions`)
       return
     }
 
