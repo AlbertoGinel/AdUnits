@@ -2,53 +2,36 @@
 <template>
   <div class="tool-menu">
     <h3 class="menu-title">Edit main image</h3>
-    <p class="subtitle">Across ad sizes</p>
+    <p class="menu-subtitle">Across ad sizes</p>
 
-    <!-- Image preview section -->
     <div class="image-section">
       <h4 class="section-title">Lifestyle photo</h4>
-
       <div class="image-preview">
-        <img
-          v-if="currentImage"
-          :src="currentImage"
-          alt="Lifestyle photo preview"
-          class="preview-image"
-        />
-        <div v-else class="no-image">
-          <span class="icon">🖼️</span>
-          <p>No image selected</p>
-        </div>
-
+        <img src="/lifeStyle.png" alt="Lifestyle photo" class="preview-image" />
         <div class="image-actions">
-          <button class="btn-change" @click="handleChangeImage">Change</button>
-          <button class="btn-crop" @click="handleCropImage">Crop</button>
-          <button class="btn-more" @click="handleMoreOptions">⋯</button>
+          <button v-if="!isCropping" class="btn-change" @click="handleStartCrop">Crop</button>
+          <button v-else class="btn-save" @click="handleSaveCrop">Save Crop</button>
+          <button v-if="isCropping" class="btn-cancel" @click="handleCancelCrop">Cancel</button>
         </div>
       </div>
     </div>
 
-    <!-- Alt text section -->
     <div class="alt-text-section">
       <h4 class="section-title">Alt text*</h4>
-      <p class="description">
+      <p class="section-description">
         Alt text should be a long-form description of what's visually represented in your ad.
       </p>
-
       <input
         v-model="altText"
         type="text"
         class="alt-text-input"
         placeholder="Image's alternate text goes here"
+        maxlength="150"
       />
-
       <div class="character-count">Character count: {{ altText.length }}/150</div>
     </div>
 
-    <hr class="divider" />
-
-    <!-- Add images button -->
-    <button class="btn-add-images" @click="handleAddImages">
+    <button class="btn-add-images">
       <span class="icon">⊕</span>
       Add images
     </button>
@@ -57,50 +40,45 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useCropping } from '@/composables/Tools/useCropping'
 
-// Temporary state - will be connected to composables later
-const currentImage = ref<string | null>(null)
+const { isCropping, startCrop, applyCrop, cancelCrop } = useCropping()
+
 const altText = ref('')
 
-const handleChangeImage = () => {
-  console.log('Change image clicked')
-  // TODO: Implement image picker
+const handleStartCrop = () => {
+  startCrop()
 }
 
-const handleCropImage = () => {
-  console.log('Change image clicked')
-  // TODO: Implement image picker
+const handleSaveCrop = () => {
+  applyCrop()
 }
 
-const handleMoreOptions = () => {
-  console.log('More options clicked')
-  // TODO: Implement more options menu
-}
-
-const handleAddImages = () => {
-  console.log('Add images clicked')
-  // TODO: Implement add images functionality
+const handleCancelCrop = () => {
+  cancelCrop()
 }
 </script>
 
+<!-- filepath: c:\AlbertosProjects\banner-editor\src\components\toolsMenu\images\EditImages.vue -->
 <style scoped>
 .tool-menu {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
+  padding: 0;
 }
 
 .menu-title {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
   color: #212529;
   margin: 0;
 }
 
-.subtitle {
+.menu-subtitle {
   font-size: 13px;
   color: #6c757d;
-  margin: -8px 0 0 0;
+  margin: 0;
 }
 
 .image-section {
@@ -117,80 +95,73 @@ const handleAddImages = () => {
 }
 
 .image-preview {
-  position: relative;
-  width: 100%;
-  height: 200px;
+  position: relative; /* ← Added this! */
   border-radius: 12px;
   overflow: hidden;
-  background: #f8f9fa;
-  border: 2px solid #dee2e6;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .preview-image {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.no-image {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: #6c757d;
-}
-
-.no-image .icon {
-  font-size: 48px;
-  margin-bottom: 8px;
-  opacity: 0.5;
-}
-
-.no-image p {
-  margin: 0;
-  font-size: 14px;
+  height: auto;
+  display: block;
 }
 
 .image-actions {
   position: absolute;
-  bottom: 12px;
-  right: 12px;
+  bottom: 16px;
+  right: 16px;
   display: flex;
-  gap: 8px;
+  gap: 12px;
+  z-index: 10; /* ← Added this to ensure buttons are on top */
 }
 
 .btn-change,
-.btn-crop .btn-more {
-  padding: 8px 16px;
+.btn-save,
+.btn-cancel,
+.btn-more {
+  padding: 10px 20px;
+  background: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transition: all 0.2s;
 }
 
-.btn-change {
-  background: white;
-  color: #212529;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+.btn-change:hover,
+.btn-save:hover,
+.btn-cancel:hover,
+.btn-more:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
 }
 
-.btn-change:hover {
-  background: #f8f9fa;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+.btn-save {
+  background: #28a745;
+  color: white;
+}
+
+.btn-save:hover {
+  background: #218838;
+}
+
+.btn-cancel {
+  background: #dc3545;
+  color: white;
+}
+
+.btn-cancel:hover {
+  background: #c82333;
 }
 
 .btn-more {
-  background: white;
-  color: #212529;
-  padding: 8px 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.btn-more:hover {
-  background: #f8f9fa;
+  width: 40px;
+  padding: 10px;
+  font-size: 18px;
+  line-height: 1;
 }
 
 .alt-text-section {
@@ -199,7 +170,7 @@ const handleAddImages = () => {
   gap: 8px;
 }
 
-.description {
+.section-description {
   font-size: 12px;
   color: #6c757d;
   line-height: 1.5;
@@ -208,11 +179,11 @@ const handleAddImages = () => {
 
 .alt-text-input {
   width: 100%;
-  padding: 10px 12px;
+  padding: 12px;
   border: 1px solid #ced4da;
   border-radius: 6px;
   font-size: 14px;
-  transition: border-color 0.2s;
+  background: #f0f8ff;
   box-sizing: border-box;
 }
 
@@ -223,15 +194,9 @@ const handleAddImages = () => {
 }
 
 .character-count {
-  font-size: 11px;
+  font-size: 12px;
   color: #6c757d;
   text-align: right;
-}
-
-.divider {
-  border: none;
-  border-top: 1px solid #dee2e6;
-  margin: 8px 0;
 }
 
 .btn-add-images {
@@ -239,13 +204,13 @@ const handleAddImages = () => {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 12px 20px;
+  padding: 14px;
+  background: white;
   border: 2px solid #007bff;
   border-radius: 8px;
-  background: white;
   color: #007bff;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -256,7 +221,7 @@ const handleAddImages = () => {
 }
 
 .btn-add-images .icon {
-  font-size: 18px;
-  font-weight: bold;
+  font-size: 20px;
+  line-height: 1;
 }
 </style>
