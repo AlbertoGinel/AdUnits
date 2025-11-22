@@ -24,20 +24,12 @@
           "y": 0,
           "width": 225,
           "height": 95,
-          "image": "",
-          "crop": {
-            "x": 100,
-            "y": 355,
-            "width": 2811,
-            "height": 1187
-          },
           "tag": "image"
         },
         "headline": {
           "type": "text",
           "x": 13,
           "y": 31,
-          "text": "",
           "fontSize": 11,
           "fontFamily": "Sans",
           "fontStyle": "bold",
@@ -51,7 +43,6 @@
           "y": 12,
           "width": 54,
           "height": 10.63,
-          "image": "",
           "tag": "logo"
         },
         "cta-background": {
@@ -71,7 +62,6 @@
           "y": 56,
           "width": 55,
           "height": 18,
-          "text": "",
           "fontSize": 6.5,
           "fontFamily": "Sans",
           "fill": "#001e60",
@@ -86,7 +76,6 @@
           "y": 62,
           "width": 217,
           "height": 30,
-          "text": "",
           "fontSize": 4.6,
           "fontFamily": "Sans",
           "fill": "#ffffff",
@@ -94,6 +83,23 @@
           "verticalAlign": "bottom",
           "wrap": "wrap",
           "tag": "disclaimer"
+        },
+        "disclaimerBG": {
+          "type": "rect",
+          "x": 225,
+          "y": 47.5,
+          "width": 225,
+          "height": 47.5,
+          "fillLinearGradientStartPoint": {
+            "x": 112.5,
+            "y": 0
+          },
+          "fillLinearGradientEndPoint": {
+            "x": 112.5,
+            "y": 47.5
+          },
+          "fillLinearGradientColorStops": [0, "#ffffff00", 1, "#000000"],
+          "tag": "disclaimerBG"
         }
       }
     },
@@ -121,13 +127,6 @@
           "y": 0,
           "width": 245,
           "height": 47,
-          "image": "",
-          "crop": {
-            "x": 15,
-            "y": 459.3,
-            "width": 2440,
-            "height": 470
-          },
           "tag": "image"
         },
         "logo": {
@@ -136,14 +135,12 @@
           "y": 66,
           "width": 52,
           "height": 10.2,
-          "image": "",
           "tag": "logo"
         },
         "headline": {
           "type": "text",
           "x": 8,
           "y": 72,
-          "text": "",
           "fontSize": 7.5,
           "fontFamily": "Sans",
           "fontStyle": "bold",
@@ -155,7 +152,6 @@
           "type": "text",
           "x": 8,
           "y": 82,
-          "text": "",
           "fontSize": 5.4,
           "fontFamily": "Sans",
           "fill": "#001e60",
@@ -194,7 +190,6 @@
           "y": 15,
           "width": 238,
           "height": 30,
-          "text": "",
           "fontSize": 4,
           "fontFamily": "Sans",
           "fill": "#ffffff",
@@ -202,6 +197,23 @@
           "verticalAlign": "bottom",
           "wrap": "wrap",
           "tag": "disclaimer"
+        },
+        "disclaimerBG": {
+          "type": "rect",
+          "x": 0,
+          "y": 23.5,
+          "width": 245,
+          "height": 23.5,
+          "fillLinearGradientStartPoint": {
+            "x": 122.5,
+            "y": 0
+          },
+          "fillLinearGradientEndPoint": {
+            "x": 122.5,
+            "y": 23.5
+          },
+          "fillLinearGradientColorStops": [0, "#ffffff00", 1, "#000000"],
+          "tag": "disclaimerBG"
         }
       }
     },
@@ -227,7 +239,6 @@
           "type": "text",
           "x": 92,
           "y": 12,
-          "text": "",
           "fontSize": 11,
           "fontFamily": "Sans",
           "fontStyle": "bold",
@@ -242,14 +253,12 @@
           "width": 58,
           "height": 11,
           "fill": "#808080",
-          "image": "",
           "tag": "logo"
         },
         "subhead": {
           "type": "text",
           "x": 91,
           "y": 29,
-          "text": "",
           "fontSize": 5.4,
           "fontFamily": "Sans",
           "fill": "#001e60",
@@ -273,7 +282,6 @@
           "y": 63,
           "width": 57,
           "height": 18,
-          "text": "",
           "fontSize": 5.8,
           "fontFamily": "Sans",
           "align": "center",
@@ -287,16 +295,9 @@
           "type": "image",
           "x": 430,
           "y": 0,
-          "image": "",
           "width": 430,
           "height": 95,
-          "tag": "image",
-          "crop": {
-            "x": 15,
-            "y": 459.3,
-            "width": 2440,
-            "height": 470
-          }
+          "tag": "image"
         },
         "disclaimer": {
           "type": "text",
@@ -304,7 +305,6 @@
           "y": 60,
           "width": 420,
           "height": 30,
-          "text": "",
           "fontSize": 6,
           "fontFamily": "Sans",
           "fill": "#ffffff",
@@ -312,40 +312,25 @@
           "verticalAlign": "bottom",
           "wrap": "wrap",
           "tag": "disclaimer"
+        },
+        "disclaimerBG": {
+          "type": "rect",
+          "x": 430,
+          "y": 47.5,
+          "width": 430,
+          "height": 47.5,
+          "fillLinearGradientStartPoint": {
+            "x": 215,
+            "y": 0
+          },
+          "fillLinearGradientEndPoint": {
+            "x": 215,
+            "y": 47.5
+          },
+          "fillLinearGradientColorStops": [0, "#ffffff00", 1, "#000000"],
+          "tag": "disclaimerBG"
         }
       }
-    }
-  },
-  "layers": {
-    "headline": {
-      "type": "text",
-      "defaultValue": "Headline goes here"
-    },
-    "logo": {
-      "type": "image",
-      "defaultValue": "logo"
-    },
-    "subhead": {
-      "type": "text",
-      "defaultValue": "Your subhead goes here"
-    },
-    "cta": {
-      "type": "text",
-      "defaultValue": "CTA button"
-    },
-    "image": {
-      "type": "image",
-      "defaultValue": "lifeStyle"
-    },
-    "disclaimer": {
-      "type": "text",
-      "defaultValue": "This content is provided solely for general informational purposes and should not be interpreted as professional, legal, financial, or technical advice. We make no guarantees regarding the accuracy, completeness, reliability, or suitability of the information presented. Any actions or decisions you choose to make based on this material are taken strictly at your own risk. We assume no responsibility or liability for any losses, damages, or consequences that may result. Always consult with a qualified and licensed professional for guidance tailored to your specific situation 123412 12412124124.",
-      "darkColour": "#000000",
-      "lightColour": "#ffffff"
-    },
-    "disclaimerBG": {
-      "type": "rect",
-      "visibility": true
     }
   }
 }

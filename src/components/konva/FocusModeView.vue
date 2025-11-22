@@ -14,17 +14,16 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useCanvasManager } from '@/composables/view/useCanvasManager'
+import { useViewState } from '@/composables/view/useViewState'
 import FramedAdUnit from '@/components/konva/FramedAdUnit.vue'
 
-const canvasManager = useCanvasManager()
+const viewState = useViewState()
 
-// ✅ Computed optimization - only recalculate when current ad unit changes
-const currentAdUnit = computed(() => canvasManager.getCurrentAdUnit())
+// ✅ Get the currently focused ad unit
+const currentAdUnit = computed(() => viewState.currentAdUnit.value)
 
-// ✅ Handle frame click - could switch back to bulk mode or do nothing
+// ✅ Handle frame click - switch back to bulk mode
 const handleFrameClick = () => {
-  // Focus mode - maybe do nothing or switch back to bulk
-  canvasManager.switchToBulkMode()
+  viewState.switchToBulkMode()
 }
 </script>

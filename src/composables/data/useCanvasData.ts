@@ -98,6 +98,15 @@ export function useCanvasData() {
     updateElement: (adUnitId: string, elementId: string, updates: Partial<CanvasElement>) => {
       const adUnit = store.adUnits[adUnitId]
       if (adUnit?.elements[elementId]) {
+        const element = adUnit.elements[elementId]
+
+        // ⚠️ ENFORCE: Image changes MUST include crop
+        if (updates.image !== undefined && element.type === 'image' && updates.crop === undefined) {
+          console.error('❌ Image update rejected: Crop is required when changing image')
+          console.trace()
+          return
+        }
+
         adUnit.elements[elementId] = { ...adUnit.elements[elementId], ...updates }
       }
     },
@@ -116,6 +125,20 @@ export function useCanvasData() {
                 // Text cascade: Update unlocked elements when defaultValue changes
                 if (updates.defaultValue !== undefined && !element.locked) {
                   elementUpdates.text = updates.defaultValue
+                }
+
+                // Image cascade: Update unlocked image elements when defaultValue changes
+                // NOTE: Image updates should include crop via useTools, not here
+                // This cascade only updates the image ID for consistency
+                if (
+                  updates.defaultValue !== undefined &&
+                  layerId === 'image' &&
+                  element.type === 'image' &&
+                  !element.locked
+                ) {
+                  elementUpdates.image = updates.defaultValue
+                  // Crop should be provided by the caller (useTools with auto-crop)
+                  // We don't auto-calculate here to keep useCanvasData pure
                 }
 
                 // Visibility cascade: Update disclaimer elements when visibility changes

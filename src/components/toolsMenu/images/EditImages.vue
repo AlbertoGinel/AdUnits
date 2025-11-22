@@ -7,7 +7,7 @@
     <div class="image-section">
       <h4 class="section-title">Lifestyle photo</h4>
       <div class="image-preview">
-        <img :src="lifeStyleImage" alt="Lifestyle photo" class="preview-image" />
+        <img :src="currentImage" alt="Lifestyle photo" class="preview-image" />
         <div class="image-actions">
           <button v-if="!isCropping" class="btn-change" @click="handleStartCrop">Crop</button>
           <button v-else class="btn-save" @click="handleSaveCrop">Save Crop</button>
@@ -43,13 +43,13 @@ import { useImageManager } from '@/composables/setupImages/useImageManager'
 import UploadImages from './UploadImages.vue'
 
 const { isCropping, startCrop, applyCrop, cancelCrop } = useCropping()
-const { getImage } = useImageManager()
+const { getCurrentImage } = useImageManager()
 
 const altText = ref('')
 
-// Get the lifestyle image from store (with fallback)
-const lifeStyleImage = computed(() => {
-  const imageData = getImage('lifeStyle')
+// Get the current image from canvas (with automatic fallback)
+const currentImage = computed(() => {
+  const imageData = getCurrentImage()
   return imageData?.url || ''
 })
 

@@ -11,12 +11,12 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useCanvasManager } from '@/composables/view/useCanvasManager'
+import { useViewState } from '@/composables/view/useViewState'
 import BulkModeView from '@/components/konva/BulkModeView.vue'
 import FocusModeView from '@/components/konva/FocusModeView.vue'
 
-const canvasManager = useCanvasManager()
-const viewMode = computed(() => canvasManager.viewMode.value)
+const viewState = useViewState()
+const viewMode = viewState.viewMode
 
 const stageConfig = computed(() => {
   if (viewMode.value === 'bulkMode') {

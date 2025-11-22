@@ -40,17 +40,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useImageManager } from '@/composables/setupImages/useImageManager'
+import { useImageStore } from '@/stores/useImageStore'
 
-const { uploadImage, getUploadedImages } = useImageManager()
+const { uploadImage } = useImageManager()
+const imageStore = useImageStore()
+const { images } = storeToRefs(imageStore)
 
 const show = defineModel<boolean>('show', { default: false })
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const selectedImageId = ref<string | null>(null)
 
-// Get list of uploaded images
-const uploadedImages = computed(() => getUploadedImages())
+// Get list of uploaded images reactively from store
+const uploadedImages = computed(() => {
+  return Object.values(images.value).filter((asset) => asset.isUploaded && asset.image)
+})
 
 const triggerFileInput = () => {
   fileInputRef.value?.click()
@@ -66,6 +72,8 @@ const handleFileSelect = async (event: Event) => {
     try {
       await uploadImage(file)
       console.log(`✅ Uploaded: ${file.name}`)
+      // Force reactivity update
+      await nextTick()
     } catch (error) {
       console.error(`Failed to upload ${file.name}:`, error)
     }

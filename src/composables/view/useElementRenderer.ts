@@ -1,9 +1,25 @@
-// composables/useElementRenderer.ts
-import { type CanvasElement } from '@/composables/data/useCanvasData'
+// composables/view/useElementRenderer.ts
+import type { CanvasElement } from '@/stores/canvas'
 
+/**
+ * Pure element rendering logic
+ * NO store imports, NO side effects
+ * Just transforms CanvasElement → Konva Config
+ */
 export function useElementRenderer() {
-  //Purpose: Transforms your raw CanvasElement data into Konva-specific configuration
-  const getElementConfig = (element: CanvasElement) => {
+  /**
+   * Check if element should be visible
+   * Pure function
+   */
+  const isElementVisible = (element: CanvasElement): boolean => {
+    return element.visibility !== false
+  }
+
+  /**
+   * Transform CanvasElement to Konva configuration
+   * Pure function: same input always gives same output
+   */
+  const getElementConfig = (element: CanvasElement): Record<string, unknown> => {
     const baseConfig = {
       x: element.x,
       y: element.y,
@@ -14,7 +30,6 @@ export function useElementRenderer() {
       case 'text':
         return {
           ...baseConfig,
-          type: 'text',
           text: element.text || '',
           fontSize: element.fontSize || 14,
           fontFamily: element.fontFamily || 'Arial',
@@ -30,23 +45,16 @@ export function useElementRenderer() {
       case 'rect':
         return {
           ...baseConfig,
-          type: 'rect',
           width: element.width || 100,
           height: element.height || 100,
           opacity: 50,
-          // Only set fill if no gradient is present
           ...(element.fillLinearGradientStartPoint ? {} : { fill: element.fill || '#ffffff' }),
           cornerRadius: element.cornerRadius || 0,
           stroke: element.strokeColor || '#000000',
           strokeWidth: element.strokeWidth || 0,
-          // Gradient properties
           ...(element.fillLinearGradientStartPoint && {
             fillLinearGradientStartPoint: element.fillLinearGradientStartPoint,
-          }),
-          ...(element.fillLinearGradientEndPoint && {
             fillLinearGradientEndPoint: element.fillLinearGradientEndPoint,
-          }),
-          ...(element.fillLinearGradientColorStops && {
             fillLinearGradientColorStops: element.fillLinearGradientColorStops,
           }),
         }
@@ -54,10 +62,9 @@ export function useElementRenderer() {
       case 'image':
         return {
           ...baseConfig,
-          type: 'image',
           width: element.width || 100,
           height: element.height || 100,
-          ...(element.image && { image: element.image }),
+          // Crop if present
           ...(element.crop && {
             cropX: element.crop.x,
             cropY: element.crop.y,
@@ -66,33 +73,13 @@ export function useElementRenderer() {
           }),
         }
 
-      case 'button':
-        return {
-          ...baseConfig,
-          type: 'button',
-          width: element.width || 80,
-          height: element.height || 30,
-          fill: element.fill || '#007bff',
-          cornerRadius: element.cornerRadius || 4,
-          stroke: element.strokeColor || '#0056b3',
-          strokeWidth: element.strokeWidth || 1,
-        }
-
       default:
         return baseConfig
     }
   }
 
-  const renderElement = (element: CanvasElement, elementId: string) => {
-    const config = getElementConfig(element)
-
-    return {
-      key: elementId,
-      config,
-    }
-  }
-
   return {
-    renderElement,
+    getElementConfig,
+    isElementVisible,
   }
 }

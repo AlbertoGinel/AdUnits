@@ -2,6 +2,7 @@ import { computed, ref, type ComputedRef } from 'vue'
 import { useCanvasData } from '@/composables/data/useCanvasData'
 import { useLayers } from '@/composables/data/useLayers'
 import { useElements } from '@/composables/data/useElements'
+import { useCropping } from '@/composables/Tools/useCropping'
 
 export const useTools = () => {
   const {
@@ -13,10 +14,12 @@ export const useTools = () => {
     getAdUnitNamesWithLockedTag,
     getAdUnitNamesWithVisibilityLockedTag,
     getAdUnits,
+    getElement,
     freeLayer,
   } = useCanvasData()
   const { getAllLayers, updateLayer } = useLayers()
   const { updateElement } = useElements()
+  const { calculateCoverCrop } = useCropping()
 
   const switchMode = (mode: 'bulkMode' | 'focusMode', id?: string | null) => {
     if (mode === 'bulkMode') {
@@ -42,6 +45,7 @@ export const useTools = () => {
     disclaimerOverride: ref(false),
     disclaimerVisibilityOverride: ref(false),
     disclaimerBGVisibilityOverride: ref(false),
+    imageOverride: ref(false),
   }
 
   // Function overloads for proper TypeScript typing
@@ -82,26 +86,56 @@ export const useTools = () => {
 
         if (currentView === 'focusMode' && currentAdUnitId) {
           // Focus mode: update current ad unit element
-          const elementUpdates: {
-            text?: string
-            locked?: boolean
-            visibility?: boolean
-            visibilityLock?: boolean
-          } = {}
-
           if (property === 'text') {
-            elementUpdates.text = value as string
-            elementUpdates.locked = true
-            // Set default visibility for disclaimer elements
-            if (fieldName === 'disclaimer') {
-              elementUpdates.visibility = true
+            // Handle image changes with auto-crop
+            if (fieldName === 'image' && typeof value === 'string') {
+              const element = getElement(currentAdUnitId, fieldName)
+              if (element?.type === 'image') {
+                const crop = calculateCoverCrop(value, element.width || 0, element.height || 0)
+
+                if (crop) {
+                  updateElement(currentAdUnitId, fieldName, {
+                    text: value,
+                    crop: crop,
+                    locked: true,
+                  })
+                  console.log('🎨 Focus mode: Image updated with auto-crop', {
+                    imageId: value,
+                    crop,
+                  })
+                } else {
+                  console.warn('Could not calculate crop, updating without crop')
+                  updateElement(currentAdUnitId, fieldName, {
+                    text: value,
+                    locked: true,
+                  })
+                }
+              }
+            } else {
+              // Regular text update
+              const elementUpdates: {
+                text?: string
+                locked?: boolean
+                visibility?: boolean
+              } = {
+                text: value as string,
+                locked: true,
+              }
+
+              // Set default visibility for disclaimer elements
+              if (fieldName === 'disclaimer') {
+                elementUpdates.visibility = true
+              }
+
+              updateElement(currentAdUnitId, fieldName, elementUpdates)
             }
           } else {
-            elementUpdates.visibility = value as boolean
-            elementUpdates.visibilityLock = true
+            // Visibility update
+            updateElement(currentAdUnitId, fieldName, {
+              visibility: value as boolean,
+              visibilityLock: true,
+            })
           }
-
-          updateElement(currentAdUnitId, fieldName, elementUpdates)
         } else {
           // Bulk mode: update layer
           if (property === 'text') {
@@ -111,8 +145,29 @@ export const useTools = () => {
 
             if (isOverrideEnabled) {
               // Override mode: free all locked elements first, then update
-              freeLayer(fieldName)
-              updateLayer(fieldName, { defaultValue: value as string })
+              if (fieldName === 'image' && typeof value === 'string') {
+                // Image override: auto-crop for each ad unit's dimensions
+                const allAdUnits = getAdUnits()
+                Object.keys(allAdUnits).forEach((adUnitId) => {
+                  const element = getElement(adUnitId, fieldName)
+                  if (element?.type === 'image') {
+                    const crop = calculateCoverCrop(value, element.width || 0, element.height || 0)
+
+                    if (crop) {
+                      updateElement(adUnitId, fieldName, {
+                        text: value,
+                        crop: crop,
+                        locked: false,
+                      })
+                    }
+                  }
+                })
+                console.log('🔓 Override: Updated all images with auto-crop (freed locks)')
+              } else {
+                // Regular text override
+                freeLayer(fieldName)
+                updateLayer(fieldName, { defaultValue: value as string })
+              }
               // Reset override after use
               overrideStates[overrideKey].value = false
             } else {
@@ -160,14 +215,17 @@ export const useTools = () => {
 
   // Create visibility model for disclaimer using the same generator
   const disclaimerVisibility = createFieldModel('disclaimer', 'visibility')
-
   const disclaimerBGVisibility = createFieldModel('disclaimerBG', 'visibility')
+
+  // Create image v-model (uses text property for image ID)
+  const imageValue = createFieldModel('image', 'text')
   // Computed lists of locked elements by tag
   const lockedElementsByTag = computed(() => ({
     headline: getAdUnitNamesWithLockedTag('headline'),
     subhead: getAdUnitNamesWithLockedTag('subhead'),
     cta: getAdUnitNamesWithLockedTag('cta'),
     disclaimer: getAdUnitNamesWithLockedTag('disclaimer'),
+    image: getAdUnitNamesWithLockedTag('image'),
   }))
 
   // Computed lists of visibility locked elements by tag
@@ -185,6 +243,7 @@ export const useTools = () => {
     disclaimerValue,
     disclaimerVisibility,
     disclaimerBGVisibility,
+    imageValue,
     // Override states
     overrideStates,
     // Computed locked lists

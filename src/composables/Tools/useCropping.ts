@@ -105,6 +105,61 @@ export function useCropping() {
   })
 
   /**
+   * Calculate cover crop for an image to fill visible area with no holes
+   * Uses "cover" strategy - fills entire area, may crop edges
+   */
+  const calculateCoverCrop = (
+    imageId: string,
+    visibleWidth: number,
+    visibleHeight: number,
+  ): CropData | null => {
+    const imageData = getImage(imageId)
+    if (!imageData?.dimensions) {
+      console.warn(`Cannot calculate crop: Image "${imageId}" not found or not loaded`)
+      return null
+    }
+
+    const imageWidth = imageData.dimensions.naturalWidth
+    const imageHeight = imageData.dimensions.naturalHeight
+    const targetAspect = visibleWidth / visibleHeight
+    const imageAspect = imageWidth / imageHeight
+
+    let cropWidth: number
+    let cropHeight: number
+    let cropX: number
+    let cropY: number
+
+    if (imageAspect > targetAspect) {
+      // Image is wider than target - crop sides
+      cropHeight = imageHeight
+      cropWidth = imageHeight * targetAspect
+      cropX = (imageWidth - cropWidth) / 2
+      cropY = 0
+    } else {
+      // Image is taller than target - crop top/bottom
+      cropWidth = imageWidth
+      cropHeight = imageWidth / targetAspect
+      cropX = 0
+      cropY = (imageHeight - cropHeight) / 2
+    }
+
+    const crop: CropData = {
+      x: Math.round(cropX),
+      y: Math.round(cropY),
+      width: Math.round(cropWidth),
+      height: Math.round(cropHeight),
+    }
+
+    console.log('🎯 Cover crop calculated:', {
+      image: `${imageWidth}x${imageHeight}`,
+      visible: `${visibleWidth}x${visibleHeight}`,
+      crop,
+    })
+
+    return crop
+  }
+
+  /**
    * Start cropping mode for the image element in the current ad unit
    */
   const startCrop = () => {
@@ -361,6 +416,7 @@ export function useCropping() {
     updateCropArea,
     applyCrop,
     cancelCrop,
+    calculateCoverCrop,
     constrainCrop,
     canvasToImageCoords,
     imageToCanvasCoords,

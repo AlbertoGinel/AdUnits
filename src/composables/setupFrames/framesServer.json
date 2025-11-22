@@ -1,0 +1,168 @@
+{
+  "adUnits": {
+    "marquee-app": {
+      "elements": {
+        "image": {
+          "image": "goodYearWheels",
+          "crop": {
+            "x": 100,
+            "y": 355,
+            "width": 2811,
+            "height": 1187
+          },
+          "locked": false
+        },
+        "logo": {
+          "image": "goodYearBlue",
+          "locked": false
+        },
+        "headline": {
+          "text": "headline from the server",
+          "locked": false
+        },
+        "subhead": {
+          "text": "subhead from the server",
+          "locked": false
+        },
+        "cta": {
+          "text": "cta from server",
+          "locked": false
+        },
+        "disclaimer": {
+          "text": "text from the server",
+          "visibility": true,
+          "visibilityLock": false,
+          "locked": false
+        },
+        "disclaimerBG": {
+          "visibility": true,
+          "visibilityLock": false
+        }
+      }
+    },
+    "brandbox-desktop": {
+      "elements": {
+        "image": {
+          "image": "goodYearWheels",
+          "crop": {
+            "x": 15,
+            "y": 459,
+            "width": 2440,
+            "height": 470
+          },
+          "locked": false
+        },
+        "logo": {
+          "image": "goodYearBlue",
+          "locked": false
+        },
+        "headline": {
+          "text": "Tittle text",
+          "locked": false
+        },
+        "subhead": {
+          "text": "subhead from the server",
+          "locked": false
+        },
+        "cta": {
+          "text": "server cta",
+          "locked": false
+        },
+        "disclaimer": {
+          "text": "text from the server",
+          "visibility": true,
+          "visibilityLock": false,
+          "locked": false
+        },
+        "disclaimerBG": {
+          "visibility": true,
+          "visibilityLock": false
+        }
+      }
+    },
+    "longmarquee": {
+      "elements": {
+        "image": {
+          "image": "goodYearWheels",
+          "crop": {
+            "x": 15,
+            "y": 459,
+            "width": 2440,
+            "height": 470
+          },
+          "locked": false
+        },
+        "logo": {
+          "image": "goodYearBlue",
+          "locked": false
+        },
+        "headline": {
+          "text": "headline from the server",
+          "locked": false
+        },
+        "subhead": {
+          "text": "subhead from the server",
+          "locked": false
+        },
+        "cta": {
+          "text": "cta from server",
+          "locked": false
+        },
+        "disclaimer": {
+          "text": "disclaimer text from server",
+          "visibility": true,
+          "visibilityLock": false,
+          "locked": false
+        },
+        "disclaimerBG": {
+          "visibility": true,
+          "visibilityLock": false
+        }
+      }
+    }
+  },
+  "layers": {
+    "headline": {
+      "type": "text",
+      "defaultValue": "Headline goes here"
+    },
+    "logo": {
+      "type": "image",
+      "defaultValue": "goodYearBlue"
+    },
+    "subhead": {
+      "type": "text",
+      "defaultValue": "Your subhead goes here"
+    },
+    "cta": {
+      "type": "text",
+      "defaultValue": "CTA button"
+    },
+    "image": {
+      "type": "image",
+      "defaultValue": "goodYearWheels"
+    },
+    "disclaimer": {
+      "type": "text",
+      "defaultValue": "This content is provided solely for general informational purposes.",
+      "visibility": true,
+      "darkColour": "#000000",
+      "lightColour": "#ffffff"
+    },
+    "disclaimerBG": {
+      "type": "rect",
+      "defaultValue": "",
+      "visibility": true
+    }
+  },
+  "images": [
+    {
+      "id": "goodYearWheels",
+      "url": "/fromServer/lifeStyle.png"
+    },
+    {
+      "id": "goodYearBlue",
+      "url": "/fromServer/logo.png"
+    }
+  ]
+}

@@ -1,5 +1,20 @@
 <script setup lang="ts">
-// Main App component
+import { onMounted } from 'vue'
+import { useAppInitializer } from '@/composables/setupFrames/useAppInitializer'
+
+// Initialize app on mount
+const { initializeApp } = useAppInitializer()
+
+onMounted(async () => {
+  console.log('🎬 App mounted, starting initialization...')
+  const success = await initializeApp()
+
+  if (success) {
+    console.log('🎉 App is ready to use!')
+  } else {
+    console.error('💥 App initialization failed - check console for errors')
+  }
+})
 </script>
 
 <template>

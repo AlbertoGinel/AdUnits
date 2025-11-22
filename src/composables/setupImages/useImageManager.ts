@@ -1,8 +1,10 @@
 // composables/setupImages/useImageManager.ts
 import { useImageStore, type ImageAsset } from '@/stores/useImageStore'
+import { useCanvasData } from '@/composables/data/useCanvasData'
 
 export const useImageManager = () => {
   const imageStore = useImageStore()
+  const { getLayers } = useCanvasData()
 
   /**
    * Load an image from URL (server or local for dev)
@@ -66,13 +68,15 @@ export const useImageManager = () => {
   /**
    * Get loaded image by ID with fallback support
    */
-  const getImage = (id: string): ImageAsset | null => {
+  const getImage = (id: string | null | undefined): ImageAsset | null => {
+    // If no ID or not found, return fallback
+    if (!id) return imageStore.images['fallback'] || null
+
     const asset = imageStore.images[id]
     if (asset?.image) return asset
 
-    // Return fallback image if requested image not found
-    const fallback = imageStore.images['fallback']
-    return fallback?.image ? fallback : null
+    // Not found, return fallback
+    return imageStore.images['fallback'] || null
   }
 
   /**
@@ -89,11 +93,14 @@ export const useImageManager = () => {
     // Load the image using existing loadImage function
     const asset = await loadImage(id, url)
 
-    // Store additional metadata
-    asset.name = file.name
-    asset.isUploaded = true
+    // Update store entry with additional metadata (triggers reactivity)
+    imageStore.images[id] = {
+      ...asset,
+      name: file.name,
+      isUploaded: true,
+    }
 
-    return asset
+    return imageStore.images[id]!
   }
 
   /**
@@ -103,9 +110,22 @@ export const useImageManager = () => {
     return Object.values(imageStore.images).filter((asset) => asset.isUploaded && asset.image)
   }
 
+  /**
+   * Get the current image from layers definition with fallback
+   */
+  const getCurrentImage = (): ImageAsset | null => {
+    const layers = getLayers()
+    const imageLayer = layers['image']
+    const imageId = imageLayer?.defaultValue || null
+
+    // getImage handles fallback if imageId is null or not found
+    return getImage(imageId)
+  }
+
   return {
     loadImage,
     getImage,
+    getCurrentImage,
     uploadImage,
     getUploadedImages,
     preloadDefaultImages,

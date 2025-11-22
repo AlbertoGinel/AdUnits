@@ -80,30 +80,6 @@ export function useAdUnits() {
         }
 
         processedElements[elementId] = processedElement
-
-        // Auto-generate disclaimerBG element for image elements with tag="image"
-        if (element.type === 'image' && element.tag === 'image') {
-          const disclaimerBG = {
-            type: 'rect' as const,
-            x: element.x || 0,
-            y: (element.y || 0) + (element.height || 0) / 2,
-            width: element.width || 0,
-            height: (element.height || 0) / 2,
-            fillLinearGradientStartPoint: {
-              x: (element.width || 0) / 2,
-              y: 0,
-            },
-            fillLinearGradientEndPoint: {
-              x: (element.width || 0) / 2,
-              y: (element.height || 0) / 2,
-            },
-            fillLinearGradientColorStops: [0, '#ffffff00', 1, '#000000'],
-            tag: 'disclaimerBG',
-            visibility: true,
-            visibilityLock: false,
-          }
-          processedElements['disclaimerBG'] = disclaimerBG
-        }
       })
 
       processedAdUnits[adUnitId] = {
