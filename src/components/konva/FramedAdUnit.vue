@@ -35,8 +35,8 @@ const viewState = useViewState()
 
 // ✅ Title configuration
 const titleConfig = computed(() => ({
-  x: 8,
-  y: -20,
+  x: 5,
+  y: 10,
   text: props.adUnit.frameConfig.title,
   fontSize: 14,
   fontFamily: 'Arial, sans-serif',
@@ -46,12 +46,12 @@ const titleConfig = computed(() => ({
 
 // ✅ Edit button - conditional text based on view mode
 const editButtonConfig = computed(() => {
-  const offset = props.adUnit.frameConfig.editButtonOffset || { x: -60, y: -25 }
+  //const offset = props.adUnit.frameConfig.editButtonOffset || { x: -60, y: -25 }
   const isInFocusMode = viewState.isFocusMode.value
 
   return {
-    x: props.adUnit.frameConfig.dimensions.width + offset.x,
-    y: offset.y,
+    x: 200,
+    y: 10,
     text: isInFocusMode ? 'Back' : 'Edit',
     fontSize: 12,
     fontFamily: 'Arial, sans-serif',

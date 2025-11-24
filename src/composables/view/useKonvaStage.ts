@@ -1,127 +1,306 @@
-// composables/useKonvaStage.ts
-import { useAdUnitRenderer } from './useAdUnitRenderer'
-import { computed } from 'vue'
-import type { AdUnit } from '@/stores/canvas'
+// composables/view/useKonvaStage.ts
+import { ref, reactive, computed, onMounted, onBeforeUnmount, type Ref } from 'vue'
+import { useCanvasManager } from './useCanvasManager'
+import type Konva from 'konva'
 
-export function useKonvaStage() {
-  const adUnitRenderer = useAdUnitRenderer()
+interface Position {
+  x: number
+  y: number
+}
 
-  // Single stage configuration for all ad units
-  const stageConfig = computed(() => {
-    const adUnits = adUnitRenderer.adUnitsToRender.value.map((item) => item.adUnit)
+interface KonvaEvent {
+  evt: MouseEvent | WheelEvent
+  target: Konva.Stage | Konva.Layer | Konva.Shape
+}
 
-    if (adUnits.length === 0) {
-      return {
-        width: 1200,
-        height: 800,
-        scaleX: 1,
-        scaleY: 1,
-      }
-    }
+/**
+ * Manages Konva stage zoom/pan with responsive container sizing
+ * Ephemeral UI state (not persisted)
+ */
+export function useKonvaStage(containerRef: Ref<HTMLElement | null>) {
+  const canvasManager = useCanvasManager()
 
-    if (adUnitRenderer.viewMode.value === 'focusMode' && adUnitRenderer.currentAdUnitId.value) {
-      const focusedAdUnit = adUnits.find(
-        (adUnit) => adUnit.id === adUnitRenderer.currentAdUnitId.value,
-      )
+  // Container dimensions (observed)
+  const containerSize = reactive({ width: 0, height: 0 })
 
-      if (focusedAdUnit) {
-        return {
-          width: focusedAdUnit.frameConfig.dimensions.width + 100,
-          height: focusedAdUnit.frameConfig.dimensions.height + 100,
-          scaleX: 1,
-          scaleY: 1,
-        }
-      }
-    }
+  // Zoom/Pan state
+  const scale = ref(1)
+  const position = reactive<Position>({ x: 0, y: 0 })
+  const isPanning = ref(false)
+  const panStart = reactive<Position>({ x: 0, y: 0 })
 
-    // Bulk mode - calculate stage to fit all adUnits
-    let minX = Infinity,
-      minY = Infinity,
-      maxX = -Infinity,
-      maxY = -Infinity
+  // Zoom limits
+  const MIN_SCALE = 0.1
+  const MAX_SCALE = 5
+  const PADDING = 5
 
-    adUnits.forEach((adUnit) => {
-      const pos = adUnit.frameConfig.position
-      const dim = adUnit.frameConfig.dimensions
+  /**
+   * Stage configuration for v-stage component
+   */
+  const stageConfig = computed(() => ({
+    width: containerSize.width,
+    height: containerSize.height,
+    scaleX: scale.value,
+    scaleY: scale.value,
+    x: position.x,
+    y: position.y,
+    draggable: false,
+    pixelRatio: window.devicePixelRatio || 1,
+  }))
 
-      minX = Math.min(minX, pos.x)
-      minY = Math.min(minY, pos.y)
-      maxX = Math.max(maxX, pos.x + dim.width)
-      maxY = Math.max(maxY, pos.y + dim.height)
-    })
-
-    const padding = 50
+  /**
+   * Content bounds from store (stage dimensions)
+   */
+  const contentBounds = computed(() => {
+    const stage = canvasManager.getStage()
     return {
-      width: Math.max(1200, maxX - minX + padding * 2),
-      height: Math.max(800, maxY - minY + padding * 2),
-      scaleX: 1,
-      scaleY: 1,
+      width: stage.width,
+      height: stage.height,
     }
   })
 
-  // Get position for each ad unit within the single stage
-  const getAdUnitPosition = (adUnit: AdUnit, isFocused: boolean) => {
-    if (isFocused) {
-      // Center the focused ad unit
-      return {
-        x: 50,
-        y: 50,
-      }
+  /**
+   * Calculate optimal zoom to fit content with padding
+   */
+  function zoomToFit() {
+    const containerWidth = containerSize.width
+    const containerHeight = containerSize.height
+    const contentWidth = contentBounds.value.width
+    const contentHeight = contentBounds.value.height
+
+    if (containerWidth === 0 || containerHeight === 0) return
+
+    // Calculate scale to fit content with padding
+    const scaleX = (containerWidth - PADDING * 2) / contentWidth
+    const scaleY = (containerHeight - PADDING * 2) / contentHeight
+    const newScale = Math.min(scaleX, scaleY, MAX_SCALE)
+
+    // Center horizontally, align to top vertically
+    const scaledWidth = contentWidth * newScale
+    const centerX = (containerWidth - scaledWidth) / 2
+    const topY = PADDING
+
+    scale.value = newScale
+    position.x = centerX
+    position.y = topY
+
+    console.log('🎯 Zoom to fit:', {
+      container: `${containerWidth}x${containerHeight}`,
+      content: `${contentWidth}x${contentHeight}`,
+      scale: newScale.toFixed(2),
+      position: { x: Math.round(centerX), y: Math.round(topY) },
+    })
+  }
+
+  /**
+   * Zoom to specific ad unit (focus mode)
+   */
+  function zoomToAdUnit(adUnitId: string) {
+    console.log('🎯 Zoom to ad unit is being executed 🎯🎯🎯🎯')
+
+    const adUnit = canvasManager.getAdUnit(adUnitId)
+    if (!adUnit) return
+
+    const containerWidth = containerSize.width
+    const containerHeight = containerSize.height
+    if (containerWidth === 0 || containerHeight === 0) return
+
+    // Frame dimensions (ignore position - in focus mode, frame is at 0,0)
+    const frameWidth = adUnit.frameConfig.dimensions.width
+    const frameHeight = adUnit.frameConfig.dimensions.height
+
+    // Add 20% margin for breathing room
+    const marginMultiplier = 1.2
+    const effectiveWidth = frameWidth * marginMultiplier
+    const effectiveHeight = frameHeight * marginMultiplier
+
+    // Calculate scale to fit frame with margin
+    const scaleX = (containerWidth - PADDING * 2) / effectiveWidth
+    const scaleY = (containerHeight - PADDING * 2) / effectiveHeight
+    const newScale = Math.min(scaleX, scaleY, MAX_SCALE)
+
+    // Apply scale
+    scale.value = newScale
+
+    // In focus mode, the frame renders at (0, 0) in the stage
+    // Center horizontally
+    const scaledFrameWidth = frameWidth * newScale
+    const containerCenterX = containerWidth / 2
+    position.x = containerCenterX - scaledFrameWidth / 2
+
+    // Align to top vertically
+    position.y = PADDING
+
+    console.log('🎯 Zoom to ad unit:', {
+      adUnitId,
+      frameDimensions: `w:${frameWidth}, h:${frameHeight}`,
+      effectiveSize: `w:${effectiveWidth.toFixed(0)}, h:${effectiveHeight.toFixed(0)}`,
+      scale: newScale.toFixed(2),
+      stagePosition: { x: Math.round(position.x), y: Math.round(position.y) },
+    })
+  }
+
+  /**
+   * Zoom toward a specific point (for wheel zoom)
+   */
+  function zoomToPoint(newScale: number, pointX: number, pointY: number) {
+    // Clamp scale
+    newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale))
+
+    // Calculate zoom point in stage coordinates
+    const oldScale = scale.value
+    const mousePointTo = {
+      x: (pointX - position.x) / oldScale,
+      y: (pointY - position.y) / oldScale,
     }
 
-    // Use original position in bulk mode
-    return adUnit.frameConfig.position
+    // Apply new scale
+    scale.value = newScale
+
+    // Adjust position to zoom toward point
+    position.x = pointX - mousePointTo.x * newScale
+    position.y = pointY - mousePointTo.y * newScale
   }
 
-  const stageHandlers = {
-    onWheel: (e: any) => {
-      // Zoom functionality for single stage
-      e.evt.preventDefault()
-      const stage = e.target.getStage()
-      const oldScale = stage.scaleX()
-      const pointer = stage.getPointerPosition()
+  /**
+   * Handle mouse wheel (zoom toward cursor)
+   */
+  function handleWheel(e: KonvaEvent) {
+    const evt = e.evt as WheelEvent
+    evt.preventDefault()
 
-      const mousePointTo = {
-        x: (pointer.x - stage.x()) / oldScale,
-        y: (pointer.y - stage.y()) / oldScale,
-      }
+    const scaleBy = 1.1
+    const stage = e.target.getStage()
+    const pointer = stage?.getPointerPosition()
 
-      const newScale = e.evt.deltaY > 0 ? oldScale * 0.9 : oldScale * 1.1
-      const limitedScale = Math.max(0.1, Math.min(5, newScale))
+    if (!pointer) return
 
-      stage.scale({ x: limitedScale, y: limitedScale })
+    // Zoom in or out
+    const direction = evt.deltaY > 0 ? -1 : 1
+    const newScale = scale.value * (direction > 0 ? scaleBy : 1 / scaleBy)
 
-      const newPos = {
-        x: pointer.x - mousePointTo.x * limitedScale,
-        y: pointer.y - mousePointTo.y * limitedScale,
-      }
-
-      stage.position(newPos)
-      stage.batchDraw()
-    },
+    zoomToPoint(newScale, pointer.x, pointer.y)
   }
+
+  /**
+   * Handle mouse down (start pan)
+   */
+  function handleMouseDown(e: KonvaEvent) {
+    const evt = e.evt as MouseEvent
+
+    // Left mouse button (without Ctrl) starts pan
+    if (evt.button === 0 && !evt.ctrlKey) {
+      evt.preventDefault()
+      isPanning.value = true
+      panStart.x = evt.clientX - position.x
+      panStart.y = evt.clientY - position.y
+
+      // Change cursor
+      if (containerRef.value) {
+        containerRef.value.style.cursor = 'grabbing'
+      }
+    }
+  }
+
+  /**
+   * Handle mouse move (pan)
+   */
+  function handleMouseMove(e: KonvaEvent) {
+    if (!isPanning.value) return
+
+    const evt = e.evt as MouseEvent
+    evt.preventDefault()
+    position.x = evt.clientX - panStart.x
+    position.y = evt.clientY - panStart.y
+  }
+
+  /**
+   * Handle mouse up (end pan)
+   */
+  function handleMouseUp(e: KonvaEvent) {
+    if (isPanning.value) {
+      const evt = e.evt as MouseEvent
+      evt.preventDefault()
+      isPanning.value = false
+
+      // Restore cursor
+      if (containerRef.value) {
+        containerRef.value.style.cursor = 'default'
+      }
+    }
+  }
+
+  /**
+   * Reset zoom to 100% and center
+   */
+  function resetZoom() {
+    scale.value = 1
+    const contentWidth = contentBounds.value.width
+    const contentHeight = contentBounds.value.height
+    position.x = (containerSize.width - contentWidth) / 2
+    position.y = (containerSize.height - contentHeight) / 2
+  }
+
+  /**
+   * Observe container size changes
+   */
+  let resizeObserver: ResizeObserver | null = null
+
+  function observeContainer() {
+    if (!containerRef.value) return
+
+    resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect
+        containerSize.width = width
+        containerSize.height = height
+      }
+    })
+
+    resizeObserver.observe(containerRef.value)
+  }
+
+  function stopObserving() {
+    if (resizeObserver) {
+      resizeObserver.disconnect()
+      resizeObserver = null
+    }
+  }
+
+  // Setup
+  onMounted(() => {
+    observeContainer()
+
+    // Initial zoom after container is measured
+    setTimeout(() => {
+      if (containerSize.width > 0 && containerSize.height > 0) {
+        zoomToFit()
+      }
+    }, 100)
+  })
+
+  onBeforeUnmount(() => {
+    stopObserving()
+  })
 
   return {
-    // State from AdUnitRenderer
-    viewMode: adUnitRenderer.viewMode,
-    currentAdUnitId: adUnitRenderer.currentAdUnitId,
-
-    // Stage configuration
+    // State
     stageConfig,
-    stageHandlers,
-    getAdUnitPosition,
+    scale,
+    position,
+    containerSize,
+    isPanning,
 
-    // Rendering data from AdUnitRenderer
-    adUnitsToRender: adUnitRenderer.adUnitsToRender,
-    getElementsForAdUnit: adUnitRenderer.getElementsForAdUnit,
+    // Actions
+    zoomToFit,
+    zoomToAdUnit,
+    zoomToPoint,
+    resetZoom,
 
-    // Actions (delegated through AdUnitRenderer)
-    switchToBulkMode: () => {
-      // This would need to be exposed through AdUnitRenderer or CanvasManager
-      // For now, we'll handle this differently in the component
-    },
-    switchToFocusMode: (adUnitId: string) => {
-      // This would need to be exposed through AdUnitRenderer or CanvasManager
-    },
+    // Event handlers
+    handleWheel,
+    handleMouseDown,
+    handleMouseMove,
+    handleMouseUp,
   }
 }

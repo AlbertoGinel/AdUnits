@@ -18,6 +18,7 @@ export function useCanvasData() {
     getAdUnit: (id: string) => (store.adUnits[id] ? { ...store.adUnits[id] } : null),
     getLayers: () => ({ ...store.layers }),
     getLayer: (layerId: string) => (store.layers[layerId] ? { ...store.layers[layerId] } : null),
+    getStage: () => ({ ...store.stage }),
     getCurrentView: () => store.currentView,
     getCurrentAdUnitId: () => store.currentAdUnitId,
     getIsInitialized: () => store.isInitialized,

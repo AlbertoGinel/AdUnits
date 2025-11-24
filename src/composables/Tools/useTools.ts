@@ -4,6 +4,11 @@ import { useLayers } from '@/composables/data/useLayers'
 import { useElements } from '@/composables/data/useElements'
 import { useCropping } from '@/composables/Tools/useCropping'
 
+// Shared callback for zoom updates (singleton)
+let sharedOnModeChangeCallback:
+  | ((mode: 'bulkMode' | 'focusMode', id?: string | null) => void)
+  | null = null
+
 export const useTools = () => {
   const {
     setCurrentAdUnitId,
@@ -21,19 +26,29 @@ export const useTools = () => {
   const { updateElement } = useElements()
   const { calculateCoverCrop } = useCropping()
 
+  const setOnModeChange = (
+    callback: (mode: 'bulkMode' | 'focusMode', id?: string | null) => void,
+  ) => {
+    console.log('🔧 setOnModeChange: Callback registered (SINGLETON)')
+    sharedOnModeChangeCallback = callback
+  }
+
   const switchMode = (mode: 'bulkMode' | 'focusMode', id?: string | null) => {
+    console.log('🔄 switchMode called:', mode, id)
     if (mode === 'bulkMode') {
-      // First set the ID, then the view (as you requested)
       setCurrentAdUnitId(null)
       setCurrentView('bulkMode')
+      console.log('→ Triggering callback for bulkMode')
+      sharedOnModeChangeCallback?.('bulkMode')
     } else if (mode === 'focusMode') {
       if (!id) {
         console.warn('Focus mode requires an ad unit ID')
         return
       }
-      // First set the ID, then the view (as you requested)
       setCurrentAdUnitId(id)
       setCurrentView('focusMode')
+      console.log('→ Triggering callback for focusMode:', id)
+      sharedOnModeChangeCallback?.('focusMode', id)
     }
   }
 
@@ -236,6 +251,7 @@ export const useTools = () => {
 
   return {
     switchMode,
+    setOnModeChange,
     // Smart v-models
     headlineValue,
     subheadValue,

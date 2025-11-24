@@ -14,6 +14,7 @@ export function useCanvasManager() {
     // Read operations
     getAllAdUnits: (): Record<string, AdUnit> => canvasData.getAdUnits(),
     getAdUnit: (adUnitId: string): AdUnit | null => canvasData.getAdUnit(adUnitId),
+    getStage: () => canvasData.getStage(),
     getAdUnitElements: (adUnitId: string): Record<string, CanvasElement> => {
       const adUnit = canvasData.getAdUnit(adUnitId)
       return adUnit?.elements || {}

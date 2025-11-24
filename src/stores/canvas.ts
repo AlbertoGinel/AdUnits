@@ -59,6 +59,7 @@ export const useCanvasStore = defineStore('canvas', () => {
   // Raw data state
   const adUnits = ref<Record<string, AdUnit>>({})
   const layers = ref<Record<string, LayerDefinition>>({})
+  const stage = ref<{ width: number; height: number }>({ width: 0, height: 0 })
   const currentView = ref<'bulkMode' | 'focusMode'>('bulkMode')
   const currentAdUnitId = ref<string | null>(null)
   const isInitialized = ref(false)
@@ -66,6 +67,7 @@ export const useCanvasStore = defineStore('canvas', () => {
   return {
     adUnits,
     layers,
+    stage,
     currentView,
     currentAdUnitId,
     isInitialized,

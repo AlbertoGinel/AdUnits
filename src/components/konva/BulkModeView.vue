@@ -1,5 +1,6 @@
 <template>
   <!-- Renders multiple FramedAdUnits at their frameConfig positions -->
+
   <v-group>
     <FramedAdUnit
       v-for="adUnit in allAdUnits"

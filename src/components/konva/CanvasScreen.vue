@@ -1,45 +1,65 @@
 ﻿<template>
-  <div class="canvas-screen">
-    <v-stage :config="stageConfig" class="main-stage">
+  <div ref="containerRef" class="canvas-screen">
+    <v-stage
+      :config="stage.stageConfig.value"
+      class="main-stage"
+      @wheel="stage.handleWheel"
+      @mousedown="stage.handleMouseDown"
+      @mousemove="stage.handleMouseMove"
+      @mouseup="stage.handleMouseUp"
+    >
       <v-layer>
-        <BulkModeView v-if="viewMode === 'bulkMode'" />
-        <FocusModeView v-else-if="viewMode === 'focusMode'" />
+        <!-- Debug: Stage bounds -->
+        <v-rect
+          :config="{
+            x: 0,
+            y: 0,
+            width: canvasStore.stage.width,
+            height: canvasStore.stage.height,
+            stroke: 'red',
+            strokeWidth: 0,
+            listening: false,
+          }"
+        />
+
+        <!-- Content -->
+        <BulkModeView v-if="viewState.isBulkMode.value" />
+        <FocusModeView v-else-if="viewState.isFocusMode.value" />
       </v-layer>
     </v-stage>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useViewState } from '@/composables/view/useViewState'
+import { useKonvaStage } from '@/composables/view/useKonvaStage'
+import { useCanvasStore } from '@/stores/canvas'
+import { useTools } from '@/composables/Tools/useTools'
 import BulkModeView from '@/components/konva/BulkModeView.vue'
 import FocusModeView from '@/components/konva/FocusModeView.vue'
 
+const containerRef = ref<HTMLElement | null>(null)
 const viewState = useViewState()
-const viewMode = viewState.viewMode
+const canvasStore = useCanvasStore()
+const stage = useKonvaStage(containerRef)
+const tools = useTools()
 
-const stageConfig = computed(() => {
-  if (viewMode.value === 'bulkMode') {
-    return {
-      width: 1200,
-      height: 800,
-      scaleX: 1,
-      scaleY: 1,
-      x: 0.5,
-      y: 25,
-      pixelRatio: 10,
-    }
-  } else {
-    return {
-      width: 1200,
-      height: 800,
-      scaleX: 1,
-      scaleY: 1,
-      x: 0.5,
-      y: 25,
-      pixelRatio: 4,
-    }
-  }
+// Setup zoom callback when mode changes
+onMounted(() => {
+  console.log('🔧 Registering zoom callback')
+  tools.setOnModeChange((mode, id) => {
+    console.log('📢 Mode changed:', mode, id)
+    setTimeout(() => {
+      if (mode === 'bulkMode') {
+        console.log('→ Calling zoomToFit()')
+        stage.zoomToFit()
+      } else if (mode === 'focusMode' && id) {
+        console.log('→ Calling zoomToAdUnit(', id, ')')
+        stage.zoomToAdUnit(id)
+      }
+    }, 50)
+  })
 })
 </script>
 
@@ -47,8 +67,14 @@ const stageConfig = computed(() => {
 .canvas-screen {
   width: 100%;
   height: 100%;
-  overflow: auto;
+  overflow: hidden;
+  border: 0px solid blue;
+  box-sizing: border-box;
+  position: relative;
 }
 
-/* Main stage styling removed to fix positioning offset */
+.main-stage {
+  width: 100%;
+  height: 100%;
+}
 </style>

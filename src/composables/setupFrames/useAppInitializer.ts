@@ -2,6 +2,7 @@
 import { useImageManager } from '@/composables/setupImages/useImageManager'
 import { useCanvasData } from '@/composables/data/useCanvasData'
 import { useLayers } from '@/composables/data/useLayers'
+import { useCanvasStore } from '@/stores/canvas'
 import type { AdUnit, LayerDefinition } from '@/stores/canvas'
 
 /**
@@ -12,6 +13,7 @@ export const useAppInitializer = () => {
   const { loadImage } = useImageManager()
   const { setAdUnits } = useCanvasData()
   const { setAllLayers } = useLayers()
+  const canvasStore = useCanvasStore()
 
   /**
    * Step 1: Load frame models (structure/layout)
@@ -22,6 +24,13 @@ export const useAppInitializer = () => {
       const modelData = module.default
 
       console.log('📐 Step 1: Loading frame models (structure)...')
+
+      // Load stage dimensions
+      if (modelData.stage) {
+        canvasStore.stage = modelData.stage
+        console.log(`📏 Stage dimensions: ${modelData.stage.width}x${modelData.stage.height}`)
+      }
+
       return modelData.adUnits as Record<string, AdUnit>
     } catch (error) {
       console.error('❌ Failed to load frame models:', error)

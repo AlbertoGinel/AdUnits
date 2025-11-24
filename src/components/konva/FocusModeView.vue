@@ -5,7 +5,7 @@
       v-if="currentAdUnit"
       :key="currentAdUnit.id"
       :ad-unit="currentAdUnit"
-      :position="{ x: 50, y: 50 }"
+      :position="{ x: 0, y: 30 }"
       :is-focused="true"
       @frame-click="handleFrameClick"
     />

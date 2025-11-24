@@ -29,7 +29,7 @@
           "locked": false
         },
         "disclaimer": {
-          "text": "text from the server",
+          "text": "Results may vary. Individual experience depends on usage patterns and system configuration. All features described are subject to change without notice. Performance claims are based on ideal conditions and may not reflect real-world usage. Limited time offer restrictions may apply. Not responsible for typographical errors in promotional materials. Service availability may be interrupted for maintenance. Some advanced features require compatible hardware and software. User agreement and terms of service apply to all usage. Commercial use may require separate licensing licensing licensing lili.",
           "visibility": true,
           "visibilityLock": false,
           "locked": false
@@ -69,7 +69,7 @@
           "locked": false
         },
         "disclaimer": {
-          "text": "text from the server",
+          "text": "Results may vary. Individual experience depends on usage patterns and system configuration. All features described are subject to change without notice. Performance claims are based on ideal conditions and may not reflect real-world usage. Limited time offer restrictions may apply. Not responsible for typographical errors in promotional materials. Service availability may be interrupted for maintenance. Some advanced features require compatible hardware and software. User agreement and terms of service apply to all usage. Commercial use may require separate licensing licensing licensing lili.",
           "visibility": true,
           "visibilityLock": false,
           "locked": false
@@ -109,7 +109,7 @@
           "locked": false
         },
         "disclaimer": {
-          "text": "disclaimer text from server",
+          "text": "Results may vary. Individual experience depends on usage patterns and system configuration. All features described are subject to change without notice. Performance claims are based on ideal conditions and may not reflect real-world usage. Limited time offer restrictions may apply. Not responsible for typographical errors in promotional materials. Service availability may be interrupted for maintenance. Some advanced features require compatible hardware and software. User agreement and terms of service apply to all usage. Commercial use may require separate licensing licensing licensing lili.",
           "visibility": true,
           "visibilityLock": false,
           "locked": false
@@ -151,7 +151,7 @@
     },
     "disclaimerBG": {
       "type": "rect",
-      "defaultValue": "",
+      "defaultValue": "Results may vary. Individual experience depends on usage patterns and system configuration. All features described are subject to change without notice. Performance claims are based on ideal conditions and may not reflect real-world usage. Limited time offer restrictions may apply. Not responsible for typographical errors in promotional materials. Service availability may be interrupted for maintenance. Some advanced features require compatible hardware and software. User agreement and terms of service apply to all usage. Commercial use may require separate licensing. All trademarks and logos are property of their respective owners. No guarantee of specific outcomes or results.",
       "visibility": true
     }
   },
