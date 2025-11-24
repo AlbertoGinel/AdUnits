@@ -158,11 +158,13 @@
   "images": [
     {
       "id": "goodYearWheels",
-      "url": "/fromServer/lifeStyle.png"
+      "url": "/fromServer/lifeStyle.png",
+      "type": "image"
     },
     {
       "id": "goodYearBlue",
-      "url": "/fromServer/logo.png"
+      "url": "/fromServer/logo.png",
+      "type": "logo"
     }
   ]
 }

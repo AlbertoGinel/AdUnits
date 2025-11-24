@@ -12,6 +12,7 @@ export interface ImageDimensions {
 export interface ImageAsset {
   id: string
   url: string
+  type?: 'image' | 'logo' // Type of image
   name?: string
   fallbackUrl?: string
   image?: HTMLImageElement
@@ -45,6 +46,14 @@ export const useImageStore = defineStore('image', {
       (state) =>
       (id: string): ImageDimensions | undefined => {
         return state.images[id]?.dimensions
+      },
+
+    getImagesByType:
+      (state) =>
+      (type: 'image' | 'logo'): Record<string, ImageAsset> => {
+        return Object.fromEntries(
+          Object.entries(state.images).filter(([, asset]) => asset.type === type),
+        )
       },
 
     isLoaded:

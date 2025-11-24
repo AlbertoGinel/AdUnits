@@ -46,9 +46,10 @@ export const useAppInitializer = () => {
 
       // Load all images in parallel
       await Promise.all(
-        serverData.images.map(async (imageInfo: { id: string; url: string }) => {
+        serverData.images.map(async (imageInfo: { id: string; url: string; type: string }) => {
           try {
-            await loadImage(imageInfo.id, imageInfo.url)
+            const imageType = imageInfo.type as 'image' | 'logo' | undefined
+            await loadImage(imageInfo.id, imageInfo.url, imageType)
           } catch (error) {
             console.error(`Failed to load image ${imageInfo.id}:`, error)
           }

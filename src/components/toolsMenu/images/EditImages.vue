@@ -32,7 +32,7 @@
     </div>
 
     <!-- Upload Images Section -->
-    <UploadImages :show="true" @insert="handleInsertImage" />
+    <UploadImages :show="true" type="image" @insert="handleInsertImage" />
   </div>
 </template>
 
@@ -40,10 +40,12 @@
 import { ref, computed } from 'vue'
 import { useCropping } from '@/composables/Tools/useCropping'
 import { useImageManager } from '@/composables/setupImages/useImageManager'
+import { useTools } from '@/composables/Tools/useTools'
 import UploadImages from './UploadImages.vue'
 
 const { isCropping, startCrop, applyCrop, cancelCrop } = useCropping()
 const { getCurrentImage } = useImageManager()
+const { imageValue } = useTools()
 
 const altText = ref('')
 
@@ -67,7 +69,12 @@ const handleCancelCrop = () => {
 
 const handleInsertImage = (imageId: string) => {
   console.log('Insert image:', imageId)
-  // TODO: Apply uploaded image to current element
+
+  // Use imageValue which handles the cascade automatically
+  // This updates the layer and cascades to all unlocked elements with tag="image"
+  ;(imageValue.value as string) = imageId
+
+  console.log('✅ Image cascaded to all unlocked elements')
 }
 </script>
 

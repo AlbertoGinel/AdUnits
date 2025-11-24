@@ -10,7 +10,11 @@ export const useImageManager = () => {
    * Load an image from URL (server or local for dev)
    * Creates HTMLImageElement in browser memory
    */
-  const loadImage = async (id: string, url: string): Promise<ImageAsset> => {
+  const loadImage = async (
+    id: string,
+    url: string,
+    type?: 'image' | 'logo',
+  ): Promise<ImageAsset> => {
     // Return if already loaded
     const existing = imageStore.images[id]
     if (existing?.image) return existing
@@ -29,6 +33,7 @@ export const useImageManager = () => {
     const asset: ImageAsset = {
       id,
       url,
+      type,
       image: img,
       dimensions: {
         width: img.width,
@@ -41,7 +46,8 @@ export const useImageManager = () => {
     }
 
     imageStore.images[id] = asset
-    console.log(`✅ Loaded: ${id} (${img.naturalWidth}x${img.naturalHeight})`)
+    const typeLabel = type ? ` [${type}]` : ''
+    console.log(`✅ Loaded: ${id}${typeLabel} (${img.naturalWidth}x${img.naturalHeight})`)
     return asset
   }
 
@@ -83,7 +89,7 @@ export const useImageManager = () => {
    * Upload image from user's computer
    * Creates object URL and loads it
    */
-  const uploadImage = async (file: File): Promise<ImageAsset> => {
+  const uploadImage = async (file: File, type: 'image' | 'logo' = 'image'): Promise<ImageAsset> => {
     // Generate unique ID for uploaded image
     const id = `upload-${Date.now()}-${file.name.replace(/\.[^/.]+$/, '')}`
 
@@ -91,13 +97,14 @@ export const useImageManager = () => {
     const url = URL.createObjectURL(file)
 
     // Load the image using existing loadImage function
-    const asset = await loadImage(id, url)
+    const asset = await loadImage(id, url, type)
 
     // Update store entry with additional metadata (triggers reactivity)
     imageStore.images[id] = {
       ...asset,
       name: file.name,
       isUploaded: true,
+      type,
     }
 
     return imageStore.images[id]!
@@ -108,6 +115,13 @@ export const useImageManager = () => {
    */
   const getUploadedImages = (): ImageAsset[] => {
     return Object.values(imageStore.images).filter((asset) => asset.isUploaded && asset.image)
+  }
+
+  /**
+   * Get all images filtered by type (image or logo)
+   */
+  const getImagesByType = (type: 'image' | 'logo'): ImageAsset[] => {
+    return Object.values(imageStore.images).filter((asset) => asset.type === type && asset.image)
   }
 
   /**
@@ -128,6 +142,7 @@ export const useImageManager = () => {
     getCurrentImage,
     uploadImage,
     getUploadedImages,
+    getImagesByType,
     preloadDefaultImages,
   }
 }

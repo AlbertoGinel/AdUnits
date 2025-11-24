@@ -1,4 +1,5 @@
 import { useCanvasStore } from '@/stores/canvas'
+import { useImageStore } from '@/stores/useImageStore'
 import type { AdUnit, CanvasElement, LayerDefinition } from '@/stores/canvas'
 
 // Re-export types for other composables (maintains clean architecture)
@@ -128,17 +129,51 @@ export function useCanvasData() {
                 }
 
                 // Image cascade: Update unlocked image elements when defaultValue changes
-                // NOTE: Image updates should include crop via useTools, not here
-                // This cascade only updates the image ID for consistency
                 if (
                   updates.defaultValue !== undefined &&
-                  layerId === 'image' &&
                   element.type === 'image' &&
                   !element.locked
                 ) {
-                  elementUpdates.image = updates.defaultValue
-                  // Crop should be provided by the caller (useTools with auto-crop)
-                  // We don't auto-calculate here to keep useCanvasData pure
+                  const newImageId = updates.defaultValue
+                  elementUpdates.image = newImageId
+
+                  // Auto-crop: Calculate aspect-ratio-preserving crop
+                  if (element.width && element.height && newImageId) {
+                    const imageStore = useImageStore()
+                    const imageData = imageStore.images[newImageId]
+
+                    if (imageData?.image) {
+                      const naturalWidth = imageData.image.naturalWidth
+                      const naturalHeight = imageData.image.naturalHeight
+
+                      // Calculate aspect-ratio-preserving crop
+                      const displayRatio = element.width / element.height
+                      const imageRatio = naturalWidth / naturalHeight
+
+                      let cropWidth: number, cropHeight: number, cropX: number, cropY: number
+
+                      if (imageRatio > displayRatio) {
+                        // Image is wider than display - crop left/right
+                        cropHeight = naturalHeight
+                        cropWidth = naturalHeight * displayRatio
+                        cropX = (naturalWidth - cropWidth) / 2
+                        cropY = 0
+                      } else {
+                        // Image is taller than display - crop top/bottom
+                        cropWidth = naturalWidth
+                        cropHeight = naturalWidth / displayRatio
+                        cropX = 0
+                        cropY = (naturalHeight - cropHeight) / 2
+                      }
+
+                      elementUpdates.crop = {
+                        x: Math.round(cropX),
+                        y: Math.round(cropY),
+                        width: Math.round(cropWidth),
+                        height: Math.round(cropHeight),
+                      }
+                    }
+                  }
                 }
 
                 // Visibility cascade: Update disclaimer elements when visibility changes

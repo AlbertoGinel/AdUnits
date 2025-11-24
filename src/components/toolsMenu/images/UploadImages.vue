@@ -1,19 +1,19 @@
 <!-- components/toolsMenu/images/UploadImages.vue -->
 <template>
   <div v-if="show" class="uploads-section">
-    <h4 class="section-title">Uploads</h4>
+    <h4 class="section-title">{{ type === 'logo' ? 'Logos' : 'Images' }}</h4>
 
     <!-- Uploaded Images Grid -->
     <div class="uploads-grid">
       <div
-        v-for="upload in uploadedImages"
+        v-for="upload in filteredImages"
         :key="upload.id"
         class="upload-item"
         :class="{ selected: selectedImageId === upload.id }"
         @click="selectImage(upload.id)"
       >
         <img :src="upload.url" :alt="upload.name" class="upload-thumbnail" />
-        <span class="upload-name">{{ upload.name }}</span>
+        <span class="upload-name">{{ upload.name || upload.id }}</span>
       </div>
     </div>
 
@@ -21,7 +21,7 @@
     <div class="upload-actions">
       <button class="btn-upload" @click="triggerFileInput">
         <span class="icon">⊕</span>
-        Upload
+        Upload {{ type === 'logo' ? 'Logo' : 'Image' }}
       </button>
       <input
         ref="fileInputRef"
@@ -40,22 +40,29 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick } from 'vue'
-import { storeToRefs } from 'pinia'
+import { ref, computed } from 'vue'
 import { useImageManager } from '@/composables/setupImages/useImageManager'
-import { useImageStore } from '@/stores/useImageStore'
 
-const { uploadImage } = useImageManager()
-const imageStore = useImageStore()
-const { images } = storeToRefs(imageStore)
+interface Props {
+  show: boolean
+  type: 'image' | 'logo'
+}
 
-const show = defineModel<boolean>('show', { default: false })
+const props = withDefaults(defineProps<Props>(), {
+  type: 'image',
+})
+
+const emit = defineEmits<{
+  insert: [imageId: string]
+}>()
+
+const { uploadImage, getImagesByType } = useImageManager()
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const selectedImageId = ref<string | null>(null)
 
-// Get list of uploaded images reactively from store
-const uploadedImages = computed(() => {
-  return Object.values(images.value).filter((asset) => asset.isUploaded && asset.image)
+// Get images filtered by type
+const filteredImages = computed(() => {
+  return getImagesByType(props.type)
 })
 
 const triggerFileInput = () => {
@@ -67,13 +74,11 @@ const handleFileSelect = async (event: Event) => {
   const files = input.files
   if (!files || files.length === 0) return
 
-  // Upload each selected file
+  // Upload each selected file with the correct type
   for (const file of Array.from(files)) {
     try {
-      await uploadImage(file)
-      console.log(`✅ Uploaded: ${file.name}`)
-      // Force reactivity update
-      await nextTick()
+      await uploadImage(file, props.type)
+      console.log(`✅ Uploaded ${props.type}: ${file.name}`)
     } catch (error) {
       console.error(`Failed to upload ${file.name}:`, error)
     }
@@ -96,10 +101,6 @@ const insertSelectedImage = () => {
   // Clear selection
   selectedImageId.value = null
 }
-
-const emit = defineEmits<{
-  insert: [imageId: string]
-}>()
 </script>
 
 <style scoped>
