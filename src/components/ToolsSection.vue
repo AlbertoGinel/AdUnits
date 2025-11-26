@@ -1,7 +1,11 @@
 <template>
   <div class="tools-section">
-    <ToolsBar @tool-selected="selectedTool = $event" :active-tool="selectedTool" />
-    <ToolsArea :active-tool="selectedTool" />
+    <ToolsBar @tool-selected="handleToolSelected" :active-tool="selectedTool" />
+    <ToolsArea
+      :active-tool="selectedTool"
+      :active-sub-view="activeSubView"
+      @navigate="handleNavigate"
+    />
   </div>
 </template>
 
@@ -10,7 +14,17 @@ import { ref } from 'vue'
 import ToolsBar from './ToolsBar.vue'
 import ToolsArea from './ToolsArea.vue'
 
-const selectedTool = ref<string>('text') // Default to text tool
+const selectedTool = ref<string>('text')
+const activeSubView = ref<string>('default')
+
+const handleToolSelected = (tool: string) => {
+  selectedTool.value = tool
+  activeSubView.value = 'default' // Reset to default view when switching tools
+}
+
+const handleNavigate = (subView: string) => {
+  activeSubView.value = subView
+}
 </script>
 
 <style scoped>

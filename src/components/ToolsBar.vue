@@ -7,13 +7,16 @@
       :class="{ active: activeTool === tool.id }"
       class="tool-button"
     >
-      <span class="tool-icon">{{ tool.icon }}</span>
+      <SingleIcon :name="tool.iconName" size="xl" class="tool-icon" />
       {{ tool.name }}
     </button>
   </div>
 </template>
 
 <script setup lang="ts">
+import SingleIcon from '@/components/SingleIcon.vue'
+import type { IconName } from '@/composables/utils/useIcons'
+
 interface Props {
   activeTool?: string
 }
@@ -24,10 +27,16 @@ defineEmits<{
   toolSelected: [toolId: string]
 }>()
 
-const tools = [
-  { id: 'images', name: 'Images', icon: '🖼️' },
-  { id: 'logos', name: 'Logos', icon: '🏢' },
-  { id: 'text', name: 'Text', icon: '📝' },
+interface Tool {
+  id: string
+  name: string
+  iconName: IconName
+}
+
+const tools: Tool[] = [
+  { id: 'images', name: 'Images', iconName: 'imageTool' },
+  { id: 'logos', name: 'Logos', iconName: 'logoTool' },
+  { id: 'text', name: 'Text', iconName: 'textTool' },
 ]
 </script>
 
@@ -49,7 +58,7 @@ const tools = [
   align-items: center;
   gap: 6px;
   padding: 12px 8px;
-  border: 1px solid #ced4da;
+  border: 0px;
   background: #ffffff;
   border-radius: 8px;
   cursor: pointer;
@@ -69,6 +78,6 @@ const tools = [
 }
 
 .tool-icon {
-  font-size: 20px;
+  /* AppIcon already has size styling */
 }
 </style>

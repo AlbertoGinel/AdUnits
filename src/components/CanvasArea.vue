@@ -6,20 +6,7 @@
     <div class="canvas-content">
       <div class="canvas-info">
         <p>Canvas properties and settings will appear here.</p>
-        <div class="canvas-properties">
-          <div class="property-item">
-            <label>Width:</label>
-            <span>800px</span>
-          </div>
-          <div class="property-item">
-            <label>Height:</label>
-            <span>600px</span>
-          </div>
-          <div class="property-item">
-            <label>Background:</label>
-            <span>Transparent</span>
-          </div>
-        </div>
+        <div class="canvas-properties"></div>
       </div>
     </div>
   </aside>

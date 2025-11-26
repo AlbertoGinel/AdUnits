@@ -25,13 +25,10 @@ export const useAppInitializer = () => {
 
       console.log('📐 Step 1: Loading frame models (structure)...')
 
-      // Load stage dimensions
-      if (modelData.stage) {
-        canvasStore.stage = modelData.stage
-        console.log(`📏 Stage dimensions: ${modelData.stage.width}x${modelData.stage.height}`)
+      return {
+        stage: modelData.stage as { width: number; height: number },
+        adUnits: modelData.adUnits as Record<string, AdUnit>,
       }
-
-      return modelData.adUnits as Record<string, AdUnit>
     } catch (error) {
       console.error('❌ Failed to load frame models:', error)
       throw error
@@ -95,6 +92,7 @@ export const useAppInitializer = () => {
    * Step 4: Merge model + content
    */
   const mergeModelAndContent = (
+    stage: { width: number; height: number },
     models: Record<string, AdUnit>,
     content: {
       adUnits: Record<string, { elements: Record<string, Partial<Record<string, unknown>>> }>
@@ -135,7 +133,7 @@ export const useAppInitializer = () => {
       }
     })
 
-    return { adUnits: mergedAdUnits, layers: content.layers }
+    return { stage, adUnits: mergedAdUnits, layers: content.layers }
   }
 
   /**
@@ -146,8 +144,9 @@ export const useAppInitializer = () => {
     try {
       console.log('🚀 Initializing app...')
 
-      // Step 1: Load structure/layout
-      const models = await loadFrameModels()
+      // Step 1: Load structure/layout (stage + adUnits)
+      const { stage, adUnits: models } = await loadFrameModels()
+      console.log(`📏 Stage dimensions: ${stage.width}x${stage.height}`)
 
       // Step 2: Load images (must happen before content, so crops can be applied)
       await loadServerImages()
@@ -156,14 +155,16 @@ export const useAppInitializer = () => {
       const content = await loadServerContent()
 
       // Step 4: Merge and apply to store
-      const { adUnits, layers } = mergeModelAndContent(models, content)
+      const { stage: finalStage, adUnits, layers } = mergeModelAndContent(stage, models, content)
 
-      // Apply to store
+      // Apply to store through proper setters
+      canvasStore.stage = finalStage
       setAdUnits(adUnits)
       setAllLayers(layers)
 
       console.log('✅ App initialization complete!')
       console.log('📊 Loaded:', {
+        stage: `${finalStage.width}x${finalStage.height}`,
         adUnits: Object.keys(adUnits).length,
         layers: Object.keys(layers).length,
       })

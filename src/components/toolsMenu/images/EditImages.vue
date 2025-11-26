@@ -31,8 +31,13 @@
       <div class="character-count">Character count: {{ altText.length }}/150</div>
     </div>
 
-    <!-- Upload Images Section -->
-    <UploadImages :show="true" type="image" @insert="handleInsertImage" />
+    <!-- Upload Library Component -->
+    <UploadLibrary
+      :show="true"
+      type="image"
+      @insert="handleInsertImage"
+      @navigate="$emit('navigate', $event)"
+    />
   </div>
 </template>
 
@@ -41,11 +46,15 @@ import { ref, computed } from 'vue'
 import { useCropping } from '@/composables/Tools/useCropping'
 import { useImageManager } from '@/composables/setupImages/useImageManager'
 import { useTools } from '@/composables/Tools/useTools'
-import UploadImages from './UploadImages.vue'
+import UploadLibrary from './UploadLibrary.vue'
 
 const { isCropping, startCrop, applyCrop, cancelCrop } = useCropping()
 const { getCurrentImage } = useImageManager()
 const { imageValue } = useTools()
+
+defineEmits<{
+  navigate: [subView: string]
+}>()
 
 const altText = ref('')
 
@@ -69,11 +78,7 @@ const handleCancelCrop = () => {
 
 const handleInsertImage = (imageId: string) => {
   console.log('Insert image:', imageId)
-
-  // Use imageValue which handles the cascade automatically
-  // This updates the layer and cascades to all unlocked elements with tag="image"
   ;(imageValue.value as string) = imageId
-
   console.log('✅ Image cascaded to all unlocked elements')
 }
 </script>

@@ -1,0 +1,26 @@
+{
+  "status": 200,
+  "content": [
+    {
+      "id": 0,
+      "type": "picture",
+      "content": "/fromServer/lifeStyle.png",
+      "path": "",
+      "error": ""
+    },
+    {
+      "id": 1,
+      "type": "picture",
+      "content": "/fromServer/logo.png",
+      "path": "",
+      "error": ""
+    },
+    {
+      "id": 2,
+      "type": "picture",
+      "content": "/fromServer/red-background.jpg",
+      "path": "",
+      "error": ""
+    }
+  ]
+}
