@@ -72,6 +72,25 @@ export function useCanvasData() {
     setAdUnits: (adUnits: Record<string, AdUnit>) => {
       store.adUnits = adUnits
     },
+    setAdUnitsModels: (modelAdUnits: Record<string, AdUnit>) => {
+      // Set structure only (from framesModel.json)
+      store.adUnits = modelAdUnits
+    },
+    setAdUnitsContent: (
+      contentAdUnits: Record<string, { elements: Record<string, Record<string, unknown>> }>,
+    ) => {
+      // Merge content into existing ad units (from API)
+      Object.entries(contentAdUnits).forEach(([adUnitId, content]) => {
+        const adUnit = store.adUnits[adUnitId]
+        if (!adUnit) return
+
+        Object.entries(content.elements).forEach(([elementId, elementContent]) => {
+          if (adUnit.elements[elementId]) {
+            Object.assign(adUnit.elements[elementId], elementContent)
+          }
+        })
+      })
+    },
     setAdUnit: (id: string, adUnit: AdUnit) => {
       store.adUnits[id] = adUnit
     },

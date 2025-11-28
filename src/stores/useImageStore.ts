@@ -24,6 +24,10 @@ export interface ImageAsset {
 
 interface ImageState {
   images: Record<string, ImageAsset>
+  reserved: {
+    fallback: ImageAsset | null
+    uploadTemp: ImageAsset | null
+  }
   preloadedImages: Record<string, boolean>
   isInitialized: boolean
 }
@@ -31,6 +35,10 @@ interface ImageState {
 export const useImageStore = defineStore('image', {
   state: (): ImageState => ({
     images: {},
+    reserved: {
+      fallback: null,
+      uploadTemp: null,
+    },
     preloadedImages: {},
     isInitialized: false,
   }),

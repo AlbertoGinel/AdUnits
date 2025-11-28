@@ -12,7 +12,13 @@
         :class="{ selected: selectedImageId === upload.id }"
         @click="selectImage(upload.id)"
       >
-        <img :src="upload.url" :alt="upload.name" class="upload-thumbnail" />
+        <img
+          v-if="upload.loaded && upload.image"
+          :src="upload.image.src"
+          :alt="upload.name"
+          class="upload-thumbnail"
+        />
+        <div v-else class="upload-placeholder">Loading...</div>
         <span class="upload-name">{{ upload.name || upload.id }}</span>
       </div>
     </div>
@@ -138,6 +144,18 @@ const insertSelectedImage = () => {
   aspect-ratio: 4/3;
   object-fit: cover;
   border-radius: 8px;
+}
+
+.upload-placeholder {
+  width: 100%;
+  aspect-ratio: 4/3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e9ecef;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #6c757d;
 }
 
 .upload-name {

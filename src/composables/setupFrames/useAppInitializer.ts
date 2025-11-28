@@ -3,20 +3,27 @@ import { useImageManager } from '@/composables/setupImages/useImageManager'
 import { useCanvasData } from '@/composables/data/useCanvasData'
 import { useLayers } from '@/composables/data/useLayers'
 import { useCanvasStore } from '@/stores/canvas'
-import type { AdUnit, LayerDefinition } from '@/stores/canvas'
+import { useCreativeAPI } from '@/composables/api/useCreativeAPI'
+import type {
+  AssetResponse,
+  ImageMetadata,
+  CreativeDataContent,
+} from '@/composables/api/useCreativeAPI'
+import type { AdUnit } from '@/stores/canvas'
 
 /**
  * Centralized app initialization
- * Loads data in correct order: Model → Images → Server Content
+ * Flow: Local Models → API Calls (Assets + Creative) → Populate Stores → Load Images
  */
 export const useAppInitializer = () => {
-  const { loadImage } = useImageManager()
-  const { setAdUnits } = useCanvasData()
+  const { loadImage, initializeReservedImages } = useImageManager()
+  const { setAdUnitsModels, setAdUnitsContent } = useCanvasData()
   const { setAllLayers } = useLayers()
   const canvasStore = useCanvasStore()
+  const creativeAPI = useCreativeAPI()
 
   /**
-   * Step 1: Load frame models (structure/layout)
+   * Step 1: Load frame models (structure/layout) - ALWAYS LOCAL
    */
   const loadFrameModels = async () => {
     try {
@@ -36,137 +43,84 @@ export const useAppInitializer = () => {
   }
 
   /**
-   * Step 2: Load images from server data
+   * Step 3: Populate stores with API data
    */
-  const loadServerImages = async () => {
-    try {
-      const module = await import('./framesServer.json')
-      const serverData = module.default
-
-      console.log('🖼️ Step 2: Loading images from server...')
-
-      if (!serverData.images || serverData.images.length === 0) {
-        console.warn('⚠️ No images found in server data')
-        return
-      }
-
-      // Load all images in parallel
-      await Promise.all(
-        serverData.images.map(async (imageInfo: { id: string; url: string; type: string }) => {
-          try {
-            const imageType = imageInfo.type as 'image' | 'logo' | undefined
-            await loadImage(imageInfo.id, imageInfo.url, imageType)
-          } catch (error) {
-            console.error(`Failed to load image ${imageInfo.id}:`, error)
-          }
-        }),
-      )
-
-      console.log(`✅ Loaded ${serverData.images.length} images`)
-    } catch (error) {
-      console.error('❌ Failed to load server images:', error)
-      throw error
-    }
-  }
-
-  /**
-   * Step 3: Load server content (text, crops, locks)
-   */
-  const loadServerContent = async () => {
-    try {
-      const module = await import('./framesServer.json')
-      const serverData = module.default
-
-      console.log('📝 Step 3: Loading server content...')
-      return {
-        adUnits: serverData.adUnits,
-        layers: serverData.layers as Record<string, LayerDefinition>,
-      }
-    } catch (error) {
-      console.error('❌ Failed to load server content:', error)
-      throw error
-    }
-  }
-
-  /**
-   * Step 4: Merge model + content
-   */
-  const mergeModelAndContent = (
+  const populateStores = (
     stage: { width: number; height: number },
-    models: Record<string, AdUnit>,
-    content: {
-      adUnits: Record<string, { elements: Record<string, Partial<Record<string, unknown>>> }>
-      layers: Record<string, LayerDefinition>
-    },
+    modelAdUnits: Record<string, AdUnit>,
+    creativeData: CreativeDataContent,
   ) => {
-    console.log('🔀 Step 4: Merging model structure with server content...')
+    console.log('💾 Step 3: Populating stores...')
 
-    const mergedAdUnits: Record<string, AdUnit> = {}
+    // 1. Set stage dimensions
+    canvasStore.stage = stage
+    console.log(`📏 Stage: ${stage.width}x${stage.height}`)
 
-    Object.entries(models).forEach(([adUnitId, modelAdUnit]) => {
-      const contentAdUnit = content.adUnits[adUnitId]
+    // 2. Set ad units structure (models only)
+    setAdUnitsModels(modelAdUnits)
 
-      if (!contentAdUnit) {
-        console.warn(`No content found for ad unit: ${adUnitId}`)
-        mergedAdUnits[adUnitId] = modelAdUnit
-        return
-      }
+    // 3. Apply creative content to ad units
+    setAdUnitsContent(creativeData.adUnits)
 
-      // Merge elements (structure + content)
-      const mergedElements = {} as Record<string, (typeof modelAdUnit.elements)[string]>
+    // 4. Set layers
+    setAllLayers(creativeData.layers)
+    console.log(`📚 Layers: ${Object.keys(creativeData.layers).length}`)
 
-      Object.entries(modelAdUnit.elements).forEach(([elementId, modelElement]) => {
-        const contentElement = contentAdUnit.elements[elementId]
+    console.log(`💾 Stores populated`)
+  }
 
-        // Start with model (structure)
-        mergedElements[elementId] = { ...modelElement } as typeof modelElement
+  /**
+   * Step 4: Load images in browser from asset paths
+   */
+  const loadImagesFromAssets = async (assets: AssetResponse[], imageMetadata: ImageMetadata[]) => {
+    console.log('🌐 Step 4: Loading images in browser...')
 
-        // Add content if available
-        if (contentElement) {
-          Object.assign(mergedElements[elementId], contentElement)
+    const loadPromises = assets.map(async (asset) => {
+      const metadata = imageMetadata.find((img) => img.id === asset.id)
+      if (metadata) {
+        try {
+          // Load image: id (UUID), url, type, name (key)
+          await loadImage(asset.id, asset.path, metadata.type as 'image' | 'logo', metadata.name)
+        } catch (error) {
+          console.error(`❌ Failed to load ${metadata.name}:`, error)
         }
-      })
-
-      mergedAdUnits[adUnitId] = {
-        ...modelAdUnit,
-        elements: mergedElements,
       }
     })
 
-    return { stage, adUnits: mergedAdUnits, layers: content.layers }
+    await Promise.all(loadPromises)
+    console.log(`✅ All images loaded`)
   }
 
   /**
    * Main initialization function
-   * Call this on app start
+   * @param creativeId - The creative ID to load
    */
-  const initializeApp = async () => {
+  const initializeApp = async (creativeId: string = '3fa85f64-5717-4562-b3fc-2c963f66afa6') => {
     try {
-      console.log('🚀 Initializing app...')
+      console.log('🚀 Initializing app with creative:', creativeId)
 
-      // Step 1: Load structure/layout (stage + adUnits)
-      const { stage, adUnits: models } = await loadFrameModels()
-      console.log(`📏 Stage dimensions: ${stage.width}x${stage.height}`)
+      // Step 0: Initialize reserved images (fallback & uploadTemp)
+      await initializeReservedImages()
 
-      // Step 2: Load images (must happen before content, so crops can be applied)
-      await loadServerImages()
+      // Step 1: Load local structure
+      const { stage, adUnits: modelAdUnits } = await loadFrameModels()
 
-      // Step 3: Load content
-      const content = await loadServerContent()
+      // Step 2: Fetch data from API
+      console.log('📡 Step 2: Fetching data from API...')
+      const { assets, creativeData } = await creativeAPI.getCreativeBundle(creativeId)
 
-      // Step 4: Merge and apply to store
-      const { stage: finalStage, adUnits, layers } = mergeModelAndContent(stage, models, content)
+      // Step 3: Populate stores
+      populateStores(stage, modelAdUnits, creativeData)
 
-      // Apply to store through proper setters
-      canvasStore.stage = finalStage
-      setAdUnits(adUnits)
-      setAllLayers(layers)
+      // Step 4: Load images in browser
+      await loadImagesFromAssets(assets, creativeData.images)
 
       console.log('✅ App initialization complete!')
-      console.log('📊 Loaded:', {
-        stage: `${finalStage.width}x${finalStage.height}`,
-        adUnits: Object.keys(adUnits).length,
-        layers: Object.keys(layers).length,
+      console.log('📊 Summary:', {
+        stage: `${stage.width}x${stage.height}`,
+        adUnits: Object.keys(modelAdUnits).length,
+        layers: Object.keys(creativeData.layers).length,
+        images: assets.length,
       })
 
       return true
@@ -179,8 +133,7 @@ export const useAppInitializer = () => {
   return {
     initializeApp,
     loadFrameModels,
-    loadServerImages,
-    loadServerContent,
-    mergeModelAndContent,
+    populateStores,
+    loadImagesFromAssets,
   }
 }

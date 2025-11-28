@@ -14,41 +14,94 @@ export const useImageManager = () => {
     id: string,
     url: string,
     type?: 'image' | 'logo',
+    name?: string,
+    isReserved?: boolean,
   ): Promise<ImageAsset> => {
-    // Return if already loaded
-    const existing = imageStore.images[id]
-    if (existing?.image) return existing
+    // Use name as key if provided, otherwise use id
+    const key = name || id
 
-    // Create HTMLImageElement
-    const img = new Image()
-    img.crossOrigin = 'anonymous'
+    // ✅ CHECK: If image already loaded, return it immediately
+    const existing = isReserved
+      ? imageStore.reserved[key as 'fallback' | 'uploadTemp']
+      : imageStore.images[key]
 
-    await new Promise<void>((resolve, reject) => {
-      img.onload = () => resolve()
-      img.onerror = () => reject(new Error(`Failed to load: ${url}`))
-      img.src = url
-    })
-
-    // Store in state
-    const asset: ImageAsset = {
-      id,
-      url,
-      type,
-      image: img,
-      dimensions: {
-        width: img.width,
-        height: img.height,
-        naturalWidth: img.naturalWidth,
-        naturalHeight: img.naturalHeight,
-        aspectRatio: img.naturalWidth / img.naturalHeight,
-      },
-      loaded: true,
+    if (existing && existing.loaded && existing.image) {
+      console.log(`♻️ Image already loaded: ${key}`)
+      return existing
     }
 
-    imageStore.images[id] = asset
-    const typeLabel = type ? ` [${type}]` : ''
-    console.log(`✅ Loaded: ${id}${typeLabel} (${img.naturalWidth}x${img.naturalHeight})`)
-    return asset
+    console.log(`🌐 Loading image from network: ${key}`)
+
+    return new Promise<ImageAsset>((resolve, reject) => {
+      const img = new Image()
+      img.crossOrigin = 'anonymous'
+
+      img.onload = () => {
+        // ✅ Convert to data URL for better memory caching
+        const canvas = document.createElement('canvas')
+        canvas.width = img.naturalWidth
+        canvas.height = img.naturalHeight
+        const ctx = canvas.getContext('2d')
+        ctx?.drawImage(img, 0, 0)
+
+        // Create a data URL (base64) - this stays in memory
+        const dataUrl = canvas.toDataURL('image/png')
+
+        // Create a new image with the data URL (don't modify the original)
+        const cachedImg = new Image()
+        cachedImg.src = dataUrl
+
+        // Store in state (use name as key, id as property)
+        const asset: ImageAsset = {
+          id: isReserved ? `__reserved__${key}` : id,
+          url: dataUrl,
+          name,
+          type,
+          image: cachedImg,
+          dimensions: {
+            width: img.width,
+            height: img.height,
+            naturalWidth: img.naturalWidth,
+            naturalHeight: img.naturalHeight,
+            aspectRatio: img.naturalWidth / img.naturalHeight,
+          },
+          loaded: true,
+        }
+
+        // Store in reserved or regular images
+        if (isReserved) {
+          imageStore.reserved[key as 'fallback' | 'uploadTemp'] = asset
+        } else {
+          imageStore.images[key] = asset
+        }
+
+        const typeLabel = type ? ` [${type}]` : ''
+        console.log(`✅ Loaded: ${key}${typeLabel} (${img.naturalWidth}x${img.naturalHeight})`)
+        resolve(asset)
+      }
+
+      img.onerror = () => {
+        console.error(`❌ Failed to load image: ${key} from ${url}`)
+        reject(new Error(`Failed to load: ${url}`))
+      }
+
+      img.src = url // ← Load from network ONCE
+    })
+  }
+
+  /**
+   * Initialize reserved images (fallback)
+   */
+  const initializeReservedImages = async () => {
+    console.log('🔧 Initializing reserved images...')
+
+    // Load fallback image
+    await loadImage('fallback', '/Fallback.png', 'image', 'fallback', true)
+
+    // Initialize uploadTemp as empty placeholder
+    imageStore.reserved.uploadTemp = null
+
+    console.log('✅ Reserved images initialized')
   }
 
   /**
@@ -138,6 +191,7 @@ export const useImageManager = () => {
 
   return {
     loadImage,
+    initializeReservedImages,
     getImage,
     getCurrentImage,
     uploadImage,
