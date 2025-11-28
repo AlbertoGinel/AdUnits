@@ -50,15 +50,14 @@ onMounted(() => {
   console.log('🔧 Registering zoom callback')
   tools.setOnModeChange((mode, id) => {
     console.log('📢 Mode changed:', mode, id)
-    setTimeout(() => {
-      if (mode === 'bulkMode') {
-        console.log('→ Calling zoomToFit()')
-        stage.zoomToFit()
-      } else if (mode === 'focusMode' && id) {
-        console.log('→ Calling zoomToAdUnit(', id, ')')
-        stage.zoomToAdUnit(id)
-      }
-    }, 50)
+
+    if (mode === 'bulkMode') {
+      console.log('→ Calling zoomToFit()')
+      stage.zoomToFit()
+    } else if (mode === 'focusMode' && id) {
+      console.log('→ Calling zoomToAdUnit(', id, ')')
+      stage.zoomToAdUnit(id)
+    }
   })
 })
 </script>

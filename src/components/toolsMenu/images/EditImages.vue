@@ -45,12 +45,12 @@
 import { ref, computed } from 'vue'
 import { useCropping } from '@/composables/Tools/useCropping'
 import { useImageManager } from '@/composables/setupImages/useImageManager'
-import { useTools } from '@/composables/Tools/useTools'
+//import { useTools } from '@/composables/Tools/useTools'
 import UploadLibrary from './UploadLibrary.vue'
 
 const { isCropping, startCrop, applyCrop, cancelCrop } = useCropping()
 const { getCurrentImage } = useImageManager()
-const { imageValue } = useTools()
+//const { imageValue } = useTools()
 
 defineEmits<{
   navigate: [subView: string]
@@ -76,11 +76,7 @@ const handleCancelCrop = () => {
   cancelCrop()
 }
 
-const handleInsertImage = (imageId: string) => {
-  console.log('Insert image:', imageId)
-  ;(imageValue.value as string) = imageId
-  console.log('✅ Image cascaded to all unlocked elements')
-}
+const handleInsertImage = () => {}
 </script>
 
 <!-- filepath: c:\AlbertosProjects\banner-editor\src\components\toolsMenu\images\EditImages.vue -->

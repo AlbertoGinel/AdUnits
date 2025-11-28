@@ -270,13 +270,6 @@ export function useKonvaStage(containerRef: Ref<HTMLElement | null>) {
   // Setup
   onMounted(() => {
     observeContainer()
-
-    // Initial zoom after container is measured
-    setTimeout(() => {
-      if (containerSize.width > 0 && containerSize.height > 0) {
-        zoomToFit()
-      }
-    }, 100)
   })
 
   onBeforeUnmount(() => {

@@ -92,48 +92,94 @@ export const useAppInitializer = () => {
   }
 
   /**
+   * Step 5: Wait for canvas to have dimensions
+   * This ensures the Konva stage is mounted and sized before zooming
+   */
+  const waitForCanvasDimensions = (): Promise<void> => {
+    return new Promise((resolve) => {
+      const checkDimensions = () => {
+        const stage = canvasStore.stage
+        if (stage && stage.width > 0 && stage.height > 0) {
+          console.log('✅ Step 5: Canvas dimensions ready:', `${stage.width}x${stage.height}`)
+          resolve()
+        } else {
+          requestAnimationFrame(checkDimensions)
+        }
+      }
+      checkDimensions()
+    })
+  }
+
+  /**
    * Main initialization function
    * @param creativeId - The creative ID to load
    */
-  const initializeApp = async (creativeId: string = '3fa85f64-5717-4562-b3fc-2c963f66afa6') => {
-    try {
-      console.log('🚀 Initializing app with creative:', creativeId)
+  const initializeApp = (() => {
+    let isInitializing = false
+    let isInitialized = false
 
-      // Step 0: Initialize reserved images (fallback & uploadTemp)
-      await initializeReservedImages()
+    return async (creativeId: string = '3fa85f64-5717-4562-b3fc-2c963f66afa6') => {
+      if (isInitialized) {
+        console.log('✅ App already initialized, skipping...')
+        return true
+      }
 
-      // Step 1: Load local structure
-      const { stage, adUnits: modelAdUnits } = await loadFrameModels()
+      if (isInitializing) {
+        console.log('⏳ App initialization in progress, waiting...')
+        while (isInitializing) {
+          await new Promise((resolve) => setTimeout(resolve, 100))
+        }
+        return isInitialized
+      }
 
-      // Step 2: Fetch data from API
-      console.log('📡 Step 2: Fetching data from API...')
-      const { assets, creativeData } = await creativeAPI.getCreativeBundle(creativeId)
+      isInitializing = true
 
-      // Step 3: Populate stores
-      populateStores(stage, modelAdUnits, creativeData)
+      try {
+        console.log('🚀 Initializing app with creative:', creativeId)
 
-      // Step 4: Load images in browser
-      await loadImagesFromAssets(assets, creativeData.images)
+        // Step 0: Initialize reserved images (fallback & uploadTemp)
+        await initializeReservedImages()
 
-      console.log('✅ App initialization complete!')
-      console.log('📊 Summary:', {
-        stage: `${stage.width}x${stage.height}`,
-        adUnits: Object.keys(modelAdUnits).length,
-        layers: Object.keys(creativeData.layers).length,
-        images: assets.length,
-      })
+        // Step 1: Load local structure
+        const { stage, adUnits: modelAdUnits } = await loadFrameModels()
 
-      return true
-    } catch (error) {
-      console.error('❌ App initialization failed:', error)
-      return false
+        // Step 2: Fetch data from API
+        console.log('📡 Step 2: Fetching data from API...')
+        const { assets, creativeData } = await creativeAPI.getCreativeBundle(creativeId)
+
+        // Step 3: Populate stores
+        populateStores(stage, modelAdUnits, creativeData)
+
+        // Step 4: Load images in browser
+        await loadImagesFromAssets(assets, creativeData.images)
+
+        // Step 5: Wait for canvas to render with proper dimensions
+        await waitForCanvasDimensions()
+
+        console.log('✅ App initialization complete!')
+        console.log('📊 Summary:', {
+          stage: `${stage.width}x${stage.height}`,
+          adUnits: Object.keys(modelAdUnits).length,
+          layers: Object.keys(creativeData.layers).length,
+          images: assets.length,
+        })
+
+        isInitialized = true
+        return true
+      } catch (error) {
+        console.error('❌ App initialization failed:', error)
+        return false
+      } finally {
+        isInitializing = false
+      }
     }
-  }
+  })()
 
   return {
     initializeApp,
     loadFrameModels,
     populateStores,
     loadImagesFromAssets,
+    waitForCanvasDimensions,
   }
 }

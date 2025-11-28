@@ -11,7 +11,9 @@ export interface ImageDimensions {
 
 export interface ImageAsset {
   id: string
-  url: string
+  url: string // Original URL (e.g., "/fromServer/lifeStyle.png", "/uploads/creative/image.png")
+  blobUrl?: string // Blob URL for display (e.g., "blob:http://localhost:3000/abc123...")
+  blobId?: string // IndexedDB key for the stored blob
   type?: 'image' | 'logo' // Type of image
   name?: string
   fallbackUrl?: string

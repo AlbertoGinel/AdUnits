@@ -1,14 +1,16 @@
 // composables/setupImages/useImageManager.ts
 import { useImageStore, type ImageAsset } from '@/stores/useImageStore'
 import { useCanvasData } from '@/composables/data/useCanvasData'
+import { useImageDatabase } from '@/composables/database/useImageDatabase'
 
 export const useImageManager = () => {
   const imageStore = useImageStore()
   const { getLayers } = useCanvasData()
+  const imageDatabase = useImageDatabase()
 
   /**
-   * Load an image from URL (server or local for dev)
-   * Creates HTMLImageElement in browser memory
+   * Load an image from URL with IndexedDB blob caching
+   * Creates HTMLImageElement and stores blob for efficient reuse
    */
   const loadImage = async (
     id: string,
@@ -30,66 +32,97 @@ export const useImageManager = () => {
       return existing
     }
 
-    console.log(`🌐 Loading image from network: ${key}`)
+    console.log(`🌐 Loading image: ${key} from ${url}`)
 
-    return new Promise<ImageAsset>((resolve, reject) => {
-      const img = new Image()
-      img.crossOrigin = 'anonymous'
+    // Generate blob ID for storage
+    const blobId = `img_${key}`
 
-      img.onload = () => {
-        // ✅ Convert to data URL for better memory caching
-        const canvas = document.createElement('canvas')
-        canvas.width = img.naturalWidth
-        canvas.height = img.naturalHeight
-        const ctx = canvas.getContext('2d')
-        ctx?.drawImage(img, 0, 0)
+    try {
+      // Check if we have this image in IndexedDB
+      const existingBlobUrl = await imageDatabase.getImageBlob(blobId)
 
-        // Create a data URL (base64) - this stays in memory
-        const dataUrl = canvas.toDataURL('image/png')
+      let blobUrl: string
+      let img: HTMLImageElement
 
-        // Create a new image with the data URL (don't modify the original)
-        const cachedImg = new Image()
-        cachedImg.src = dataUrl
+      if (existingBlobUrl) {
+        // Use existing blob
+        console.log(`💾 Using cached blob: ${key}`)
+        blobUrl = existingBlobUrl
+        img = await createImageFromBlobUrl(blobUrl)
+      } else {
+        // Fetch and store new image
+        console.log(`📥 Fetching and caching: ${key}`)
 
-        // Store in state (use name as key, id as property)
-        const asset: ImageAsset = {
-          id: isReserved ? `__reserved__${key}` : id,
-          url: dataUrl,
-          name,
-          type,
-          image: cachedImg,
-          dimensions: {
-            width: img.width,
-            height: img.height,
-            naturalWidth: img.naturalWidth,
-            naturalHeight: img.naturalHeight,
-            aspectRatio: img.naturalWidth / img.naturalHeight,
-          },
-          loaded: true,
-        }
-
-        // Store in reserved or regular images
-        if (isReserved) {
-          imageStore.reserved[key as 'fallback' | 'uploadTemp'] = asset
+        // Handle different URL types
+        if (url.startsWith('data:')) {
+          // Convert data URL to blob
+          const response = await fetch(url)
+          const blob = await response.blob()
+          blobUrl = await imageDatabase.storeImageBlob(blobId, blob, url)
+        } else if (url.startsWith('blob:')) {
+          // Already a blob URL, just use it
+          blobUrl = url
         } else {
-          imageStore.images[key] = asset
+          // Fetch from network and cache
+          const response = await fetch(url)
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+          }
+          blobUrl = await imageDatabase.storeFromResponse(blobId, response, url)
         }
 
-        const typeLabel = type ? ` [${type}]` : ''
-        console.log(`✅ Loaded: ${key}${typeLabel} (${img.naturalWidth}x${img.naturalHeight})`)
-        resolve(asset)
+        img = await createImageFromBlobUrl(blobUrl)
       }
 
-      img.onerror = () => {
-        console.error(`❌ Failed to load image: ${key} from ${url}`)
-        reject(new Error(`Failed to load: ${url}`))
+      // Create asset
+      const asset: ImageAsset = {
+        id: isReserved ? `__reserved__${key}` : id,
+        url, // ✅ Keep original URL
+        blobUrl, // ✅ Add blob URL for display
+        blobId, // ✅ Add IndexedDB key
+        name,
+        type,
+        image: img,
+        dimensions: {
+          width: img.width,
+          height: img.height,
+          naturalWidth: img.naturalWidth,
+          naturalHeight: img.naturalHeight,
+          aspectRatio: img.naturalWidth / img.naturalHeight,
+        },
+        loaded: true,
       }
 
-      img.src = url // ← Load from network ONCE
-    })
+      // Store in appropriate location
+      if (isReserved) {
+        imageStore.reserved[key as 'fallback' | 'uploadTemp'] = asset
+      } else {
+        imageStore.images[key] = asset
+      }
+
+      const typeLabel = type ? ` [${type}]` : ''
+      console.log(`✅ Loaded: ${key}${typeLabel} (${img.naturalWidth}x${img.naturalHeight})`)
+      return asset
+    } catch (error) {
+      console.error(`❌ Failed to load image: ${key} from ${url}`, error)
+      throw new Error(`Failed to load: ${url}`)
+    }
   }
 
   /**
+   * Create HTMLImageElement from blob URL
+   */
+  const createImageFromBlobUrl = (blobUrl: string): Promise<HTMLImageElement> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image()
+      img.crossOrigin = 'anonymous'
+
+      img.onload = () => resolve(img)
+      img.onerror = () => reject(new Error(`Failed to create image from blob URL`))
+
+      img.src = blobUrl
+    })
+  } /**
    * Initialize reserved images (fallback)
    */
   const initializeReservedImages = async () => {
@@ -140,27 +173,48 @@ export const useImageManager = () => {
 
   /**
    * Upload image from user's computer
-   * Creates object URL and loads it
+   * Stores in IndexedDB and creates asset with blob URL
    */
   const uploadImage = async (file: File, type: 'image' | 'logo' = 'image'): Promise<ImageAsset> => {
     // Generate unique ID for uploaded image
     const id = `upload-${Date.now()}-${file.name.replace(/\.[^/.]+$/, '')}`
+    const blobId = `img_uploadTemp` // ✅ Use fixed ID for uploadTemp
 
-    // Create object URL from file
-    const url = URL.createObjectURL(file)
+    try {
+      // Store file directly in IndexedDB
+      const blobUrl = await imageDatabase.storeFromFile(blobId, file, `file://${file.name}`)
 
-    // Load the image using existing loadImage function
-    const asset = await loadImage(id, url, type)
+      // Create image element from blob URL
+      const img = await createImageFromBlobUrl(blobUrl)
 
-    // Update store entry with additional metadata (triggers reactivity)
-    imageStore.images[id] = {
-      ...asset,
-      name: file.name,
-      isUploaded: true,
-      type,
+      // Create asset
+      const asset: ImageAsset = {
+        id,
+        url: `file://${file.name}`, // ✅ Original file reference
+        blobUrl, // ✅ Blob URL for display
+        blobId, // ✅ IndexedDB key (img_uploadTemp)
+        name: file.name,
+        type,
+        image: img,
+        dimensions: {
+          width: img.width,
+          height: img.height,
+          naturalWidth: img.naturalWidth,
+          naturalHeight: img.naturalHeight,
+          aspectRatio: img.naturalWidth / img.naturalHeight,
+        },
+        loaded: true,
+        isUploaded: true,
+      }
+
+      // Don't store in general images store for uploadTemp
+      console.log(`📤 Uploaded: ${file.name} → ${blobId} (IndexedDB only)`)
+
+      return asset
+    } catch (error) {
+      console.error(`❌ Failed to upload image:`, error)
+      throw error
     }
-
-    return imageStore.images[id]!
   }
 
   /**
@@ -189,6 +243,45 @@ export const useImageManager = () => {
     return getImage(imageId)
   }
 
+  /**
+   * Clean up image resources (revoke blob URLs, delete from IndexedDB)
+   */
+  const cleanupImage = async (imageId: string): Promise<void> => {
+    // Check both general images and reserved
+    const asset = imageStore.images[imageId] || imageStore.reserved.uploadTemp
+
+    if (!asset) {
+      console.log(`⚠️ No asset found for cleanup: ${imageId}`)
+      return
+    }
+
+    try {
+      // Revoke blob URL to free memory
+      if (asset.blobUrl) {
+        URL.revokeObjectURL(asset.blobUrl)
+        console.log(`🔄 Revoked blob URL: ${asset.blobUrl}`)
+      }
+
+      // Delete from IndexedDB
+      if (asset.blobId) {
+        await imageDatabase.deleteImageBlob(asset.blobId)
+        console.log(`🗑️ Deleted from IndexedDB: ${asset.blobId}`)
+      }
+
+      // Remove from appropriate store
+      if (imageStore.images[imageId]) {
+        delete imageStore.images[imageId]
+      }
+      if (imageStore.reserved.uploadTemp?.id === imageId) {
+        imageStore.reserved.uploadTemp = null
+      }
+
+      console.log(`🧹 Cleaned up image: ${imageId}`)
+    } catch (error) {
+      console.error(`❌ Failed to cleanup image: ${imageId}`, error)
+    }
+  }
+
   return {
     loadImage,
     initializeReservedImages,
@@ -198,5 +291,7 @@ export const useImageManager = () => {
     getUploadedImages,
     getImagesByType,
     preloadDefaultImages,
+    cleanupImage,
+    createImageFromBlobUrl,
   }
 }

@@ -91,7 +91,7 @@ const emit = defineEmits<{
 }>()
 
 const imageStore = useImageStore()
-const { loadImage } = useImageManager()
+const { uploadImage, cleanupImage } = useImageManager()
 const creativeAPI = useCreativeAPI()
 
 const fileInput = ref<HTMLInputElement | null>(null)
@@ -135,20 +135,33 @@ const processFile = async (file: File) => {
   try {
     console.log('📤 Processing upload:', file.name)
 
-    // Create object URL for the file
-    const objectUrl = URL.createObjectURL(file)
+    // Use the proper image manager to load and store the file
+    const tempAsset = await uploadImage(file, 'image')
 
-    // Load to reserved uploadTemp slot
-    const asset = await loadImage(
-      '__temp__upload',
-      objectUrl,
-      'image',
-      'uploadTemp',
-      true, // isReserved
-    )
+    // Store in reserved uploadTemp slot (not general images)
+    const uploadTempAsset: ImageAsset = {
+      id: '__temp__upload',
+      url: `file://${file.name}`, // ✅ Original file reference
+      blobUrl: tempAsset.blobUrl, // ✅ Blob URL for display
+      blobId: tempAsset.blobId, // ✅ IndexedDB key
+      name: 'uploadTemp',
+      type: 'image' as const,
+      image: tempAsset.image,
+      dimensions: tempAsset.dimensions,
+      loaded: true,
+      isUploaded: true,
+    }
 
-    uploadedImage.value = asset
-    console.log('✅ Image loaded to uploadTemp')
+    // Store in reserved.uploadTemp (not general images)
+    imageStore.reserved.uploadTemp = uploadTempAsset
+    uploadedImage.value = uploadTempAsset
+
+    // Remove from general images store if it was added there
+    if (imageStore.images[tempAsset.id]) {
+      delete imageStore.images[tempAsset.id]
+    }
+
+    console.log('✅ Image processed and stored in IndexedDB:', tempAsset.blobId)
   } catch (error) {
     console.error('❌ Failed to process image:', error)
     alert('Failed to load image')
@@ -165,7 +178,7 @@ const handleInsert = async () => {
     console.log('📤 Uploading to server...')
 
     // Upload to backend
-    const response = await creativeAPI.uploadAsset('creative-001', file)
+    const response = await creativeAPI.uploadAsset('3fa85f64-5717-4562-b3fc-2c963f66afa6', file)
 
     console.log('✅ Upload successful:', response.path)
 
@@ -186,8 +199,18 @@ const handleInsert = async () => {
   }
 }
 
-const handleRemoveImage = () => {
+const handleRemoveImage = async () => {
   console.log('🗑️ Removing uploaded image')
+
+  if (uploadedImage.value?.blobId) {
+    try {
+      // Clean up IndexedDB and blob URL
+      await cleanupImage(uploadedImage.value.id)
+      console.log('✅ Cleaned up IndexedDB for:', uploadedImage.value.blobId)
+    } catch (error) {
+      console.error('❌ Failed to cleanup IndexedDB:', error)
+    }
+  }
 
   // Clear the uploadedImage ref
   uploadedImage.value = null
@@ -203,7 +226,7 @@ const handleRemoveImage = () => {
     fileInput.value.value = ''
   }
 
-  console.log('✅ Upload memory cleared')
+  console.log('✅ Upload memory and IndexedDB cleared')
 }
 </script>
 
