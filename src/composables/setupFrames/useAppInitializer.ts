@@ -4,6 +4,7 @@ import { useCanvasData } from '@/composables/data/useCanvasData'
 import { useLayers } from '@/composables/data/useLayers'
 import { useCanvasStore } from '@/stores/canvas'
 import { useCreativeAPI } from '@/composables/api/useCreativeAPI'
+import { useImageDatabase } from '@/composables/database/useImageDatabase'
 import type {
   AssetResponse,
   ImageMetadata,
@@ -21,6 +22,7 @@ export const useAppInitializer = () => {
   const { setAllLayers } = useLayers()
   const canvasStore = useCanvasStore()
   const creativeAPI = useCreativeAPI()
+  const { clearAllImages } = useImageDatabase()
 
   /**
    * Step 1: Load frame models (structure/layout) - ALWAYS LOCAL
@@ -137,7 +139,12 @@ export const useAppInitializer = () => {
       try {
         console.log('🚀 Initializing app with creative:', creativeId)
 
-        // Step 0: Initialize reserved images (fallback & uploadTemp)
+        // Step 0: Clear previous session images for fresh integrity
+        console.log('🧹 Clearing previous session images...')
+        await clearAllImages()
+        console.log('✅ Image cache cleared')
+
+        // Step 1: Initialize reserved images (fallback & uploadTemp)
         await initializeReservedImages()
 
         // Step 1: Load local structure

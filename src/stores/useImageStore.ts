@@ -22,6 +22,7 @@ export interface ImageAsset {
   loaded: boolean
   error?: string
   isUploaded?: boolean
+  uploadAssetId?: string // ID of uploaded asset in mock API uploads store
 }
 
 interface ImageState {

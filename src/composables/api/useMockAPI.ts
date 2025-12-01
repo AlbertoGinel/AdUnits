@@ -42,7 +42,6 @@ function createMockDatabase() {
   const STORES = {
     ASSETS: 'assets',
     CREATIVE_DATA: 'creativeData',
-    UPLOADS: 'uploads',
   }
 
   let db: IDBDatabase | null = null
@@ -107,13 +106,6 @@ function createMockDatabase() {
           const creativeStore = db.createObjectStore(STORES.CREATIVE_DATA, { keyPath: 'id' })
           creativeStore.createIndex('creative_id', 'creative_id', { unique: false })
           console.log('📦 Created creative data store')
-        }
-
-        // Uploads store (for user uploaded files) - created on demand
-        if (!db.objectStoreNames.contains(STORES.UPLOADS)) {
-          const uploadsStore = db.createObjectStore(STORES.UPLOADS, { keyPath: 'id' })
-          uploadsStore.createIndex('creative_id', 'creative_id', { unique: false })
-          console.log('📦 Created uploads store (for user uploads)')
         }
       }
     })
@@ -242,24 +234,7 @@ function createMockDatabase() {
           assets.push(cursor.value)
           cursor.continue()
         } else {
-          // Now get uploads
-          const uploadsTransaction = database.transaction([STORES.UPLOADS], 'readonly')
-          const uploadsStore = uploadsTransaction.objectStore(STORES.UPLOADS)
-          const uploadsIndex = uploadsStore.index('creative_id')
-          const uploadsRequest = uploadsIndex.openCursor(IDBKeyRange.only(creativeId))
-
-          uploadsRequest.onsuccess = () => {
-            const uploadCursor = uploadsRequest.result
-            if (uploadCursor) {
-              // Add upload data (blob field will be filtered out in return statement)
-              assets.push(uploadCursor.value)
-              uploadCursor.continue()
-            } else {
-              resolve(assets)
-            }
-          }
-
-          uploadsRequest.onerror = () => reject(uploadsRequest.error)
+          resolve(assets)
         }
       }
 
@@ -285,47 +260,43 @@ function createMockDatabase() {
   }
 
   /**
-   * Save uploaded asset with blob data
+   * Insert new asset into assets store (accepts File object to simulate multipart)
    */
-  const saveUploadedAsset = async (creativeId: string, file: File): Promise<StoredAsset> => {
+  const insertAsset = async (creativeId: string, file: File): Promise<StoredAsset> => {
+    // Generate new random ID for the asset
+    const newAssetId = `img-${crypto.randomUUID()}`
+
+    // Extract metadata from File object (simulating multipart processing)
     const asset: StoredAsset = {
-      id: crypto.randomUUID(),
-      type: 'picture',
+      id: newAssetId,
+      type: 'image',
       creative_id: creativeId,
-      path: `/uploads/${creativeId}/${Date.now()}-${file.name}`,
-      blob: file, // Store the actual file blob
+      path: `file://${file.name}`, // Use original filename
       error: '',
     }
 
-    await performStoreOperation(STORES.UPLOADS, 'readwrite', (store) => store.put(asset))
+    // Store in assets store
+    await performStoreOperation(STORES.ASSETS, 'readwrite', (store) => store.put(asset))
 
-    console.log('💾 Saved uploaded asset to IndexedDB:', asset.id)
+    console.log('✅ Inserted new asset (multipart simulation):', {
+      id: newAssetId,
+      filename: file.name,
+      size: file.size,
+      type: file.type,
+      path: asset.path,
+    })
+
     return asset
   }
 
   /**
-   * Get uploaded asset blob
+   * Delete asset from assets store
    */
-  const getUploadedAssetBlob = async (assetId: string): Promise<Blob | null> => {
+  const deleteAsset = async (assetId: string): Promise<boolean> => {
     try {
-      const asset = await performStoreOperation(STORES.UPLOADS, 'readonly', (store) =>
-        store.get(assetId),
-      )
+      await performStoreOperation(STORES.ASSETS, 'readwrite', (store) => store.delete(assetId))
 
-      return asset?.blob || null
-    } catch {
-      return null
-    }
-  }
-
-  /**
-   * Delete uploaded asset
-   */
-  const deleteUploadedAsset = async (assetId: string): Promise<boolean> => {
-    try {
-      await performStoreOperation(STORES.UPLOADS, 'readwrite', (store) => store.delete(assetId))
-
-      console.log('🗑️ Deleted uploaded asset:', assetId)
+      console.log('🗑️ Deleted asset:', assetId)
       return true
     } catch (error) {
       console.error('❌ Failed to delete asset:', error)
@@ -360,9 +331,8 @@ function createMockDatabase() {
     seedDatabase,
     getAllAssets,
     getCreativeData,
-    saveUploadedAsset,
-    getUploadedAssetBlob,
-    deleteUploadedAsset,
+    insertAsset,
+    deleteAsset,
     clearDatabase,
   }
 }
@@ -371,7 +341,7 @@ function createMockDatabase() {
  * Mock API Configuration
  */
 const MOCK_CONFIG = {
-  errorRate: 0.0,
+  errorRate: 0.0, //errorRate 100% is 1.0
   minDelay: 0,
   maxDelay: 1,
   enableErrors: true,
@@ -464,36 +434,40 @@ export function useMockAPI() {
   }
 
   /**
-   * POST /api/v1/assets/{id}
+   * POST /api/v1/assets
+   * Insert new asset (multipart file upload simulation)
    */
-  const uploadAsset = async (
+  const insertAsset = async (
     creativeId: string,
     file: File,
   ): Promise<{
     status: number
     message: string
+    assetId: string
     path: string
   }> => {
     try {
-      console.log(`📤 Mock API: Uploading asset for creative ${creativeId}`)
-      console.log(`   File: ${file.name} (${file.size} bytes)`)
+      console.log(`📤 Mock API: Inserting asset for creative ${creativeId}`)
+      console.log(`   File: ${file.name} (${file.size} bytes, ${file.type})`)
 
       await simulateNetworkCall()
 
-      const asset = await mockDB.saveUploadedAsset(creativeId, file)
+      const insertedAsset = await mockDB.insertAsset(creativeId, file)
 
-      console.log(`✅ Mock API: Upload successful - ${asset.path}`)
+      console.log(`✅ Mock API: Asset inserted successfully - ${insertedAsset.id}`)
 
       return {
         status: 200,
-        message: 'Asset uploaded successfully',
-        path: asset.path,
+        message: 'Asset inserted successfully',
+        assetId: insertedAsset.id,
+        path: insertedAsset.path,
       }
     } catch (error) {
-      console.error('❌ Failed to upload asset:', error)
+      console.error('❌ Failed to insert asset:', error)
       return {
         status: 500,
-        message: error instanceof Error ? error.message : 'Upload failed',
+        message: error instanceof Error ? error.message : 'Insert failed',
+        assetId: '',
         path: '',
       }
     }
@@ -508,7 +482,7 @@ export function useMockAPI() {
 
       await simulateNetworkCall()
 
-      const success = await mockDB.deleteUploadedAsset(assetId)
+      const success = await mockDB.deleteAsset(assetId)
 
       return {
         status: success ? 200 : 404,
@@ -520,31 +494,10 @@ export function useMockAPI() {
     }
   }
 
-  /**
-   * GET blob data for uploaded assets (internal use)
-   */
-  const getAssetBlob = async (assetId: string): Promise<Blob | null> => {
-    try {
-      console.log(`📦 Mock API: Fetching blob for asset ${assetId}`)
-
-      const blob = await mockDB.getUploadedAssetBlob(assetId)
-
-      if (blob) {
-        console.log(`✅ Mock API: Retrieved blob (${blob.size} bytes)`)
-      }
-
-      return blob
-    } catch (error) {
-      console.error('❌ Failed to get asset blob:', error)
-      return null
-    }
-  }
-
   return {
     fetchAssets,
     fetchCreativeData,
-    uploadAsset,
+    insertAsset,
     deleteAsset,
-    getAssetBlob,
   }
 }

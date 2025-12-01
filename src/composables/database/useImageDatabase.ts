@@ -4,9 +4,9 @@
  * Provides efficient binary storage with blob URL management
  */
 
-const DB_NAME = 'BannerEditorImages'
-const DB_VERSION = 1
-const STORE_NAME = 'images'
+const DB_NAME = 'LocalImages'
+const DB_VERSION = 2
+const STORE_NAME = 'imagesStored'
 
 interface StoredImageBlob {
   id: string
@@ -71,7 +71,7 @@ export function useImageDatabase() {
 
         // Create object store for images
         if (!database.objectStoreNames.contains(STORE_NAME)) {
-          const store = database.createObjectStore(STORE_NAME, { keyPath: 'id' })
+          database.createObjectStore(STORE_NAME, { keyPath: 'id' })
           console.log('🔧 Created IndexedDB object store:', STORE_NAME)
         }
       }
@@ -211,7 +211,7 @@ export function useImageDatabase() {
       request.onsuccess = () => {
         const results = request.result as StoredImageBlob[]
         // Return metadata without the blob data
-        const metadata = results.map(({ blob, ...meta }) => meta)
+        const metadata = results.map(({ ...meta }) => meta)
         resolve(metadata)
       }
 

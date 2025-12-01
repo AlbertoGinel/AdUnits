@@ -143,7 +143,7 @@ const processFile = async (file: File) => {
       id: '__temp__upload',
       url: `file://${file.name}`, // ✅ Original file reference
       blobUrl: tempAsset.blobUrl, // ✅ Blob URL for display
-      blobId: tempAsset.blobId, // ✅ IndexedDB key
+      blobId: tempAsset.blobId, // ✅ IndexedDB key (img_uploadTemp)
       name: 'uploadTemp',
       type: 'image' as const,
       image: tempAsset.image,
@@ -169,31 +169,29 @@ const processFile = async (file: File) => {
 }
 
 const handleInsert = async () => {
-  if (!uploadedImage.value || !fileInput.value?.files?.[0]) return
+  if (!uploadedImage.value) return
 
-  const file = fileInput.value.files[0]
+  // Get the original file for the upload
+  const file = fileInput.value?.files?.[0]
+  if (!file) {
+    console.error('❌ No file available for insert')
+    return
+  }
 
   try {
     isUploading.value = true
-    console.log('📤 Uploading to server...')
 
-    // Upload to backend
-    const response = await creativeAPI.uploadAsset('3fa85f64-5717-4562-b3fc-2c963f66afa6', file)
+    // Call smart business logic (handles success/error flows internally)
+    const result = await creativeAPI.insertAsset('3fa85f64-5717-4562-b3fc-2c963f66afa6', file)
 
-    console.log('✅ Upload successful:', response.path)
-
-    // TODO: Now you have the server path
-    // You can:
-    // 1. Create a permanent image entry with real ID
-    // 2. Update creative data with new asset
-    // 3. Clear uploadTemp
-
-    // For now, emit with temp ID
-    emit('insert', 'uploadTemp')
-    emit('navigate', 'edit')
-  } catch (error) {
-    console.error('❌ Upload failed:', error)
-    alert(error instanceof Error ? error.message : 'Upload failed')
+    if (result.success) {
+      // SUCCESS: uploadTemp already cleaned by useCreativeAPI, toasts shown
+      console.log('✅ Insert successful:', result.message)
+      emit('insert', result.assetId || '')
+      emit('navigate', 'edit')
+    }
+    // ERROR: temp asset preserved, error toast shown by useCreativeAPI
+    // Component stays on upload screen so user can try again
   } finally {
     isUploading.value = false
   }

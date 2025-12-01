@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useAppInitializer } from '@/composables/setupFrames/useAppInitializer'
+import ToastContainer from '@/components/ui/ToastContainer.vue'
 
 // Initialize app on mount
 const { initializeApp } = useAppInitializer()
@@ -39,6 +40,9 @@ onMounted(async () => {
 <template>
   <div id="app">
     <RouterView />
+
+    <!-- Toast notifications -->
+    <ToastContainer />
   </div>
 </template>
 
