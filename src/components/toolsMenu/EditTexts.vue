@@ -1,6 +1,10 @@
 <!-- tools/EditTexts.vue -->
 <template>
-  <div class="tool-menu">
+  <!-- Show skeleton when dependencies are loading -->
+  <EditTextsSkeleton v-if="suspenseState.isLoading && !areCriticalDependenciesReady()" />
+
+  <!-- Normal content when dependencies are ready -->
+  <div v-else class="tool-menu">
     <h3 class="menu-title">Edit texts</h3>
 
     <!-- Main headline -->
@@ -59,10 +63,41 @@
   </div>
 </template>
 
+<style scoped>
+.tool-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 16px;
+  background: #ffffff;
+  border-radius: 8px;
+}
+
+.menu-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #212529;
+  margin: 0 0 8px 0;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #f8f9fa;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid #dee2e6;
+  margin: 16px 0;
+}
+</style>
+
 <script setup lang="ts">
 import { useTools } from '@/composables/Tools/useTools'
+import { useErrorHandler } from '@/composables/errors/useErrorHandler'
 import TextFieldSection from './Subcomponets/TextFieldSection.vue'
 import DisclaimerSection from './Subcomponets/DisclaimerSection.vue'
+import EditTextsSkeleton from './EditTextsSkeleton.vue'
+
+// Error handler for suspense state
+const { suspenseState, areCriticalDependenciesReady } = useErrorHandler()
 
 const {
   headlineValue,
@@ -76,3 +111,29 @@ const {
   lockedVisibilityElementsByTag,
 } = useTools()
 </script>
+
+<style scoped>
+.tool-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 16px;
+  background: #ffffff;
+  border-radius: 8px;
+}
+
+.menu-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #212529;
+  margin: 0 0 8px 0;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #f8f9fa;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid #dee2e6;
+  margin: 16px 0;
+}
+</style>

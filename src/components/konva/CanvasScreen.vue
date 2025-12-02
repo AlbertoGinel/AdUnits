@@ -1,4 +1,6 @@
 ﻿<template>
+  <CanvasScreenSkeleton v-if="suspenseState.isLoading" />
+
   <div ref="containerRef" class="canvas-screen">
     <v-stage
       :config="stage.stageConfig.value"
@@ -9,20 +11,6 @@
       @mouseup="stage.handleMouseUp"
     >
       <v-layer>
-        <!-- Debug: Stage bounds -->
-        <v-rect
-          :config="{
-            x: 0,
-            y: 0,
-            width: canvasStore.stage.width,
-            height: canvasStore.stage.height,
-            stroke: 'red',
-            strokeWidth: 0,
-            listening: false,
-          }"
-        />
-
-        <!-- Content -->
         <BulkModeView v-if="viewState.isBulkMode.value" />
         <FocusModeView v-else-if="viewState.isFocusMode.value" />
       </v-layer>
@@ -34,14 +22,17 @@
 import { ref, onMounted } from 'vue'
 import { useViewState } from '@/composables/view/useViewState'
 import { useKonvaStage } from '@/composables/view/useKonvaStage'
-import { useCanvasStore } from '@/stores/canvas'
 import { useTools } from '@/composables/Tools/useTools'
 import BulkModeView from '@/components/konva/BulkModeView.vue'
 import FocusModeView from '@/components/konva/FocusModeView.vue'
+import CanvasScreenSkeleton from './CanvasScreenSkeleton.vue'
+import { useErrorHandler } from '@/composables/errors/useErrorHandler'
+
+// Error handler for suspense state
+const { suspenseState } = useErrorHandler()
 
 const containerRef = ref<HTMLElement | null>(null)
 const viewState = useViewState()
-const canvasStore = useCanvasStore()
 const stage = useKonvaStage(containerRef)
 const tools = useTools()
 

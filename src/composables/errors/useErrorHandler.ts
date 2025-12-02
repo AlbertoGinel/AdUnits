@@ -21,11 +21,39 @@ export interface ToastMessage {
   }>
 }
 
+export interface DependencyState {
+  assets: boolean
+  creativeData: boolean
+}
+
+export interface SuspenseState {
+  isLoading: boolean
+  isTimeout: boolean
+  startTime: number | null
+  timeoutDuration: number
+}
+
 // Singleton state - shared across all instances
 const toasts = ref<ToastMessage[]>([])
 const isInFallbackMode = ref(false)
 
+// Global dependency tracking
+const dependencies = ref<DependencyState>({
+  assets: false,
+  creativeData: false,
+})
+
+// Global suspense state
+const suspenseState = ref<SuspenseState>({
+  isLoading: false,
+  isTimeout: false,
+  startTime: null,
+  timeoutDuration: 8000, // 8 seconds before showing retry
+})
+
 let instanceCount = 0
+let timeoutId: number | null = null
+let lastRetryTimestamp = 0
 
 export function useErrorHandler() {
   instanceCount++
@@ -159,6 +187,14 @@ export function useErrorHandler() {
   const handleNetworkError = (operation: string, retryFn?: () => Promise<void>) => {
     console.log('🚨 handleNetworkError called:', operation)
 
+    // Mark critical dependencies as failed
+    if (operation.includes('assets')) {
+      dependencies.value.assets = false
+    }
+    if (operation.includes('creative')) {
+      dependencies.value.creativeData = false
+    }
+
     const actions = retryFn
       ? [
           {
@@ -178,14 +214,121 @@ export function useErrorHandler() {
     console.log('🍞 Toast created:', toastId)
   }
 
+  /**
+   * Set dependency status
+   */
+  const setDependency = (key: keyof DependencyState, value: boolean) => {
+    console.log(`🔗 Dependency ${key}: ${value}`)
+    dependencies.value[key] = value
+
+    // Check if we can exit suspense mode
+    if (value && areCriticalDependenciesReady()) {
+      exitSuspense()
+    }
+  }
+
+  /**
+   * Check if critical dependencies are ready
+   */
+  const areCriticalDependenciesReady = () => {
+    return dependencies.value.assets && dependencies.value.creativeData
+  }
+
+  /**
+   * Start suspense loading state
+   */
+  const startSuspense = () => {
+    console.log('⏳ Starting suspense mode')
+    suspenseState.value = {
+      isLoading: true,
+      isTimeout: false,
+      startTime: Date.now(),
+      timeoutDuration: suspenseState.value.timeoutDuration,
+    }
+
+    // Clear existing timeout
+    if (timeoutId) {
+      clearTimeout(timeoutId)
+    }
+
+    // Set timeout for retry button
+    timeoutId = setTimeout(() => {
+      if (suspenseState.value.isLoading && !areCriticalDependenciesReady()) {
+        console.log('⏰ Suspense timeout - showing retry')
+        suspenseState.value.isTimeout = true
+      }
+    }, suspenseState.value.timeoutDuration)
+  }
+
+  /**
+   * Exit suspense mode
+   */
+  const exitSuspense = () => {
+    console.log('✅ Exiting suspense mode')
+    suspenseState.value.isLoading = false
+    suspenseState.value.isTimeout = false
+    suspenseState.value.startTime = null
+
+    if (timeoutId) {
+      clearTimeout(timeoutId)
+      timeoutId = null
+    }
+  }
+
+  /**
+   * Retry critical dependencies (single attempt only)
+   */
+  const retryCriticalDependencies = async () => {
+    const timestamp = Date.now()
+
+    // Prevent multiple rapid retries
+    if (timestamp - lastRetryTimestamp < 1000) {
+      console.log('🚫 Ignoring rapid retry attempt')
+      return
+    }
+
+    lastRetryTimestamp = timestamp
+    console.log('🔄 Retrying critical dependencies')
+
+    // Reset dependencies
+    dependencies.value.assets = false
+    dependencies.value.creativeData = false
+
+    // Restart suspense
+    startSuspense()
+
+    // Show loading toast
+    showToast({
+      type: 'info',
+      title: 'Retrying...',
+      message: 'Loading creative data and assets',
+      duration: 3000,
+    })
+
+    // Trigger app re-initialization with unique timestamp
+    const event = new CustomEvent('retry-critical-dependencies', {
+      detail: { timestamp },
+    })
+    window.dispatchEvent(event)
+  }
+
   return {
     // State
     toasts: readonly(toasts),
     isInFallbackMode: readonly(isInFallbackMode),
+    dependencies: readonly(dependencies),
+    suspenseState: readonly(suspenseState),
 
     // Toast management
     showToast,
     removeToast,
+
+    // Dependency management
+    setDependency,
+    areCriticalDependenciesReady,
+    startSuspense,
+    exitSuspense,
+    retryCriticalDependencies,
 
     // Specific error handlers
     handleCreativeLoadError,

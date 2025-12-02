@@ -20,6 +20,31 @@ import CanvasScreen from '@/components/konva/CanvasScreen.vue'
   gap: 0;
   overflow: hidden;
   background: #f5f5f5;
+
+  /* Grid containment - prevent children from affecting layout */
+  contain: layout;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Explicit grid positioning for each child */
+.main-container > :nth-child(1) {
+  grid-column: 1;
+  min-width: 0;
+  contain: layout;
+}
+
+.main-container > :nth-child(2) {
+  grid-column: 2;
+  min-width: 0;
+  contain: layout;
+  overflow: hidden;
+}
+
+.main-container > :nth-child(3) {
+  grid-column: 3;
+  min-width: 0;
+  contain: layout;
 }
 
 /* Responsive design */

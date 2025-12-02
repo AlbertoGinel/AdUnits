@@ -1,5 +1,5 @@
 <template>
-  <aside class="canvas-area">
+  <div class="canvas-area">
     <div class="canvas-header">
       <h3>Canvas Area</h3>
     </div>
@@ -9,7 +9,7 @@
         <div class="canvas-properties"></div>
       </div>
     </div>
-  </aside>
+  </div>
 </template>
 
 <script setup lang="ts">

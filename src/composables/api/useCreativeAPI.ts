@@ -64,6 +64,11 @@ export function useCreativeAPI() {
   const imageStore = useImageStore()
   const { loadImage, cleanupImage } = useImageManager()
 
+  // Start suspense when API is initialized
+  if (!errorHandler.areCriticalDependenciesReady()) {
+    errorHandler.startSuspense()
+  }
+
   /**
    * Get assets for a creative with error handling
    */
@@ -80,9 +85,12 @@ export function useCreativeAPI() {
         return []
       }
 
+      // Mark assets as loaded
+      errorHandler.setDependency('assets', true)
       return response.content as AssetResponse[]
     } catch {
       errorHandler.handleNetworkError('load assets', retryFn)
+      errorHandler.setDependency('assets', false)
       return []
     }
   }
@@ -103,9 +111,12 @@ export function useCreativeAPI() {
         return null
       }
 
+      // Mark creative data as loaded
+      errorHandler.setDependency('creativeData', true)
       return response.creativeData.data as CreativeDataContent
     } catch (error) {
       errorHandler.handleCreativeLoadError(error, retryFn)
+      errorHandler.setDependency('creativeData', false)
       return null
     }
   }
@@ -244,6 +255,32 @@ export function useCreativeAPI() {
     }
   }
 
+  // Listen for retry events (deduplicated)
+  if (typeof window !== 'undefined') {
+    let lastHandledRetry = 0
+
+    window.addEventListener('retry-critical-dependencies', (event: Event) => {
+      const customEvent = event as CustomEvent<{ timestamp: number }>
+      const timestamp = customEvent.detail?.timestamp || 0
+
+      // Prevent duplicate handling of same event
+      if (timestamp <= lastHandledRetry) {
+        console.log('🚫 Ignoring duplicate retry event')
+        return
+      }
+
+      lastHandledRetry = timestamp
+      console.log('🔄 Received retry event, reloading creative bundle')
+
+      // Reset dependencies and restart
+      errorHandler.setDependency('assets', false)
+      errorHandler.setDependency('creativeData', false)
+
+      // Trigger re-initialization via custom event
+      const reinitEvent = new CustomEvent('reinitialize-app')
+      window.dispatchEvent(reinitEvent)
+    })
+  }
   return {
     getAssets,
     getCreativeData,

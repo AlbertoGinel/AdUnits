@@ -343,7 +343,7 @@ function createMockDatabase() {
 const MOCK_CONFIG = {
   errorRate: 0.0, //errorRate 100% is 1.0
   minDelay: 0,
-  maxDelay: 1,
+  maxDelay: 2000,
   enableErrors: true,
 }
 
@@ -370,10 +370,17 @@ export function useMockAPI() {
         { status: 503, message: 'Service unavailable' },
         { status: 408, message: 'Request timeout' },
         { status: 404, message: 'Resource not found' },
+        { status: 0, message: 'No response (infinite hang)' },
       ]
       const error = errorTypes[Math.floor(Math.random() * errorTypes.length)]!
       console.log(`💥 Mock API Error: ${error.message}`)
-      throw new Error(`API Error ${error.status}: ${error.message}`)
+
+      if (error.status === 0) {
+        // Simulate infinite hang - never resolves
+        await new Promise(() => {})
+      } else {
+        throw new Error(`API Error ${error.status}: ${error.message}`)
+      }
     }
   }
 
