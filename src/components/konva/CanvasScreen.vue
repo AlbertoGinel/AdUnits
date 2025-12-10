@@ -1,7 +1,7 @@
 ﻿<template>
   <CanvasScreenSkeleton v-if="suspenseState.isLoading" />
 
-  <div ref="containerRef" class="canvas-screen">
+  <div v-else ref="containerRef" class="canvas-screen">
     <v-stage
       :config="stage.stageConfig.value"
       class="main-stage"

@@ -50,9 +50,11 @@ export interface AdUnit {
 }
 
 export interface LayerDefinition {
-  type: 'text' | 'image'
+  type: 'text' | 'image' | 'rect'
   defaultValue: string
   visibility?: boolean
+  darkColour?: string
+  lightColour?: string
 }
 
 export const useCanvasStore = defineStore('canvas', () => {
@@ -62,6 +64,7 @@ export const useCanvasStore = defineStore('canvas', () => {
   const stage = ref<{ width: number; height: number }>({ width: 0, height: 0 })
   const currentView = ref<'bulkMode' | 'focusMode'>('bulkMode')
   const currentAdUnitId = ref<string | null>(null)
+  const creative_id = ref<string | null>(null)
   const isInitialized = ref(false)
 
   return {
@@ -70,6 +73,7 @@ export const useCanvasStore = defineStore('canvas', () => {
     stage,
     currentView,
     currentAdUnitId,
+    creative_id,
     isInitialized,
   }
 })

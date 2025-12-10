@@ -17,7 +17,7 @@ export function useCropping() {
   const croppingStore = useCroppingStore()
   const { isCropping, workingCrop } = storeToRefs(croppingStore)
   const { getCurrentAdUnitId, getElement, updateElement } = useCanvasData()
-  const { getImage } = useImageManager()
+  const imageManager = useImageManager()
 
   // Get the current ad unit element being cropped
   const activeElement = computed(() => {
@@ -38,8 +38,12 @@ export function useCropping() {
     const imageId = originalImageId.value
     if (!imageId) return null
 
-    const imageData = getImage(imageId)
-    return imageData?.image || null
+    // Check if image is actually ready (not fallback)
+    if (!imageManager.isImageReady(imageId)) {
+      return null
+    }
+
+    return imageManager.getImageOptimized(imageId)
   })
 
   // Get original image dimensions
@@ -47,12 +51,15 @@ export function useCropping() {
     const imageId = originalImageId.value
     if (!imageId) return null
 
-    const imageData = getImage(imageId)
-    if (!imageData?.dimensions) return null
+    // Check if image is actually ready (not fallback)
+    if (!imageManager.isImageReady(imageId)) {
+      return null
+    }
 
+    const image = imageManager.getImageOptimized(imageId)
     return {
-      naturalWidth: imageData.dimensions.naturalWidth,
-      naturalHeight: imageData.dimensions.naturalHeight,
+      naturalWidth: image.naturalWidth || 0,
+      naturalHeight: image.naturalHeight || 0,
     }
   })
 
@@ -113,14 +120,15 @@ export function useCropping() {
     visibleWidth: number,
     visibleHeight: number,
   ): CropData | null => {
-    const imageData = getImage(imageId)
-    if (!imageData?.dimensions) {
+    // Check if image is actually ready (not fallback)
+    if (!imageManager.isImageReady(imageId)) {
       console.warn(`Cannot calculate crop: Image "${imageId}" not found or not loaded`)
       return null
     }
 
-    const imageWidth = imageData.dimensions.naturalWidth
-    const imageHeight = imageData.dimensions.naturalHeight
+    const image = imageManager.getImageOptimized(imageId)
+    const imageWidth = image.naturalWidth
+    const imageHeight = image.naturalHeight
     const targetAspect = visibleWidth / visibleHeight
     const imageAspect = imageWidth / imageHeight
 
@@ -181,25 +189,27 @@ export function useCropping() {
       return
     }
 
-    const imageData = getImage(imageId)
-    if (!imageData?.dimensions) {
+    // Check if image is actually ready (not fallback)
+    if (!imageManager.isImageReady(imageId)) {
       console.warn(`Cannot start crop: Image "${imageId}" not loaded or missing dimensions`)
       return
     }
+
+    const image = imageManager.getImageOptimized(imageId)
 
     // Get initial crop from element
     const initialCrop: CropData = element.crop
       ? {
           x: element.crop.x,
           y: element.crop.y,
-          width: element.crop.width || imageData.dimensions.naturalWidth,
-          height: element.crop.height || imageData.dimensions.naturalHeight,
+          width: element.crop.width || image.naturalWidth,
+          height: element.crop.height || image.naturalHeight,
         }
       : {
           x: 0,
           y: 0,
-          width: imageData.dimensions.naturalWidth,
-          height: imageData.dimensions.naturalHeight,
+          width: image.naturalWidth,
+          height: image.naturalHeight,
         }
 
     // Update store state directly
@@ -209,7 +219,7 @@ export function useCropping() {
 
     console.log('🎨 Cropping mode started:', {
       element: 'image',
-      originalSize: `${imageData.dimensions.naturalWidth}x${imageData.dimensions.naturalHeight}`,
+      originalSize: `${image.naturalWidth}x${image.naturalHeight}`,
       visibleSize: `${element.width}x${element.height}`,
       currentCrop: initialCrop,
     })

@@ -1,6 +1,7 @@
 import { useCanvasStore } from '@/stores/canvas'
 import { useImageStore } from '@/stores/useImageStore'
 import type { AdUnit, CanvasElement, LayerDefinition } from '@/stores/canvas'
+import type { CreativeContentData } from '@/types/creative'
 
 // Re-export types for other composables (maintains clean architecture)
 export type { AdUnit, CanvasElement, LayerDefinition }
@@ -21,6 +22,7 @@ export function useCanvasData() {
     getStage: () => ({ ...store.stage }),
     getCurrentView: () => store.currentView,
     getCurrentAdUnitId: () => store.currentAdUnitId,
+    getCreativeId: () => store.creative_id,
     getIsInitialized: () => store.isInitialized,
 
     // Element getters, all the elements
@@ -100,11 +102,17 @@ export function useCanvasData() {
     setLayer: (layerId: string, layer: LayerDefinition) => {
       store.layers[layerId] = layer
     },
+    setStage: (stage: { width: number; height: number }) => {
+      store.stage = stage
+    },
     setCurrentView: (view: 'bulkMode' | 'focusMode') => {
       store.currentView = view
     },
     setCurrentAdUnitId: (id: string | null) => {
       store.currentAdUnitId = id
+    },
+    setCreativeId: (id: string | null) => {
+      store.creative_id = id
     },
     setIsInitialized: (initialized: boolean) => {
       store.isInitialized = initialized
@@ -162,9 +170,9 @@ export function useCanvasData() {
                     const imageStore = useImageStore()
                     const imageData = imageStore.images[newImageId]
 
-                    if (imageData?.image) {
-                      const naturalWidth = imageData.image.naturalWidth
-                      const naturalHeight = imageData.image.naturalHeight
+                    if (imageData?.dimensions) {
+                      const naturalWidth = imageData.dimensions.naturalWidth
+                      const naturalHeight = imageData.dimensions.naturalHeight
 
                       // Calculate aspect-ratio-preserving crop
                       const displayRatio = element.width / element.height
@@ -269,12 +277,91 @@ export function useCanvasData() {
       })
     },
 
+    // ========== CONVERSION OPERATIONS ==========
+    /**
+     * Convert Pinia store data to CreativeContentData for API
+     */
+    exportToCreativeContentData: (): CreativeContentData | null => {
+      if (!store.creative_id) {
+        console.warn('Cannot export: No creative_id set')
+        return null
+      }
+
+      const imageStore = useImageStore()
+
+      return {
+        creative_id: store.creative_id,
+        adUnits: Object.fromEntries(
+          Object.entries(store.adUnits).map(([key, adUnit]) => [
+            key,
+            {
+              elements: Object.fromEntries(
+                Object.entries(adUnit.elements).map(([elementKey, element]) => [
+                  elementKey,
+                  {
+                    ...element,
+                    // Only include relevant fields for CreativeContentData
+                  },
+                ]),
+              ),
+            },
+          ]),
+        ),
+        layers: { ...store.layers },
+        images: imageStore.getAllImages.map((asset) => ({
+          id: asset.id || asset.url, // Fallback to URL if no ID
+          type: asset.type || 'image',
+          name: asset.name || 'Unnamed',
+        })),
+      }
+    },
+
+    /**
+     * Import CreativeContentData to Pinia stores
+     */
+    importToCreativeContentData: (
+      stage: { width: number; height: number },
+      modelAdUnits: Record<string, AdUnit>,
+      creativeData: CreativeContentData,
+    ) => {
+      console.log('💾 Importing CreativeContentData to stores...')
+
+      // 1. Set creative ID
+      store.creative_id = creativeData.creative_id
+
+      // 2. Set stage dimensions
+      store.stage = stage
+      console.log(`📏 Stage: ${stage.width}x${stage.height}`)
+
+      // 3. Set ad units structure (models only)
+      store.adUnits = modelAdUnits
+
+      // 4. Apply creative content to ad units
+      Object.entries(creativeData.adUnits).forEach(([adUnitId, content]) => {
+        const adUnit = store.adUnits[adUnitId]
+        if (!adUnit) return
+
+        Object.entries(content.elements).forEach(([elementId, elementContent]) => {
+          if (adUnit.elements[elementId]) {
+            Object.assign(adUnit.elements[elementId], elementContent)
+          }
+        })
+      })
+
+      // 5. Set layers
+      store.layers = creativeData.layers
+      console.log(`📚 Layers: ${Object.keys(creativeData.layers).length}`)
+
+      console.log(`💾 Stores populated from CreativeContentData`)
+    },
+
     // ========== RESET OPERATIONS ==========
     resetCanvas: () => {
       store.adUnits = {}
       store.layers = {}
       store.currentView = 'bulkMode'
       store.currentAdUnitId = null
+      store.creative_id = null
       store.isInitialized = false
     },
   }

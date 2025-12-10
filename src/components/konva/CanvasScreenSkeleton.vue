@@ -1,23 +1,21 @@
 ﻿<template>
-  <div class="canvas-screen">
-    <div class="skeleton-canvas">
-      <!-- Grid pattern for bulk mode skeleton -->
-      <div v-if="viewState?.isBulkMode?.value" class="bulk-mode-parent">
-        <div class="div1"></div>
-        <div class="div2"></div>
-        <div class="div3"></div>
-        <div class="div4"></div>
-        <div class="div5"></div>
-        <div class="div6"></div>
-        <div class="div7"></div>
-        <div class="div8"></div>
-        <div class="div9"></div>
-      </div>
+  <div class="skeleton-canvas">
+    <!-- Grid pattern for bulk mode skeleton -->
+    <div v-if="viewState?.isBulkMode?.value" class="bulk-mode-parent">
+      <div class="div1"></div>
+      <div class="div2"></div>
+      <div class="div3"></div>
+      <div class="div4"></div>
+      <div class="div5"></div>
+      <div class="div6"></div>
+      <div class="div7"></div>
+      <div class="div8"></div>
+      <div class="div9"></div>
+    </div>
 
-      <!-- Single focused item for focus mode skeleton -->
-      <div v-else-if="viewState?.isFocusMode?.value" class="focus-mode-parent">
-        <div class="div1"></div>
-      </div>
+    <!-- Single focused item for focus mode skeleton -->
+    <div v-else-if="viewState?.isFocusMode?.value" class="focus-mode-parent">
+      <div class="div1"></div>
     </div>
   </div>
 </template>
@@ -29,15 +27,15 @@ const viewState = useViewState()
 </script>
 
 <style scoped>
-.canvas-screen {
+/* Remove this duplicate CSS rule */
+/* .canvas-screen {
   width: 100%;
   height: 100%;
   overflow: hidden;
   border: 0px solid blue;
   box-sizing: border-box;
   position: relative;
-}
-
+} */
 .skeleton-canvas {
   width: 100%;
   height: 100%;

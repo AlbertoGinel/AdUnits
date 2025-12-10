@@ -3,13 +3,147 @@
  * Mock API with integrated IndexedDB backend
  * Simulates real API endpoints with persistent storage
  * Self-contained mock system for development
+ *
+ * 🚀 PRODUCTION: Delete this entire file to remove all debug data
  */
 
-import type {
-  CreativeContentData,
-  ServerCreativeModule,
-  ServerAssetsModule,
-} from '@/types/creative'
+import type { CreativeContentData } from '@/types/creative'
+
+/**
+ * 📊 EMBEDDED DEBUG DATA - Replace external JSON files
+ * Delete this entire file for production deployment
+ */
+
+import lifeStyleImg from './lifeStyle.png'
+import logoImg from './logo.png'
+import redBackgroundImg from './red-background.jpg'
+
+// Embedded serverAssets.json data
+const MOCK_ASSETS_DATA = {
+  status: 200,
+  content: [
+    {
+      id: '6f5c3c22-9d3e-4c2c-9c7c-7bb8f6e3e3c1',
+      type: 'picture',
+      creative_id: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+      path: lifeStyleImg,
+      error: '',
+    },
+    {
+      id: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9',
+      type: 'picture',
+      creative_id: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+      path: logoImg,
+      error: '',
+    },
+    {
+      id: '0d7a2c4b-2b54-4710-8b6d-2e2df91c4923',
+      type: 'picture',
+      creative_id: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+      path: redBackgroundImg,
+      error: '',
+    },
+  ],
+}
+
+// Embedded serverCreatives.json data
+const MOCK_CREATIVE_DATA = {
+  status: 200,
+  creativeData: {
+    id: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+    version: 1,
+    data: {
+      creative_id: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+      adUnits: {
+        'marquee-app': {
+          elements: {
+            image: {
+              image: '6f5c3c22-9d3e-4c2c-9c7c-7bb8f6e3e3c1',
+              crop: { x: 100, y: 355, width: 2811, height: 1187 },
+              locked: false,
+            },
+            logo: { image: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9', locked: false },
+            headline: { text: 'headline from the server', locked: false },
+            subhead: { text: 'subhead from the server', locked: false },
+            cta: { text: 'cta from server', locked: false },
+            disclaimer: {
+              text: 'Results may vary. Individual experience depends on usage patterns and system configuration. All features described are subject to change without notice. Performance claims are based on ideal conditions and may not reflect real-world usage. Limited time offer restrictions may apply. Not responsible for typographical errors in promotional materials. Service availability may be interrupted for maintenance. Some advanced features require compatible hardware and software. User agreement and terms of service apply to all usage. Commercial use may require separate licensing licensing licensing lili.',
+              visibility: true,
+              visibilityLock: false,
+              locked: false,
+            },
+            disclaimerBG: { visibility: true, visibilityLock: false },
+          },
+        },
+        'brandbox-desktop': {
+          elements: {
+            image: {
+              image: '6f5c3c22-9d3e-4c2c-9c7c-7bb8f6e3e3c1',
+              crop: { x: 15, y: 459, width: 2440, height: 470 },
+              locked: false,
+            },
+            logo: { image: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9', locked: false },
+            headline: { text: 'Tittle text', locked: false },
+            subhead: { text: 'subhead from the server', locked: false },
+            cta: { text: 'server cta', locked: false },
+            disclaimer: {
+              text: 'Results may vary. Individual experience depends on usage patterns and system configuration. All features described are subject to change without notice. Performance claims are based on ideal conditions and may not reflect real-world usage. Limited time offer restrictions may apply. Not responsible for typographical errors in promotional materials. Service availability may be interrupted for maintenance. Some advanced features require compatible hardware and software. User agreement and terms of service apply to all usage. Commercial use may require separate licensing licensing licensing lili.',
+              visibility: true,
+              visibilityLock: false,
+              locked: false,
+            },
+            disclaimerBG: { visibility: true, visibilityLock: false },
+          },
+        },
+        longmarquee: {
+          elements: {
+            image: {
+              image: '6f5c3c22-9d3e-4c2c-9c7c-7bb8f6e3e3c1',
+              crop: { x: 15, y: 459, width: 2440, height: 470 },
+              locked: false,
+            },
+            logo: { image: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9', locked: false },
+            headline: { text: 'headline from the server', locked: false },
+            subhead: { text: 'subhead from the server', locked: false },
+            cta: { text: 'cta from server', locked: false },
+            disclaimer: {
+              text: 'Results may vary. Individual experience depends on usage patterns and system configuration. All features described are subject to change without notice. Performance claims are based on ideal conditions and may not reflect real-world usage. Limited time offer restrictions may apply. Not responsible for typographical errors in promotional materials. Service availability may be interrupted for maintenance. Some advanced features require compatible hardware and software. User agreement and terms of service apply to all usage. Commercial use may require separate licensing licensing licensing lili.',
+              visibility: true,
+              visibilityLock: false,
+              locked: false,
+            },
+            disclaimerBG: { visibility: true, visibilityLock: false },
+          },
+        },
+      },
+      layers: {
+        headline: { type: 'text', defaultValue: 'Headline goes here' },
+        logo: { type: 'image', defaultValue: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9' },
+        subhead: { type: 'text', defaultValue: 'Your subhead goes here' },
+        cta: { type: 'text', defaultValue: 'CTA button' },
+        image: { type: 'image', defaultValue: '6f5c3c22-9d3e-4c2c-9c7c-7bb8f6e3e3c1' },
+        disclaimer: {
+          type: 'text',
+          defaultValue: 'This content is provided solely for general informational purposes.',
+          visibility: true,
+          darkColour: '#000000',
+          lightColour: '#ffffff',
+        },
+        disclaimerBG: {
+          type: 'rect',
+          defaultValue:
+            'Results may vary. Individual experience depends on usage patterns and system configuration. All features described are subject to change without notice. Performance claims are based on ideal conditions and may not reflect real-world usage. Limited time offer restrictions may apply. Not responsible for typographical errors in promotional materials. Service availability may be interrupted for maintenance. Some advanced features require compatible hardware and software. User agreement and terms of service apply to all usage. Commercial use may require separate licensing. All trademarks and logos are property of their respective owners. No guarantee of specific outcomes or results.',
+          visibility: true,
+        },
+      },
+      images: [
+        { id: '6f5c3c22-9d3e-4c2c-9c7c-7bb8f6e3e3c1', type: 'image', name: 'goodYearWheels' },
+        { id: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9', type: 'logo', name: 'goodYearBlue' },
+        { id: '0d7a2c4b-2b54-4710-8b6d-2e2df91c4923', type: 'image', name: 'redBackground' },
+      ],
+    } as CreativeContentData,
+  },
+}
 
 /**
  * Internal interfaces for mock system
@@ -169,17 +303,9 @@ function createMockDatabase() {
 
         console.log('🔄 Seeding database with UUID creative data...')
 
-        // Load default assets from JSON
-        const assetsModule = (await import(
-          '../setupFrames/serverAssets.json'
-        )) as ServerAssetsModule
-        const defaultAssets = assetsModule.default.content
-
-        // Load default creative data from JSON
-        const creativeModule = (await import(
-          '../setupFrames/serverCreatives.json'
-        )) as ServerCreativeModule
-        const defaultCreative = creativeModule.default.creativeData
+        // Use embedded data instead of importing JSON files
+        const defaultAssets = MOCK_ASSETS_DATA.content
+        const defaultCreative = MOCK_CREATIVE_DATA.creativeData
 
         // Store assets using put() instead of add() to avoid constraint errors
         for (const asset of defaultAssets) {
@@ -341,9 +467,9 @@ function createMockDatabase() {
  * Mock API Configuration
  */
 const MOCK_CONFIG = {
-  errorRate: 0.0, //errorRate 100% is 1.0
-  minDelay: 0,
-  maxDelay: 2000,
+  errorRate: 0, //errorRate 100% is 1.0
+  minDelay: 1000,
+  maxDelay: 5000,
   enableErrors: true,
 }
 
@@ -358,7 +484,7 @@ const MOCK_CONFIG = {
 export function useMockAPI() {
   const mockDB = createMockDatabase()
 
-  const simulateNetworkCall = async (): Promise<void> => {
+  const simulateNetworkCall = async <T>(successResponse: T, operationName: string): Promise<T> => {
     const delay =
       Math.floor(Math.random() * (MOCK_CONFIG.maxDelay - MOCK_CONFIG.minDelay)) +
       MOCK_CONFIG.minDelay
@@ -370,18 +496,20 @@ export function useMockAPI() {
         { status: 503, message: 'Service unavailable' },
         { status: 408, message: 'Request timeout' },
         { status: 404, message: 'Resource not found' },
-        { status: 0, message: 'No response (infinite hang)' },
       ]
       const error = errorTypes[Math.floor(Math.random() * errorTypes.length)]!
-      console.log(`💥 Mock API Error: ${error.message}`)
+      console.log(`💥 Mock API Error [${operationName}]: ${error.message}`)
 
-      if (error.status === 0) {
-        // Simulate infinite hang - never resolves
-        await new Promise(() => {})
-      } else {
-        throw new Error(`API Error ${error.status}: ${error.message}`)
-      }
+      // Return error response with same structure but different status
+      return {
+        ...successResponse,
+        status: error.status,
+        message: error.message,
+      } as T
     }
+
+    console.log(`✅ Mock API Success [${operationName}]`)
+    return successResponse
   }
 
   /**
@@ -391,17 +519,16 @@ export function useMockAPI() {
     try {
       console.log(`📡 Mock API: Fetching assets for creative ${creativeId}`)
 
-      await simulateNetworkCall()
       await mockDB.seedDatabase()
-
       const assets = await mockDB.getAllAssets(creativeId)
 
-      console.log(`✅ Mock API: Retrieved ${assets.length} assets`)
-
-      return {
-        status: 200,
-        content: assets.map(({ ...asset }) => asset),
-      }
+      return await simulateNetworkCall(
+        {
+          status: 200,
+          content: assets.map(({ ...asset }) => asset),
+        },
+        'fetchAssets',
+      )
     } catch (error) {
       console.error('❌ Failed to fetch assets:', error)
       throw error
@@ -414,26 +541,24 @@ export function useMockAPI() {
   const fetchCreativeData = async (creativeId: string) => {
     try {
       console.log(`📡 Mock API: Fetching creative data for ${creativeId}`)
-
-      await simulateNetworkCall()
       await mockDB.seedDatabase()
-
       const creativeData = await mockDB.getCreativeData(creativeId)
 
       if (!creativeData) {
         throw new Error(`Creative data not found for ${creativeId}`)
       }
 
-      console.log('✅ Mock API: Retrieved creative data')
-
-      return {
-        status: 200,
-        creativeData: {
-          id: creativeData.id,
-          version: creativeData.version,
-          data: creativeData.data,
+      return await simulateNetworkCall(
+        {
+          status: 200,
+          creativeData: {
+            id: creativeData.id,
+            version: creativeData.version,
+            data: creativeData.data,
+          },
         },
-      }
+        'fetchCreativeData',
+      )
     } catch (error) {
       console.error('❌ Failed to fetch creative data:', error)
       throw error
@@ -457,18 +582,17 @@ export function useMockAPI() {
       console.log(`📤 Mock API: Inserting asset for creative ${creativeId}`)
       console.log(`   File: ${file.name} (${file.size} bytes, ${file.type})`)
 
-      await simulateNetworkCall()
-
       const insertedAsset = await mockDB.insertAsset(creativeId, file)
 
-      console.log(`✅ Mock API: Asset inserted successfully - ${insertedAsset.id}`)
-
-      return {
-        status: 200,
-        message: 'Asset inserted successfully',
-        assetId: insertedAsset.id,
-        path: insertedAsset.path,
-      }
+      return await simulateNetworkCall(
+        {
+          status: 200,
+          message: 'Asset inserted successfully',
+          assetId: insertedAsset.id,
+          path: insertedAsset.path,
+        },
+        'insertAsset',
+      )
     } catch (error) {
       console.error('❌ Failed to insert asset:', error)
       return {
@@ -486,18 +610,42 @@ export function useMockAPI() {
   const deleteAsset = async (assetId: string) => {
     try {
       console.log(`🗑️ Mock API: Deleting asset ${assetId}`)
-
-      await simulateNetworkCall()
-
       const success = await mockDB.deleteAsset(assetId)
 
-      return {
-        status: success ? 200 : 404,
-        message: success ? 'Asset deleted' : 'Asset not found',
-      }
+      return await simulateNetworkCall(
+        {
+          status: success ? 200 : 404,
+          message: success ? 'Asset deleted' : 'Asset not found',
+        },
+        'deleteAsset',
+      )
     } catch (error) {
       console.error('❌ Failed to delete asset:', error)
       throw error
+    }
+  }
+
+  /**
+   * PUT /api/v1/creative_data/{id}
+   */
+  const updateCreative = async (creativeId: string) => {
+    try {
+      console.log(`🔄 Mock API: Updating creative data for ${creativeId}`)
+
+      // In a real scenario, this would update the creative data in the database
+      return await simulateNetworkCall(
+        {
+          status: 200,
+          message: 'Creative data updated successfully',
+        },
+        'updateCreative',
+      )
+    } catch (error) {
+      console.error('❌ Failed to update creative data:', error)
+      return {
+        status: 500,
+        message: error instanceof Error ? error.message : 'Update failed',
+      }
     }
   }
 
@@ -506,5 +654,6 @@ export function useMockAPI() {
     fetchCreativeData,
     insertAsset,
     deleteAsset,
+    updateCreative,
   }
 }

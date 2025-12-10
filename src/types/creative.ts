@@ -55,22 +55,10 @@ export interface ImageMetadata {
 }
 
 export interface CreativeContentData {
+  creative_id: string
   adUnits: Record<string, AdUnitData>
   layers: Record<string, LayerData>
   images: ImageMetadata[]
-}
-
-export interface CreativeData {
-  id: string
-  version: number
-  data: CreativeContentData
-}
-
-export interface ServerCreativeModule {
-  default: {
-    status: number
-    creativeData: CreativeData
-  }
 }
 
 export interface ServerAssetsModule {

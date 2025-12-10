@@ -1,13 +1,11 @@
 // composables/api/useCreativeAPI.ts
-import { useMockAPI } from './useMockAPI'
-import { useErrorHandler } from '@/composables/errors/useErrorHandler'
-import { useImageStore } from '@/stores/useImageStore'
-import { useImageManager } from '@/composables/setupImages/useImageManager'
-import type { LayerDefinition } from '@/stores/canvas'
+import { useMockAPI } from './mockAPI/useMockAPI'
+import { useCanvasData } from '@/composables/data/useCanvasData'
+import type { CreativeContentData } from '@/types/creative'
 
 /**
- * Creative API - Business logic layer for API data access
- * Handles types, validation, and data transformation
+ * Switchable Creative API - Dev/Production environment detection
+ * Handles all creative operations with transaction-like behavior
  */
 
 // API Response Types
@@ -25,24 +23,9 @@ export interface ImageMetadata {
   name: string
 }
 
-export interface CreativeDataContent {
-  adUnits: Record<string, { elements: Record<string, Record<string, unknown>> }>
-  layers: Record<string, LayerDefinition>
-  images: ImageMetadata[]
-}
-
-export interface UploadAssetResponse {
-  status: number
-  message: string
-  path: string
-  assetId: string
-}
-
-export interface InsertAssetResponse {
-  status: number
-  message: string
-  assetId: string
-  path: string
+export interface CreativeBundle {
+  assets: AssetResponse[]
+  creativeData: CreativeContentData
 }
 
 export interface InsertAssetResult {
@@ -52,242 +35,536 @@ export interface InsertAssetResult {
   path?: string
 }
 
-export interface CreativeBundle {
-  stage?: { width: number; height: number }
-  assets: AssetResponse[]
-  creativeData: CreativeDataContent
+export interface UpdateCreativeResult {
+  success: boolean
+  message: string
+}
+
+export interface DeleteAssetResult {
+  success: boolean
+  message: string
+}
+
+// Environment detection
+const isDevelopment = import.meta.env.DEV
+
+// Event emitters for error communication
+interface ErrorEventData {
+  type: string
+  culprit: string
+  error?: string
+  status?: number
+  message?: string
+  creativeId?: string
+  assetId?: string
+  fileName?: string
+  originalError?: string
+}
+
+const errorEvents = {
+  emit: (type: string, data: ErrorEventData) => {
+    const event = new CustomEvent(`creative-api-${type}`, { detail: data })
+    window.dispatchEvent(event)
+  },
+}
+
+interface ReadyEventData {
+  creativeId?: string
+  assets?: number
+}
+
+const readyEvents = {
+  emit: (type: string, data?: ReadyEventData) => {
+    const event = new CustomEvent(`creative-api-${type}`, { detail: data })
+    window.dispatchEvent(event)
+  },
 }
 
 export function useCreativeAPI() {
-  const api = useMockAPI()
-  const errorHandler = useErrorHandler()
-  const imageStore = useImageStore()
-  const { loadImage, cleanupImage } = useImageManager()
+  const canvasData = useCanvasData()
 
-  // Start suspense when API is initialized
-  if (!errorHandler.areCriticalDependenciesReady()) {
-    errorHandler.startSuspense()
-  }
-
-  /**
-   * Get assets for a creative with error handling
-   */
-  const getAssets = async (creativeId: string): Promise<AssetResponse[]> => {
-    const retryFn = async () => {
-      await getAssets(creativeId)
-    }
-
-    try {
-      const response = await api.fetchAssets(creativeId)
-
-      if (response.status !== 200) {
-        errorHandler.handleNetworkError('load assets', retryFn)
-        return []
-      }
-
-      // Mark assets as loaded
-      errorHandler.setDependency('assets', true)
-      return response.content as AssetResponse[]
-    } catch {
-      errorHandler.handleNetworkError('load assets', retryFn)
-      errorHandler.setDependency('assets', false)
-      return []
-    }
-  }
-
-  /**
-   * Get creative data with error handling and fallback
-   */
-  const getCreativeData = async (creativeId: string): Promise<CreativeDataContent | null> => {
-    const retryFn = async () => {
-      await getCreativeData(creativeId)
-    }
-
-    try {
-      const response = await api.fetchCreativeData(creativeId)
-
-      if (response.status !== 200) {
-        errorHandler.handleCreativeLoadError(new Error('Failed to fetch creative data'), retryFn)
-        return null
-      }
-
-      // Mark creative data as loaded
-      errorHandler.setDependency('creativeData', true)
-      return response.creativeData.data as CreativeDataContent
-    } catch (error) {
-      errorHandler.handleCreativeLoadError(error, retryFn)
-      errorHandler.setDependency('creativeData', false)
-      return null
-    }
-  }
-
-  /**
-   * Get complete creative bundle (assets + creative data)
-   * Uses error-aware methods for proper error handling and toasts
-   */
   const getCreativeBundle = async (creativeId: string): Promise<CreativeBundle> => {
-    console.log('📡 Fetching creative bundle:', creativeId)
+    console.log(`📡 [${isDevelopment ? 'DEV' : 'PROD'}] Fetching creative bundle:`, creativeId)
 
-    // Use error-aware methods that show toasts and handle errors
-    const [assets, creativeData] = await Promise.all([
-      getAssets(creativeId), // ✅ Has error handling + toasts
-      getCreativeData(creativeId), // ✅ Has error handling + toasts
-    ])
+    try {
+      // Fetch both endpoints with direct DEV/PROD switching
+      const [assetsResponse, creativeResponse] = await Promise.all([
+        isDevelopment
+          ? useMockAPI().fetchAssets(creativeId)
+          : fetch(`/api/v1/assets/creative/${creativeId}`).then((r) => r.json()),
+        isDevelopment
+          ? useMockAPI().fetchCreativeData(creativeId)
+          : fetch(`/api/v1/creative_data/${creativeId}`).then((r) => r.json()),
+      ])
 
-    // If creativeData failed, we might be in fallback mode
-    if (!creativeData) {
-      console.log('⚠️ Using fallback creative data due to API error')
-      // Return minimal bundle with available assets
+      // Check for individual endpoint failures
+      if (assetsResponse.status !== 200) {
+        const error = new Error(`Assets endpoint failed: ${assetsResponse.status}`)
+        errorEvents.emit('bundle-error', {
+          type: 'assets-failure',
+          culprit: 'assets endpoint',
+          status: assetsResponse.status,
+          creativeId,
+        })
+        throw error
+      }
+
+      if (creativeResponse.status !== 200) {
+        const error = new Error(`Creative data endpoint failed: ${creativeResponse.status}`)
+        errorEvents.emit('bundle-error', {
+          type: 'creative-data-failure',
+          culprit: 'creative data endpoint',
+          status: creativeResponse.status,
+          creativeId,
+        })
+        throw error
+      }
+
+      const assets = assetsResponse.content as AssetResponse[]
+      const creativeData = creativeResponse.creativeData.data as CreativeContentData
+
+      console.log('✅ Creative bundle loaded:', {
+        assets: assets.length,
+        adUnits: Object.keys(creativeData.adUnits || {}).length,
+        layers: Object.keys(creativeData.layers || {}).length,
+        images: (creativeData.images || []).length,
+      })
+
+      // Emit ready event
+      readyEvents.emit('bundle-ready', { creativeId, assets: assets.length })
+
       return {
         assets,
-        creativeData: {
-          adUnits: {},
-          layers: {},
-          images: [],
-        },
+        creativeData,
       }
-    }
+    } catch (error) {
+      console.error('❌ Failed to fetch creative bundle:', error)
 
-    console.log('✅ Creative bundle loaded:', {
-      assets: assets.length,
-      adUnits: Object.keys(creativeData.adUnits || {}).length,
-      layers: Object.keys(creativeData.layers || {}).length,
-      images: (creativeData.images || []).length,
-    })
+      errorEvents.emit('bundle-error', {
+        type: 'bundle-failure',
+        culprit: 'unknown - both endpoints may have failed',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        creativeId,
+      })
 
-    return {
-      assets,
-      creativeData,
+      throw error
     }
   }
 
   /**
-   * Insert asset with smart error handling and business logic
-   * @param creativeId - Creative ID to attach asset to
-   * @param file - File to upload
-   * @returns Smart result with success/error handling
+   * Update creative data (PUT)
    */
-  const insertAsset = async (creativeId: string, file: File): Promise<InsertAssetResult> => {
-    const retryFn = async () => {
-      await insertAsset(creativeId, file)
-    }
+  const updateCreative = async (creativeId: string): Promise<UpdateCreativeResult> => {
+    console.log(`📤 [${isDevelopment ? 'DEV' : 'PROD'}] Updating creative:`, creativeId)
 
     try {
-      // Validate file
-      if (!file.type.startsWith('image/')) {
-        return {
-          success: false,
-          message: 'Please select an image file',
-        }
+      // Get current state from Pinia
+      const currentData = canvasData.exportToCreativeContentData()
+
+      if (!currentData) {
+        const error = new Error('Cannot export creative data - no creative_id set')
+        errorEvents.emit('update-error', {
+          type: 'export-failure',
+          culprit: 'local state',
+          error: error.message,
+          creativeId,
+        })
+        return { success: false, message: 'No creative data to export' }
       }
 
-      // Validate file size (10MB max)
-      const maxSize = 10 * 1024 * 1024 // 10MB
-      if (file.size > maxSize) {
-        return {
-          success: false,
-          message: 'File size exceeds 10MB limit',
-        }
-      }
-
-      console.log('📤 Inserting asset:', file.name)
-
-      // Call mock API (can simulate errors with MOCK_CONFIG)
-      const response = await api.insertAsset(creativeId, file)
+      // Call API with direct DEV/PROD switching
+      const response = isDevelopment
+        ? await useMockAPI().updateCreative(creativeId)
+        : await fetch(`/api/v1/creative_data/${creativeId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              version: 1,
+              data: currentData,
+              creative_id: creativeId,
+            }),
+          }).then((r) => r.json())
 
       if (response.status === 200) {
-        console.log('✅ Asset inserted successfully:', response.assetId)
-
-        // SUCCESS FLOW:
-        // 1. Delete temporal uploadTemp image
-        if (imageStore.reserved.uploadTemp) {
-          console.log('🗑️ Cleaning up temp asset')
-          await cleanupImage('uploadTemp')
-          imageStore.reserved.uploadTemp = null
-        }
-
-        // 2. Refresh all images from DB to get fresh data
-        console.log('🔄 Refreshing images from database...')
-        const assets = await getAssets(creativeId)
-
-        // Load the images that aren't already loaded
-        for (const asset of assets) {
-          if (!imageStore.images[asset.id]) {
-            try {
-              console.log('🌐 Loading new image:', asset.id)
-              await loadImage(asset.id, asset.path, asset.type as 'image' | 'logo')
-            } catch (loadError) {
-              errorHandler.handleAssetLoadError(asset.id, loadError, async () => {
-                await loadImage(asset.id, asset.path, asset.type as 'image' | 'logo')
-              })
-            }
-          }
-        }
-
-        console.log('✅ Images refreshed successfully')
-
-        // Show success toast
-        errorHandler.handleUploadSuccess(file.name)
-
-        return {
-          success: true,
-          message: 'Image uploaded successfully',
-          assetId: response.assetId,
-          path: response.path,
-        }
+        console.log('✅ Creative updated successfully')
+        return { success: true, message: 'Creative updated successfully' }
       } else {
-        // ERROR FLOW: Keep temp asset, show error
-        errorHandler.handleUploadError(file.name, new Error(response.message), retryFn)
-
-        return {
-          success: false,
-          message: response.message || 'Upload failed, try later',
-        }
+        errorEvents.emit('update-error', {
+          type: 'api-failure',
+          culprit: 'update endpoint',
+          status: response.status,
+          message: response.message,
+          creativeId,
+        })
+        return { success: false, message: response.message || 'Update failed' }
       }
     } catch (error) {
-      // EXCEPTION FLOW: Keep temp asset, show error
-      errorHandler.handleUploadError(file.name, error, retryFn)
+      console.error('❌ Failed to update creative:', error)
+
+      errorEvents.emit('update-error', {
+        type: 'update-failure',
+        culprit: 'unknown',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        creativeId,
+      })
 
       return {
         success: false,
-        message: 'Upload failed, try later',
+        message: error instanceof Error ? error.message : 'Update failed',
       }
     }
   }
 
-  // Listen for retry events (deduplicated)
-  if (typeof window !== 'undefined') {
-    let lastHandledRetry = 0
+  /**
+   * Insert asset with transaction-like behavior
+   * Step 1: Upload asset -> Step 2: Update creative data
+   * Rollback: Delete asset if creative update fails
+   */
+  const insertAsset = async (
+    creativeId: string,
+    file: File,
+    metadata: { type: 'image' | 'logo'; name: string },
+  ): Promise<InsertAssetResult> => {
+    console.log(`📤 [${isDevelopment ? 'DEV' : 'PROD'}] Inserting asset:`, file.name)
 
-    window.addEventListener('retry-critical-dependencies', (event: Event) => {
-      const customEvent = event as CustomEvent<{ timestamp: number }>
-      const timestamp = customEvent.detail?.timestamp || 0
+    let uploadedAssetId: string | null = null
 
-      // Prevent duplicate handling of same event
-      if (timestamp <= lastHandledRetry) {
-        console.log('🚫 Ignoring duplicate retry event')
-        return
+    try {
+      // Step 1: Upload asset with direct DEV/PROD switching
+      console.log('Step 1: Uploading asset...')
+      const uploadResponse = isDevelopment
+        ? await useMockAPI().insertAsset(creativeId, file)
+        : await (async () => {
+            const formData = new FormData()
+            formData.append('file', file)
+            formData.append('creative_id', creativeId)
+            return fetch(`/api/v1/assets/${creativeId}`, {
+              method: 'POST',
+              body: formData,
+            }).then((r) => r.json())
+          })()
+
+      if (uploadResponse.status !== 200) {
+        errorEvents.emit('asset-error', {
+          type: 'upload-failure',
+          culprit: 'asset upload endpoint',
+          status: uploadResponse.status,
+          message: uploadResponse.message,
+          fileName: file.name,
+          creativeId,
+        })
+        return { success: false, message: uploadResponse.message || 'Upload failed' }
       }
 
-      lastHandledRetry = timestamp
-      console.log('🔄 Received retry event, reloading creative bundle')
+      uploadedAssetId = uploadResponse.assetId
+      console.log('✅ Step 1 complete: Asset uploaded', uploadedAssetId)
 
-      // Reset dependencies and restart
-      errorHandler.setDependency('assets', false)
-      errorHandler.setDependency('creativeData', false)
+      // Step 2: Update creative data to include new asset
+      console.log('Step 2: Updating creative data...')
 
-      // Trigger re-initialization via custom event
-      const reinitEvent = new CustomEvent('reinitialize-app')
-      window.dispatchEvent(reinitEvent)
-    })
+      // Add asset to local images array
+      const currentData = canvasData.exportToCreativeContentData()
+      if (!currentData) {
+        throw new Error('Cannot export creative data for update')
+      }
+
+      // Add new image metadata
+      if (uploadedAssetId) {
+        currentData.images.push({
+          id: uploadedAssetId,
+          type: metadata.type,
+          name: metadata.name,
+        })
+      }
+
+      // Update via API with direct DEV/PROD switching
+      const updateResponse = isDevelopment
+        ? await useMockAPI().updateCreative(creativeId)
+        : await fetch(`/api/v1/creative_data/${creativeId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              version: 1,
+              data: currentData,
+              creative_id: creativeId,
+            }),
+          }).then((r) => r.json())
+
+      if (updateResponse.status !== 200) {
+        // Step 2 failed - rollback Step 1
+        console.warn('⚠️ Step 2 failed, rolling back Step 1...')
+
+        try {
+          if (uploadedAssetId) {
+            const rollbackResponse = await (isDevelopment
+              ? useMockAPI().deleteAsset(uploadedAssetId)
+              : fetch(`/api/v1/assets/${uploadedAssetId}`, { method: 'DELETE' }).then((r) =>
+                  r.json(),
+                ))
+
+            if (rollbackResponse.status !== 200) {
+              throw new Error(`Rollback failed: ${rollbackResponse.message}`)
+            }
+          }
+          console.log('✅ Rollback successful: Asset deleted')
+        } catch (rollbackError) {
+          console.error('💥 ROLLBACK FAILED:', rollbackError)
+          errorEvents.emit('asset-error', {
+            type: 'rollback-failure',
+            culprit: 'rollback mechanism',
+            error: rollbackError instanceof Error ? rollbackError.message : 'Rollback failed',
+            assetId: uploadedAssetId || undefined,
+            originalError: updateResponse.message,
+            creativeId,
+          })
+          return {
+            success: false,
+            message: `Update failed AND rollback failed. Asset ${uploadedAssetId} may be orphaned.`,
+          }
+        }
+
+        errorEvents.emit('asset-error', {
+          type: 'update-failure',
+          culprit: 'creative update endpoint',
+          status: updateResponse.status,
+          message: updateResponse.message,
+          assetId: uploadedAssetId || undefined,
+          creativeId,
+        })
+        return { success: false, message: updateResponse.message || 'Creative update failed' }
+      }
+
+      console.log('✅ Step 2 complete: Creative data updated')
+      console.log('✅ Asset insertion successful:', uploadedAssetId)
+
+      return {
+        success: true,
+        message: 'Asset inserted successfully',
+        assetId: uploadedAssetId || undefined,
+        path: uploadResponse.path,
+      }
+    } catch (error) {
+      console.error('❌ Asset insertion failed:', error)
+
+      // If we uploaded an asset but something else failed, try rollback
+      if (uploadedAssetId) {
+        console.warn('⚠️ Attempting rollback of uploaded asset...')
+        try {
+          if (uploadedAssetId) {
+            const rollbackResponse = await (isDevelopment
+              ? useMockAPI().deleteAsset(uploadedAssetId)
+              : fetch(`/api/v1/assets/${uploadedAssetId}`, { method: 'DELETE' }).then((r) =>
+                  r.json(),
+                ))
+
+            if (rollbackResponse.status !== 200) {
+              throw new Error(`Rollback failed: ${rollbackResponse.message}`)
+            }
+          }
+          console.log('✅ Rollback successful')
+        } catch (rollbackError) {
+          console.error('💥 ROLLBACK FAILED:', rollbackError)
+          errorEvents.emit('asset-error', {
+            type: 'rollback-failure',
+            culprit: 'rollback mechanism',
+            error: rollbackError instanceof Error ? rollbackError.message : 'Rollback failed',
+            assetId: uploadedAssetId || undefined,
+            originalError: error instanceof Error ? error.message : 'Unknown error',
+            creativeId,
+          })
+          return {
+            success: false,
+            message: `Insertion failed AND rollback failed. Asset ${uploadedAssetId} may be orphaned.`,
+          }
+        }
+      }
+
+      errorEvents.emit('asset-error', {
+        type: 'insertion-failure',
+        culprit: 'unknown',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        fileName: file.name,
+        creativeId,
+      })
+
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Asset insertion failed',
+      }
+    }
   }
-  return {
-    getAssets,
-    getCreativeData,
-    getCreativeBundle,
-    insertAsset,
 
-    // Expose error handler for components that need it
-    errorHandler,
+  /**
+   * Delete asset with transaction-like behavior
+   * Step 1: Update creative data -> Step 2: Delete asset
+   */
+  const deleteAsset = async (creativeId: string, assetId: string): Promise<DeleteAssetResult> => {
+    console.log(`🗑️ [${isDevelopment ? 'DEV' : 'PROD'}] Deleting asset:`, assetId)
+
+    let originalCreativeData: CreativeContentData | null = null
+
+    try {
+      // Step 1: Update creative data to remove asset
+      console.log('Step 1: Updating creative data...')
+
+      originalCreativeData = canvasData.exportToCreativeContentData()
+      if (!originalCreativeData) {
+        throw new Error('Cannot export creative data for update')
+      }
+
+      // Remove asset from images array
+      const updatedData = {
+        ...originalCreativeData,
+        images: originalCreativeData.images.filter((img) => img.id !== assetId),
+      }
+
+      const updateResponse = isDevelopment
+        ? await useMockAPI().updateCreative(creativeId)
+        : await fetch(`/api/v1/creative_data/${creativeId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              version: 1,
+              data: updatedData,
+              creative_id: creativeId,
+            }),
+          }).then((r) => r.json())
+
+      if (updateResponse.status !== 200) {
+        errorEvents.emit('asset-error', {
+          type: 'update-failure',
+          culprit: 'creative update endpoint',
+          status: updateResponse.status,
+          message: updateResponse.message,
+          assetId,
+          creativeId,
+        })
+        return { success: false, message: updateResponse.message || 'Creative update failed' }
+      }
+
+      console.log('✅ Step 1 complete: Creative data updated')
+
+      // Step 2: Delete asset with direct DEV/PROD switching
+      console.log('Step 2: Deleting asset...')
+      const deleteResponse = isDevelopment
+        ? await useMockAPI().deleteAsset(assetId)
+        : await fetch(`/api/v1/assets/${assetId}`, { method: 'DELETE' }).then((r) => r.json())
+
+      if (deleteResponse.status !== 200) {
+        // Step 2 failed - rollback Step 1
+        console.warn('⚠️ Step 2 failed, rolling back Step 1...')
+
+        try {
+          const rollbackResponse = await (isDevelopment
+            ? useMockAPI().updateCreative(creativeId)
+            : fetch(`/api/v1/creative_data/${creativeId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  version: 1,
+                  data: originalCreativeData,
+                  creative_id: creativeId,
+                }),
+              }).then((r) => r.json()))
+
+          if (rollbackResponse.status !== 200) {
+            throw new Error(`Rollback failed: ${rollbackResponse.message}`)
+          }
+          console.log('✅ Rollback successful: Creative data restored')
+        } catch (rollbackError) {
+          console.error('💥 ROLLBACK FAILED:', rollbackError)
+          errorEvents.emit('asset-error', {
+            type: 'rollback-failure',
+            culprit: 'rollback mechanism',
+            error: rollbackError instanceof Error ? rollbackError.message : 'Rollback failed',
+            assetId,
+            originalError: deleteResponse.message,
+            creativeId,
+          })
+          return {
+            success: false,
+            message: `Delete failed AND rollback failed. Creative data may be inconsistent.`,
+          }
+        }
+
+        errorEvents.emit('asset-error', {
+          type: 'delete-failure',
+          culprit: 'asset delete endpoint',
+          status: deleteResponse.status,
+          message: deleteResponse.message,
+          assetId,
+          creativeId,
+        })
+        return { success: false, message: deleteResponse.message || 'Asset deletion failed' }
+      }
+
+      console.log('✅ Step 2 complete: Asset deleted')
+      console.log('✅ Asset deletion successful:', assetId)
+
+      return { success: true, message: 'Asset deleted successfully' }
+    } catch (error) {
+      console.error('❌ Asset deletion failed:', error)
+
+      // If we updated creative data but something else failed, try rollback
+      if (originalCreativeData) {
+        console.warn('⚠️ Attempting rollback of creative data...')
+        try {
+          const rollbackResponse = await (isDevelopment
+            ? useMockAPI().updateCreative(creativeId)
+            : fetch(`/api/v1/creative_data/${creativeId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  version: 1,
+                  data: originalCreativeData,
+                  creative_id: creativeId,
+                }),
+              }).then((r) => r.json()))
+
+          if (rollbackResponse.status !== 200) {
+            throw new Error(`Rollback failed: ${rollbackResponse.message}`)
+          }
+          console.log('✅ Rollback successful')
+        } catch (rollbackError) {
+          console.error('💥 ROLLBACK FAILED:', rollbackError)
+          errorEvents.emit('asset-error', {
+            type: 'rollback-failure',
+            culprit: 'rollback mechanism',
+            error: rollbackError instanceof Error ? rollbackError.message : 'Rollback failed',
+            assetId,
+            originalError: error instanceof Error ? error.message : 'Unknown error',
+            creativeId,
+          })
+          return {
+            success: false,
+            message: `Deletion failed AND rollback failed. Creative data may be inconsistent.`,
+          }
+        }
+      }
+
+      errorEvents.emit('asset-error', {
+        type: 'deletion-failure',
+        culprit: 'unknown',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        assetId,
+        creativeId,
+      })
+
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Asset deletion failed',
+      }
+    }
+  }
+
+  return {
+    // Core operations
+    getCreativeBundle,
+    updateCreative,
+    insertAsset,
+    deleteAsset,
+
+    // Utility
+    isDevelopment,
   }
 }

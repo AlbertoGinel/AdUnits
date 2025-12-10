@@ -1,8 +1,9 @@
 // composables/view/useAdUnitRendering.ts
 import { useCanvasManager } from './useCanvasManager'
 import { useElementRenderer } from './useElementRenderer'
-import { useElementLoader } from './useElementLoader'
+import { useImageManager } from '../setupImages/useImageManager'
 import type { CanvasElement } from '@/stores/canvas'
+import { useCropping } from '@/composables/Tools/useCropping'
 
 export interface ElementRenderData {
   elementId: string
@@ -20,7 +21,8 @@ export interface ElementRenderData {
 export function useAdUnitRendering() {
   const manager = useCanvasManager()
   const renderer = useElementRenderer()
-  const loader = useElementLoader()
+  const imageManager = useImageManager()
+  const cropping = useCropping()
 
   /**
    * Define rendering order (bottom to top)
@@ -50,7 +52,7 @@ export function useAdUnitRendering() {
 
       // Add loaded image to config for image elements
       if (element.type === 'image' && element.image) {
-        const loadedImage = loader.getLoadedImage(element.image)
+        const loadedImage = imageManager.getImageOptimized(element.image)
         if (loadedImage) {
           config.image = loadedImage
         }
@@ -60,10 +62,12 @@ export function useAdUnitRendering() {
         elementId,
         element,
         visible: renderer.isElementVisible(element),
-        isCropping: loader.isElementCropping(elementId),
+        isCropping: cropping.isCropping.value,
         config,
         loadedImage:
-          element.type === 'image' && element.image ? loader.getLoadedImage(element.image) : null,
+          element.type === 'image' && element.image
+            ? imageManager.getImageOptimized(element.image)
+            : null,
       }
     })
 

@@ -91,7 +91,7 @@ const emit = defineEmits<{
 }>()
 
 const imageStore = useImageStore()
-const { uploadImage, cleanupImage } = useImageManager()
+const { uploadImage } = useImageManager()
 const creativeAPI = useCreativeAPI()
 
 const fileInput = ref<HTMLInputElement | null>(null)
@@ -199,16 +199,6 @@ const handleInsert = async () => {
 
 const handleRemoveImage = async () => {
   console.log('🗑️ Removing uploaded image')
-
-  if (uploadedImage.value?.blobId) {
-    try {
-      // Clean up IndexedDB and blob URL
-      await cleanupImage(uploadedImage.value.id)
-      console.log('✅ Cleaned up IndexedDB for:', uploadedImage.value.blobId)
-    } catch (error) {
-      console.error('❌ Failed to cleanup IndexedDB:', error)
-    }
-  }
 
   // Clear the uploadedImage ref
   uploadedImage.value = null

@@ -217,24 +217,38 @@ export function useErrorHandler() {
   /**
    * Set dependency status
    */
-  const setDependency = (key: keyof DependencyState, value: boolean) => {
+  const setDependency = async (key: keyof DependencyState, value: boolean) => {
     console.log(`🔗 Dependency ${key}: ${value}`)
     dependencies.value[key] = value
 
     // Check if we can exit suspense mode
-    if (value && areCriticalDependenciesReady()) {
+    if (value && (await areCriticalDependenciesReady())) {
       exitSuspense()
     }
   }
 
   /**
-   * Check if critical dependencies are ready
+   * Check if critical dependencies are ready (including images)
    */
-  const areCriticalDependenciesReady = () => {
-    return dependencies.value.assets && dependencies.value.creativeData
-  }
+  const areCriticalDependenciesReady = async () => {
+    const depsReady = dependencies.value.assets && dependencies.value.creativeData
 
-  /**
+    if (!depsReady) return false
+
+    try {
+      // Dynamic import to avoid circular dependency
+      const { useImageManager } = await import('@/composables/setupImages/useImageManager')
+      const { areImagesLoading } = useImageManager()
+      const imagesStillLoading = areImagesLoading.value
+
+      console.log('🔍 Dependencies ready:', depsReady, 'Images loading:', imagesStillLoading)
+
+      return depsReady && !imagesStillLoading
+    } catch (error) {
+      console.warn('⚠️ Could not check image loading state, defaulting to deps only:', error)
+      return depsReady
+    }
+  } /**
    * Start suspense loading state
    */
   const startSuspense = () => {
@@ -264,7 +278,7 @@ export function useErrorHandler() {
    * Exit suspense mode
    */
   const exitSuspense = () => {
-    console.log('✅ Exiting suspense mode')
+    console.log('⏳ Exiting suspense mode')
     suspenseState.value.isLoading = false
     suspenseState.value.isTimeout = false
     suspenseState.value.startTime = null

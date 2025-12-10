@@ -1,297 +1,389 @@
 // composables/setupImages/useImageManager.ts
-import { useImageStore, type ImageAsset } from '@/stores/useImageStore'
-import { useCanvasData } from '@/composables/data/useCanvasData'
-import { useImageDatabase } from '@/composables/database/useImageDatabase'
+import { ref } from 'vue'
+import { useCreativeAPI } from '@/composables/api/useCreativeAPI'
+import type { AssetResponse, ImageMetadata } from '@/composables/api/useCreativeAPI'
+import type { CreativeContentData } from '@/types/creative'
 
-export const useImageManager = () => {
-  const imageStore = useImageStore()
-  const { getLayers } = useCanvasData()
-  const imageDatabase = useImageDatabase()
+/**
+ * Robust ID-centric Image Manager
+ * Coordinates with useCreativeAPI for complete image asset management
+ * Provides synchronous image access after initialization
+ */
+
+interface CachedImage {
+  id: string
+  url: string
+  type: 'image' | 'logo'
+  name: string
+  element: HTMLImageElement
+  status: 'loading' | 'loaded' | 'error'
+  lastUsed: number
+}
+
+interface ImageCacheMap {
+  [imageId: string]: CachedImage
+}
+
+interface ImageManagerErrorData {
+  type: string
+  culprit: string
+  error?: string
+  imageId?: string
+  url?: string
+  creativeId?: string
+}
+
+// Event emitters for error communication
+const imageManagerEvents = {
+  emit: (
+    type: string,
+    data: ImageManagerErrorData | { creativeId?: string; totalImages?: number },
+  ) => {
+    const event = new CustomEvent(`image-manager-${type}`, { detail: data })
+    window.dispatchEvent(event)
+  },
+}
+
+// Singleton instance
+let sharedImageManager: ReturnType<typeof createImageManager> | null = null
+
+export function useImageManager() {
+  if (!sharedImageManager) {
+    sharedImageManager = createImageManager()
+  }
+  return sharedImageManager
+}
+
+function createImageManager() {
+  // Internal state
+  const imageCache = ref<ImageCacheMap>({})
+  const isInitialized = ref(false)
+  const isReady = ref(false)
+  const fallbackImage = ref<HTMLImageElement | null>(null)
+  const cachedCreativeData = ref<CreativeContentData | null>(null)
+
+  // Creative API integration
+  const creativeAPI = useCreativeAPI()
 
   /**
-   * Load an image from URL with IndexedDB blob caching
-   * Creates HTMLImageElement and stores blob for efficient reuse
+   * Create fallback image element with special ID
    */
-  const loadImage = async (
-    id: string,
-    url: string,
-    type?: 'image' | 'logo',
-    name?: string,
-    isReserved?: boolean,
-  ): Promise<ImageAsset> => {
-    // Use name as key if provided, otherwise use id
-    const key = name || id
-
-    // ✅ CHECK: If image already loaded, return it immediately
-    const existing = isReserved
-      ? imageStore.reserved[key as 'fallback' | 'uploadTemp']
-      : imageStore.images[key]
-
-    if (existing && existing.loaded && existing.image) {
-      console.log(`♻️ Image already loaded: ${key}`)
-      return existing
+  const createFallbackImage = (): HTMLImageElement => {
+    if (fallbackImage.value) {
+      return fallbackImage.value
     }
 
-    console.log(`🌐 Loading image: ${key} from ${url}`)
+    const img = new Image()
+    img.src = '/Fallback.png'
 
-    // Generate blob ID for storage
-    const blobId = `img_${key}`
+    fallbackImage.value = img
+    return img
+  }
+
+  /**
+   * Initialize image manager with creative bundle
+   * Calls useCreativeAPI and handles complete initialization
+   */
+  const initialize = async (creativeId: string): Promise<void> => {
+    console.log('🖼️ ImageManager: Initializing with creative:', creativeId)
 
     try {
-      // Check if we have this image in IndexedDB
-      const existingBlobUrl = await imageDatabase.getImageBlob(blobId)
+      // Reset state
+      isInitialized.value = false
+      isReady.value = false
+      imageCache.value = {}
 
-      let blobUrl: string
-      let img: HTMLImageElement
+      // Fetch creative bundle from API
+      const bundle = await creativeAPI.getCreativeBundle(creativeId)
 
-      if (existingBlobUrl) {
-        // Use existing blob
-        console.log(`💾 Using cached blob: ${key}`)
-        blobUrl = existingBlobUrl
-        img = await createImageFromBlobUrl(blobUrl)
-      } else {
-        // Fetch and store new image
-        console.log(`📥 Fetching and caching: ${key}`)
+      console.log('📦 ImageManager: Got bundle:', {
+        assets: bundle.assets.length,
+        images: bundle.creativeData.images.length,
+      })
 
-        // Handle different URL types
-        if (url.startsWith('data:')) {
-          // Convert data URL to blob
-          const response = await fetch(url)
-          const blob = await response.blob()
-          blobUrl = await imageDatabase.storeImageBlob(blobId, blob, url)
-        } else if (url.startsWith('blob:')) {
-          // Already a blob URL, just use it
-          blobUrl = url
-        } else {
-          // Fetch from network and cache
-          const response = await fetch(url)
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-          }
-          blobUrl = await imageDatabase.storeFromResponse(blobId, response, url)
+      // Validate data integrity
+      const assetMap = new Map(bundle.assets.map((asset) => [asset.id, asset]))
+      //const imageMap = new Map(bundle.creativeData.images.map((img) => [img.id, img]))
+
+      // Check for mismatches
+      const validImages: Array<{ asset: AssetResponse; metadata: ImageMetadata }> = []
+
+      for (const imageMetadata of bundle.creativeData.images) {
+        const asset = assetMap.get(imageMetadata.id)
+
+        if (!asset) {
+          console.warn('⚠️ Image metadata without corresponding asset:', imageMetadata.id)
+          imageManagerEvents.emit('error', {
+            type: 'integrity-mismatch',
+            culprit: 'missing asset',
+            imageId: imageMetadata.id,
+            creativeId,
+          })
+          continue
         }
 
-        img = await createImageFromBlobUrl(blobUrl)
+        if (asset.error) {
+          console.warn('⚠️ Asset has error:', asset.id, asset.error)
+          imageManagerEvents.emit('error', {
+            type: 'asset-error',
+            culprit: 'asset endpoint',
+            error: asset.error,
+            imageId: asset.id,
+            creativeId,
+          })
+          continue
+        }
+
+        validImages.push({ asset, metadata: imageMetadata })
       }
 
-      // Create asset
-      const asset: ImageAsset = {
-        id: isReserved ? `__reserved__${key}` : id,
-        url, // ✅ Keep original URL
-        blobUrl, // ✅ Add blob URL for display
-        blobId, // ✅ Add IndexedDB key
-        name,
-        type,
-        image: img,
-        dimensions: {
-          width: img.width,
-          height: img.height,
-          naturalWidth: img.naturalWidth,
-          naturalHeight: img.naturalHeight,
-          aspectRatio: img.naturalWidth / img.naturalHeight,
-        },
-        loaded: true,
-      }
+      console.log(
+        `🔍 ImageManager: ${validImages.length}/${bundle.creativeData.images.length} images are valid`,
+      )
 
-      // Store in appropriate location
-      if (isReserved) {
-        imageStore.reserved[key as 'fallback' | 'uploadTemp'] = asset
-      } else {
-        imageStore.images[key] = asset
-      }
+      // Cache creative data for external access
+      cachedCreativeData.value = bundle.creativeData
 
-      const typeLabel = type ? ` [${type}]` : ''
-      console.log(`✅ Loaded: ${key}${typeLabel} (${img.naturalWidth}x${img.naturalHeight})`)
-      return asset
+      // Start bulk caching immediately
+      await bulkCacheImages(validImages, creativeId)
+
+      isInitialized.value = true
+      console.log('✅ ImageManager: Initialization complete')
     } catch (error) {
-      console.error(`❌ Failed to load image: ${key} from ${url}`, error)
-      throw new Error(`Failed to load: ${url}`)
-    }
-  }
+      console.error('❌ ImageManager: Initialization failed:', error)
 
-  /**
-   * Create HTMLImageElement from blob URL
-   */
-  const createImageFromBlobUrl = (blobUrl: string): Promise<HTMLImageElement> => {
-    return new Promise((resolve, reject) => {
-      const img = new Image()
-      img.crossOrigin = 'anonymous'
+      imageManagerEvents.emit('error', {
+        type: 'initialization-failure',
+        culprit: 'image manager',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        creativeId,
+      })
 
-      img.onload = () => resolve(img)
-      img.onerror = () => reject(new Error(`Failed to create image from blob URL`))
-
-      img.src = blobUrl
-    })
-  } /**
-   * Initialize reserved images (fallback)
-   */
-  const initializeReservedImages = async () => {
-    console.log('🔧 Initializing reserved images...')
-
-    // Load fallback image
-    await loadImage('fallback', '/Fallback.png', 'image', 'fallback', true)
-
-    // Initialize uploadTemp as empty placeholder
-    imageStore.reserved.uploadTemp = null
-
-    console.log('✅ Reserved images initialized')
-  }
-
-  /**
-   * Preload default images for dev
-   */
-  const preloadDefaultImages = async () => {
-    if (imageStore.isInitialized) return
-
-    const defaultImages = [
-      { id: 'lifeStyle', url: '/lifeStyle.png' },
-      { id: 'logo', url: '/logo.png' },
-      { id: 'fallback', url: '/Fallback.png' },
-    ]
-
-    await Promise.all(
-      defaultImages.map(({ id, url }) => loadImage(id, url).catch((err) => console.error(err))),
-    )
-
-    imageStore.isInitialized = true
-    console.log('✅ Default images preloaded')
-  }
-
-  /**
-   * Get loaded image by ID with fallback support
-   */
-  const getImage = (id: string | null | undefined): ImageAsset | null => {
-    // If no ID or not found, return fallback
-    if (!id) return imageStore.images['fallback'] || null
-
-    const asset = imageStore.images[id]
-    if (asset?.image) return asset
-
-    // Not found, return fallback
-    return imageStore.images['fallback'] || null
-  }
-
-  /**
-   * Upload image from user's computer
-   * Stores in IndexedDB and creates asset with blob URL
-   */
-  const uploadImage = async (file: File, type: 'image' | 'logo' = 'image'): Promise<ImageAsset> => {
-    // Generate unique ID for uploaded image
-    const id = `upload-${Date.now()}-${file.name.replace(/\.[^/.]+$/, '')}`
-    const blobId = `img_uploadTemp` // ✅ Use fixed ID for uploadTemp
-
-    try {
-      // Store file directly in IndexedDB
-      const blobUrl = await imageDatabase.storeFromFile(blobId, file, `file://${file.name}`)
-
-      // Create image element from blob URL
-      const img = await createImageFromBlobUrl(blobUrl)
-
-      // Create asset
-      const asset: ImageAsset = {
-        id,
-        url: `file://${file.name}`, // ✅ Original file reference
-        blobUrl, // ✅ Blob URL for display
-        blobId, // ✅ IndexedDB key (img_uploadTemp)
-        name: file.name,
-        type,
-        image: img,
-        dimensions: {
-          width: img.width,
-          height: img.height,
-          naturalWidth: img.naturalWidth,
-          naturalHeight: img.naturalHeight,
-          aspectRatio: img.naturalWidth / img.naturalHeight,
-        },
-        loaded: true,
-        isUploaded: true,
-      }
-
-      // Don't store in general images store for uploadTemp
-      console.log(`📤 Uploaded: ${file.name} → ${blobId} (IndexedDB only)`)
-
-      return asset
-    } catch (error) {
-      console.error(`❌ Failed to upload image:`, error)
       throw error
     }
   }
 
   /**
-   * Get all uploaded images
+   * Bulk cache all valid images
    */
-  const getUploadedImages = (): ImageAsset[] => {
-    return Object.values(imageStore.images).filter((asset) => asset.isUploaded && asset.image)
-  }
+  const bulkCacheImages = async (
+    validImages: Array<{ asset: AssetResponse; metadata: ImageMetadata }>,
+    creativeId: string,
+  ): Promise<void> => {
+    console.log('🚀 ImageManager: Starting bulk cache for', validImages.length, 'images')
 
-  /**
-   * Get all images filtered by type (image or logo)
-   */
-  const getImagesByType = (type: 'image' | 'logo'): ImageAsset[] => {
-    return Object.values(imageStore.images).filter((asset) => asset.type === type && asset.image)
-  }
+    // Create cache entries for all images
+    const loadPromises = validImages.map(({ asset, metadata }) => {
+      const img = new Image()
 
-  /**
-   * Get the current image from layers definition with fallback
-   */
-  const getCurrentImage = (): ImageAsset | null => {
-    const layers = getLayers()
-    const imageLayer = layers['image']
-    const imageId = imageLayer?.defaultValue || null
+      const cacheEntry: CachedImage = {
+        id: asset.id,
+        url: asset.path,
+        type: metadata.type as 'image' | 'logo',
+        name: metadata.name,
+        element: img,
+        status: 'loading',
+        lastUsed: Date.now(),
+      }
 
-    // getImage handles fallback if imageId is null or not found
-    return getImage(imageId)
-  }
+      // Add to cache immediately
+      imageCache.value[asset.id] = cacheEntry
 
-  /**
-   * Clean up image resources (revoke blob URLs, delete from IndexedDB)
-   */
-  const cleanupImage = async (imageId: string): Promise<void> => {
-    // Check both general images and reserved
-    const asset = imageStore.images[imageId] || imageStore.reserved.uploadTemp
+      // Return loading promise
+      return new Promise<void>((resolve) => {
+        img.onload = () => {
+          cacheEntry.status = 'loaded'
+          console.log('✅ Image cached:', asset.id, metadata.name)
+          resolve()
+        }
 
-    if (!asset) {
-      console.log(`⚠️ No asset found for cleanup: ${imageId}`)
-      return
+        img.onerror = () => {
+          cacheEntry.status = 'error'
+          console.error('❌ Image cache failed:', asset.id, asset.path)
+
+          imageManagerEvents.emit('error', {
+            type: 'cache-failure',
+            culprit: 'image loading',
+            error: 'Failed to load image',
+            imageId: asset.id,
+            url: asset.path,
+            creativeId,
+          })
+
+          resolve() // Don't block other images
+        }
+
+        // Start loading
+        img.src = asset.path
+      })
+    })
+
+    // Wait for all images to complete (load or error)
+    await Promise.all(loadPromises)
+
+    // Check if all images loaded successfully
+    const stats = getCacheStats()
+
+    if (stats.error > 0) {
+      console.warn(`⚠️ ImageManager: ${stats.error} images failed to load`)
     }
 
-    try {
-      // Revoke blob URL to free memory
-      if (asset.blobUrl) {
-        URL.revokeObjectURL(asset.blobUrl)
-        console.log(`🔄 Revoked blob URL: ${asset.blobUrl}`)
-      }
+    isReady.value = true
 
-      // Delete from IndexedDB
-      if (asset.blobId) {
-        await imageDatabase.deleteImageBlob(asset.blobId)
-        console.log(`🗑️ Deleted from IndexedDB: ${asset.blobId}`)
-      }
+    imageManagerEvents.emit('images-ready', {
+      creativeId,
+      totalImages: stats.total,
+    })
 
-      // Remove from appropriate store
-      if (imageStore.images[imageId]) {
-        delete imageStore.images[imageId]
-      }
-      if (imageStore.reserved.uploadTemp?.id === imageId) {
-        imageStore.reserved.uploadTemp = null
-      }
+    console.log('✅ ImageManager: Bulk caching complete:', stats)
+  }
 
-      console.log(`🧹 Cleaned up image: ${imageId}`)
-    } catch (error) {
-      console.error(`❌ Failed to cleanup image: ${imageId}`, error)
+  /**
+   * Get image element by ID (synchronous)
+   * Returns HTMLImageElement if ready, fallback if not found/failed
+   */
+  const getImageOptimized = (imageId: string): HTMLImageElement => {
+    // Handle special fallback ID
+    if (imageId === '__fallback__') {
+      return createFallbackImage()
+    }
+
+    const cached = imageCache.value[imageId]
+
+    if (!cached) {
+      console.warn('🖼️ ImageManager: Image not found:', imageId)
+      return createFallbackImage()
+    }
+
+    if (cached.status === 'error') {
+      console.warn('🖼️ ImageManager: Image failed to load:', imageId)
+      return createFallbackImage()
+    }
+
+    if (cached.status === 'loading') {
+      console.warn('🖼️ ImageManager: Image still loading:', imageId)
+      return createFallbackImage()
+    }
+
+    // Update usage timestamp
+    cached.lastUsed = Date.now()
+
+    return cached.element
+  }
+
+  /**
+   * Check if specific image is ready
+   */
+  const isImageReady = (imageId: string): boolean => {
+    if (imageId === '__fallback__') {
+      return true
+    }
+
+    const cached = imageCache.value[imageId]
+    return cached ? cached.status === 'loaded' : false
+  }
+
+  /**
+   * Check if all images are ready
+   */
+  const areAllImagesReady = (): boolean => {
+    return isReady.value
+  }
+
+  /**
+   * Get image metadata by ID
+   */
+  const getImageMetadata = (imageId: string): { id: string; type: string; name: string } | null => {
+    const cached = imageCache.value[imageId]
+
+    if (!cached) {
+      return null
+    }
+
+    return {
+      id: cached.id,
+      type: cached.type,
+      name: cached.name,
+    }
+  }
+
+  /**
+   * Get cache statistics
+   */
+  const getCacheStats = () => {
+    const stats = {
+      total: 0,
+      loaded: 0,
+      loading: 0,
+      error: 0,
+    }
+
+    for (const cached of Object.values(imageCache.value)) {
+      stats.total++
+      stats[cached.status]++
+    }
+
+    return stats
+  }
+
+  /**
+   * Get all cached image IDs
+   */
+  const getAllImageIds = (): string[] => {
+    return Object.keys(imageCache.value)
+  }
+
+  /**
+   * Clear cache and reset state
+   */
+  const clearCache = () => {
+    imageCache.value = {}
+    isInitialized.value = false
+    isReady.value = false
+    fallbackImage.value = null
+    cachedCreativeData.value = null
+    console.log('🧹 ImageManager: Cache cleared')
+  }
+
+  /**
+   * Get cached creative data
+   */
+  const getCreativeData = () => {
+    return cachedCreativeData.value
+  }
+
+  /**
+   * Get current initialization status
+   */
+  const getStatus = () => {
+    return {
+      isInitialized: isInitialized.value,
+      isReady: isReady.value,
+      cacheStats: getCacheStats(),
     }
   }
 
   return {
-    loadImage,
-    initializeReservedImages,
-    getImage,
-    getCurrentImage,
-    uploadImage,
-    getUploadedImages,
-    getImagesByType,
-    preloadDefaultImages,
-    cleanupImage,
-    createImageFromBlobUrl,
+    // State
+    isInitialized,
+    isReady,
+
+    // Core methods
+    initialize,
+    getImageOptimized,
+
+    // Status checks
+    isImageReady,
+    areAllImagesReady,
+    getStatus,
+
+    // Metadata
+    getImageMetadata,
+    getAllImageIds,
+    getCreativeData,
+
+    // Utilities
+    getCacheStats,
+    clearCache,
   }
 }

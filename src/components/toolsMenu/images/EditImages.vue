@@ -45,12 +45,10 @@
 import { ref, computed } from 'vue'
 import { useCropping } from '@/composables/Tools/useCropping'
 import { useImageManager } from '@/composables/setupImages/useImageManager'
-//import { useTools } from '@/composables/Tools/useTools'
 import UploadLibrary from './UploadLibrary.vue'
 
 const { isCropping, startCrop, applyCrop, cancelCrop } = useCropping()
 const { getCurrentImage } = useImageManager()
-//const { imageValue } = useTools()
 
 defineEmits<{
   navigate: [subView: string]
@@ -58,7 +56,6 @@ defineEmits<{
 
 const altText = ref('')
 
-// Get the current image from canvas (with automatic fallback)
 const currentImage = computed(() => {
   const imageData = getCurrentImage()
   return imageData?.url || ''
