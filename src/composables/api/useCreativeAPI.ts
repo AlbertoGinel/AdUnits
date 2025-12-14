@@ -161,6 +161,8 @@ export function useCreativeAPI() {
       // Get current state from Pinia
       const currentData = canvasData.exportToCreativeContentData()
 
+      console.log('Current data is here: ', currentData)
+
       if (!currentData) {
         const error = new Error('Cannot export creative data - no creative_id set')
         errorEvents.emit('update-error', {
@@ -173,16 +175,17 @@ export function useCreativeAPI() {
       }
 
       // Call API with direct DEV/PROD switching
+      const payload = {
+        version: 1,
+        data: currentData,
+        creative_id: creativeId,
+      }
       const response = isDevelopment
-        ? await useMockAPI().updateCreative(creativeId)
+        ? await useMockAPI().updateCreative(creativeId, payload)
         : await fetch(`/api/v1/creative_data/${creativeId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              version: 1,
-              data: currentData,
-              creative_id: creativeId,
-            }),
+            body: JSON.stringify(payload),
           }).then((r) => r.json())
 
       if (response.status === 200) {
@@ -227,6 +230,14 @@ export function useCreativeAPI() {
   ): Promise<InsertAssetResult> => {
     console.log(`📤 [${isDevelopment ? 'DEV' : 'PROD'}] Inserting asset:`, file.name)
 
+    // Emit asset operation start
+    errorEvents.emit('asset-start', {
+      type: 'asset-insert-start',
+      culprit: 'asset upload',
+      fileName: file.name,
+      creativeId,
+    })
+
     let uploadedAssetId: string | null = null
 
     try {
@@ -257,37 +268,52 @@ export function useCreativeAPI() {
       }
 
       uploadedAssetId = uploadResponse.assetId
+      const uploadedPath = uploadResponse.path
       console.log('✅ Step 1 complete: Asset uploaded', uploadedAssetId)
+
+      if (!uploadedAssetId || !uploadedPath) {
+        throw new Error('Asset upload succeeded but no assetId or path returned')
+      }
+
+      // Add image to Pinia imageStore with the real assetId
+      // This must happen BEFORE Step 2 so exportToCreativeContentData includes it
+      const imageManager = await import('@/composables/setupImages/useImageManager').then((m) =>
+        m.useImageManager(),
+      )
+      const imageStore = (await import('@/stores/useImageStore')).useImageStore()
+      await imageManager.addUploadedImage(
+        uploadedAssetId,
+        uploadedPath,
+        metadata.type,
+        metadata.name,
+      )
+
+      // Clear uploadTemp after successfully adding to regular images
+      imageStore.setUploadTempImage(null)
+      console.log('✅ Image added to Pinia store with assetId:', uploadedAssetId)
+      console.log('✅ Cleared uploadTemp')
 
       // Step 2: Update creative data to include new asset
       console.log('Step 2: Updating creative data...')
 
-      // Add asset to local images array
+      // Export current data (now includes the new image with correct assetId)
       const currentData = canvasData.exportToCreativeContentData()
       if (!currentData) {
         throw new Error('Cannot export creative data for update')
       }
 
-      // Add new image metadata
-      if (uploadedAssetId) {
-        currentData.images.push({
-          id: uploadedAssetId,
-          type: metadata.type,
-          name: metadata.name,
-        })
-      }
-
       // Update via API with direct DEV/PROD switching
+      const payload = {
+        version: 1,
+        data: currentData,
+        creative_id: creativeId,
+      }
       const updateResponse = isDevelopment
-        ? await useMockAPI().updateCreative(creativeId)
+        ? await useMockAPI().updateCreative(creativeId, payload)
         : await fetch(`/api/v1/creative_data/${creativeId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              version: 1,
-              data: currentData,
-              creative_id: creativeId,
-            }),
+            body: JSON.stringify(payload),
           }).then((r) => r.json())
 
       if (updateResponse.status !== 200) {
@@ -336,6 +362,14 @@ export function useCreativeAPI() {
 
       console.log('✅ Step 2 complete: Creative data updated')
       console.log('✅ Asset insertion successful:', uploadedAssetId)
+
+      // Emit success event
+      errorEvents.emit('asset-complete', {
+        type: 'asset-insert-success',
+        culprit: 'asset upload',
+        assetId: uploadedAssetId || undefined,
+        creativeId,
+      })
 
       return {
         success: true,
@@ -401,6 +435,14 @@ export function useCreativeAPI() {
   const deleteAsset = async (creativeId: string, assetId: string): Promise<DeleteAssetResult> => {
     console.log(`🗑️ [${isDevelopment ? 'DEV' : 'PROD'}] Deleting asset:`, assetId)
 
+    // Emit asset operation start
+    errorEvents.emit('asset-start', {
+      type: 'asset-delete-start',
+      culprit: 'asset delete',
+      assetId,
+      creativeId,
+    })
+
     let originalCreativeData: CreativeContentData | null = null
 
     try {
@@ -418,16 +460,17 @@ export function useCreativeAPI() {
         images: originalCreativeData.images.filter((img) => img.id !== assetId),
       }
 
+      const payload = {
+        version: 1,
+        data: updatedData,
+        creative_id: creativeId,
+      }
       const updateResponse = isDevelopment
-        ? await useMockAPI().updateCreative(creativeId)
+        ? await useMockAPI().updateCreative(creativeId, payload)
         : await fetch(`/api/v1/creative_data/${creativeId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              version: 1,
-              data: updatedData,
-              creative_id: creativeId,
-            }),
+            body: JSON.stringify(payload),
           }).then((r) => r.json())
 
       if (updateResponse.status !== 200) {
@@ -455,16 +498,17 @@ export function useCreativeAPI() {
         console.warn('⚠️ Step 2 failed, rolling back Step 1...')
 
         try {
+          const rollbackPayload = {
+            version: 1,
+            data: originalCreativeData,
+            creative_id: creativeId,
+          }
           const rollbackResponse = await (isDevelopment
-            ? useMockAPI().updateCreative(creativeId)
+            ? useMockAPI().updateCreative(creativeId, rollbackPayload)
             : fetch(`/api/v1/creative_data/${creativeId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  version: 1,
-                  data: originalCreativeData,
-                  creative_id: creativeId,
-                }),
+                body: JSON.stringify(rollbackPayload),
               }).then((r) => r.json()))
 
           if (rollbackResponse.status !== 200) {
@@ -501,6 +545,14 @@ export function useCreativeAPI() {
       console.log('✅ Step 2 complete: Asset deleted')
       console.log('✅ Asset deletion successful:', assetId)
 
+      // Emit success event
+      errorEvents.emit('asset-complete', {
+        type: 'asset-delete-success',
+        culprit: 'asset delete',
+        assetId,
+        creativeId,
+      })
+
       return { success: true, message: 'Asset deleted successfully' }
     } catch (error) {
       console.error('❌ Asset deletion failed:', error)
@@ -509,16 +561,17 @@ export function useCreativeAPI() {
       if (originalCreativeData) {
         console.warn('⚠️ Attempting rollback of creative data...')
         try {
+          const rollbackPayload = {
+            version: 1,
+            data: originalCreativeData,
+            creative_id: creativeId,
+          }
           const rollbackResponse = await (isDevelopment
-            ? useMockAPI().updateCreative(creativeId)
+            ? useMockAPI().updateCreative(creativeId, rollbackPayload)
             : fetch(`/api/v1/creative_data/${creativeId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  version: 1,
-                  data: originalCreativeData,
-                  creative_id: creativeId,
-                }),
+                body: JSON.stringify(rollbackPayload),
               }).then((r) => r.json()))
 
           if (rollbackResponse.status !== 200) {

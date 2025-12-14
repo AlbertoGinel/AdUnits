@@ -6,6 +6,8 @@ import { useCroppingStore } from '@/stores/useCroppingStore'
 import { useCanvasData } from '@/composables/data/useCanvasData'
 import { useImageManager } from '@/composables/setupImages/useImageManager'
 
+//TODO!! the cropping principle is in useCanvasData
+
 export interface CropData {
   x: number
   y: number

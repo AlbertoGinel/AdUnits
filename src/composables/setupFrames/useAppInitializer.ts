@@ -1,7 +1,8 @@
 // composables/setupFrames/useAppInitializer.ts
 import { useImageManager } from '@/composables/setupImages/useImageManager'
 import { useCanvasData } from '@/composables/data/useCanvasData'
-import { useErrorHandler } from '@/composables/errors/useErrorHandler'
+import { useCreativeAPI } from '@/composables/api/useCreativeAPI'
+import { useNotifications } from '@/composables/feedbackAsync/useNotifications'
 import type { AdUnit } from '@/stores/canvas'
 
 /**
@@ -11,7 +12,8 @@ import type { AdUnit } from '@/stores/canvas'
 export const useAppInitializer = () => {
   const imageManager = useImageManager()
   const { importToCreativeContentData, getStage } = useCanvasData()
-  const errorHandler = useErrorHandler()
+  const creativeAPI = useCreativeAPI()
+  const notifications = useNotifications()
 
   /**
    * Step 1: Load frame models (structure/layout) - ALWAYS LOCAL
@@ -98,28 +100,20 @@ export const useAppInitializer = () => {
           // Show warning for failed images
           const stats = imageManager.getCacheStats()
           if (stats.error > 0) {
-            errorHandler.showToast({
-              type: 'warning',
-              title: 'Some images failed to load',
-              message: `${stats.error} of ${stats.total} images couldn't be loaded`,
-              actions: [
-                {
-                  label: 'Retry',
-                  action: async () => {
-                    await imageManager.initialize(creativeId)
-                  },
-                },
-              ],
-            })
+            notifications.showWarning(
+              'Some images failed to load',
+              `${stats.error} of ${stats.total} images couldn't be loaded`,
+            )
           }
         }
 
-        // Step 4: Get creative data from image manager and populate stores
+        // Step 4: Get creative data from API and populate stores
         console.log('📊 Step 4: Populating stores...')
-        const creativeData = imageManager.getCreativeData()
+        const bundle = await creativeAPI.getCreativeBundle(creativeId)
+        const creativeData = bundle.creativeData
 
         if (!creativeData) {
-          throw new Error('Creative data not available from image manager')
+          throw new Error('Creative data not available from API')
         }
 
         importToCreativeContentData(stage, modelAdUnits, creativeData)
@@ -142,11 +136,10 @@ export const useAppInitializer = () => {
         console.error('❌ App initialization failed:', error)
 
         // Handle initialization failure
-        errorHandler.showToast({
-          type: 'error',
-          title: 'App initialization failed',
-          message: 'Failed to load creative data. Please refresh the page.',
-          actions: [
+        notifications.showError(
+          'App initialization failed',
+          'Failed to load creative data. Please refresh the page.',
+          [
             {
               label: 'Retry',
               action: async () => {
@@ -154,7 +147,7 @@ export const useAppInitializer = () => {
               },
             },
           ],
-        })
+        )
 
         return false
       } finally {

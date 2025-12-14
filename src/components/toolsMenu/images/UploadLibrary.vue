@@ -6,14 +6,14 @@
     <!-- Uploaded Images Grid -->
     <div class="uploads-grid">
       <div
-        v-for="upload in filteredImages"
+        v-for="upload in images"
         :key="upload.id"
         class="upload-item"
         :class="{ selected: selectedImageId === upload.id }"
         @click="selectImage(upload.id)"
       >
         <img
-          v-if="upload.loaded && upload.image"
+          v-if="upload.image"
           :src="upload.image.src"
           :alt="upload.name"
           class="upload-thumbnail"
@@ -25,55 +25,57 @@
 
     <!-- Action Buttons -->
     <div class="action-buttons">
-      <button @click="$emit('navigate', 'upload')" class="btn-upload">
+      <button @click="$emit('upload-requested')" class="btn-upload">
         Upload {{ type === 'logo' ? 'Logo' : 'Image' }}
       </button>
 
-      <button class="btn-insert" :disabled="!selectedImageId" @click="insertSelectedImage">
-        Insert
-      </button>
+      <button class="btn-insert" :disabled="!selectedImageId" @click="handleInsert">Insert</button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useImageManager } from '@/composables/setupImages/useImageManager'
+import { ref } from 'vue'
+
+interface ImageItem {
+  id: string
+  name: string
+  image: HTMLImageElement
+}
 
 interface Props {
   show: boolean
   type: 'image' | 'logo'
+  images: ImageItem[]
+  selectedImageId?: string | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
   type: 'image',
+  selectedImageId: null,
 })
 
 const emit = defineEmits<{
-  insert: [imageId: string]
-  navigate: [subView: string]
+  'image-selected': [imageId: string]
+  'upload-requested': []
+  'insert-requested': [imageId: string]
 }>()
 
-const { getImagesByType } = useImageManager()
-const selectedImageId = ref<string | null>(null)
-
-// Get images filtered by type
-const filteredImages = computed(() => {
-  return getImagesByType(props.type)
-})
+// Use prop for selected state, but maintain local ref for UI responsiveness
+const selectedImageId = ref<string | null>(props.selectedImageId)
 
 const selectImage = (id: string) => {
-  selectedImageId.value = selectedImageId.value === id ? null : id
+  const newSelection = selectedImageId.value === id ? null : id
+  selectedImageId.value = newSelection
+
+  if (newSelection) {
+    emit('image-selected', newSelection)
+  }
 }
 
-const insertSelectedImage = () => {
+const handleInsert = () => {
   if (!selectedImageId.value) return
-
-  // Emit event to parent with selected image ID
-  emit('insert', selectedImageId.value)
-
-  // Clear selection
-  selectedImageId.value = null
+  emit('insert-requested', selectedImageId.value)
 }
 </script>
 

@@ -1,7 +1,7 @@
 <!-- tools/EditTexts.vue -->
 <template>
   <!-- Show skeleton when dependencies are loading -->
-  <EditTextsSkeleton v-if="suspenseState.isLoading && !areCriticalDependenciesReady()" />
+  <EditTextsSkeleton v-if="!suspenseManager.appReady || !areCriticalDependenciesReady()" />
 
   <!-- Normal content when dependencies are ready -->
   <div v-else class="tool-menu">
@@ -91,13 +91,18 @@
 
 <script setup lang="ts">
 import { useTools } from '@/composables/Tools/useTools'
-import { useErrorHandler } from '@/composables/errors/useErrorHandler'
+import { useSuspenseManager } from '@/composables/feedbackAsync/useSuspenseManager'
 import TextFieldSection from './Subcomponets/TextFieldSection.vue'
 import DisclaimerSection from './Subcomponets/DisclaimerSection.vue'
 import EditTextsSkeleton from './EditTextsSkeleton.vue'
 
-// Error handler for suspense state
-const { suspenseState, areCriticalDependenciesReady } = useErrorHandler()
+// Suspense manager for loading state
+const suspenseManager = useSuspenseManager()
+
+// Check if critical dependencies are ready
+const areCriticalDependenciesReady = () => {
+  return suspenseManager.appReady.value
+}
 
 const {
   headlineValue,

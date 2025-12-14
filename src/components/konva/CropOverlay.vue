@@ -98,7 +98,7 @@ const {
   cancelCrop,
 } = useCropping()
 
-const { getImage } = useImageManager()
+const imageManager = useImageManager()
 
 const originalImage = ref<HTMLImageElement | null>(null)
 
@@ -111,10 +111,8 @@ watch(
   originalImageId,
   (imageId) => {
     if (imageId) {
-      const imageData = getImage(imageId)
-      if (imageData) {
-        originalImage.value = imageData.image
-      }
+      const imageElement = imageManager.getImageOptimized(imageId)
+      originalImage.value = imageElement
     } else {
       originalImage.value = null
     }

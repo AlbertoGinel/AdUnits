@@ -11,12 +11,12 @@
       @dragover.prevent="isDragOver = true"
       @dragenter.prevent="isDragOver = true"
       @dragleave.prevent="isDragOver = false"
-      @click="!uploadedImage && triggerFileInput()"
-      :class="{ 'drag-over': isDragOver, 'has-image': uploadedImage }"
-      :style="{ cursor: uploadedImage ? 'default' : 'pointer' }"
+      @click="!hasFile && triggerFileInput()"
+      :class="{ 'drag-over': isDragOver, 'has-image': hasFile }"
+      :style="{ cursor: hasFile ? 'default' : 'pointer' }"
     >
       <!-- Show upload prompt when no image -->
-      <div v-if="!uploadedImage" class="drop-zone-content">
+      <div v-if="!hasFile" class="drop-zone-content">
         <span class="upload-icon">📁</span>
         <p class="drop-text">Drag photos here</p>
         <p class="browse-text">or browse</p>
@@ -25,11 +25,15 @@
       <!-- Show preview when image uploaded -->
       <div v-else class="preview-content">
         <img
-          v-if="uploadedImage.image"
-          :src="uploadedImage.image.src"
+          v-if="previewImage"
+          :src="previewImage.src"
           alt="Upload preview"
           class="preview-image"
         />
+        <div v-else-if="error" class="error-content">
+          <span class="error-icon">⚠️</span>
+          <p class="error-text">{{ error }}</p>
+        </div>
         <button @click.stop="handleRemoveImage" class="btn-remove">
           <span>Remove image</span>
           <span class="remove-icon">⊗</span>
@@ -72,7 +76,7 @@
       <button @click="$emit('navigate', 'edit')" class="btn-secondary" :disabled="isUploading">
         Cancel
       </button>
-      <button @click="handleInsert" :disabled="!uploadedImage || isUploading" class="btn-primary">
+      <button @click="handleInsert" :disabled="!hasFile || isUploading" class="btn-primary">
         {{ isUploading ? 'Uploading...' : 'Insert Image' }}
       </button>
     </div>
@@ -80,141 +84,140 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useImageManager } from '@/composables/setupImages/useImageManager'
-import { useImageStore, type ImageAsset } from '@/stores/useImageStore'
+import { useSuspenseManager } from '@/composables/feedbackAsync/useSuspenseManager'
 import { useCreativeAPI } from '@/composables/api/useCreativeAPI'
+import { useCanvasData } from '@/composables/data/useCanvasData'
 
 const emit = defineEmits<{
   navigate: [subView: string]
-  insert: [imageId: string]
 }>()
 
-const imageStore = useImageStore()
-const { uploadImage } = useImageManager()
+const imageManager = useImageManager()
+const suspenseManager = useSuspenseManager()
 const creativeAPI = useCreativeAPI()
+const canvasData = useCanvasData()
 
 const fileInput = ref<HTMLInputElement | null>(null)
 const isDragOver = ref(false)
-const uploadedImage = ref<ImageAsset | null>(null)
 const altText = ref('')
-const isUploading = ref(false)
+const currentFile = ref<File | null>(null)
+
+// Computed properties
+const hasFile = computed(() => imageManager.hasUploadTemp())
+const isUploading = computed(() => !suspenseManager.loadingImagesMenuReady.value)
+const previewImage = computed(() => {
+  const uploadTemp = imageManager.getUploadTempImage()
+  if (!uploadTemp) return null
+  // Create image element from uploadTemp blob URL
+  const img = new Image()
+  img.src = uploadTemp.url
+  return img
+})
+const error = computed(() => {
+  // Could connect to error state from notifications or suspense manager
+  return null
+})
 
 const triggerFileInput = () => {
   fileInput.value?.click()
 }
 
-const handleDrop = async (e: DragEvent) => {
+const handleDrop = (e: DragEvent) => {
   e.preventDefault()
   isDragOver.value = false
 
-  // Don't allow drop if image already uploaded
-  if (uploadedImage.value) return
+  // Don't allow drop if image already selected
+  if (hasFile.value) return
 
   const files = e.dataTransfer?.files
   if (files && files.length > 0 && files[0]) {
-    await processFile(files[0])
+    handleFileSelection(files[0])
   }
 }
 
-const handleFileSelect = async (e: Event) => {
+const handleFileSelect = (e: Event) => {
   const input = e.target as HTMLInputElement
   const files = input.files
   if (files && files.length > 0 && files[0]) {
-    await processFile(files[0])
+    handleFileSelection(files[0])
   }
 }
 
-const processFile = async (file: File) => {
-  // Check if it's an image
-  if (!file.type.startsWith('image/')) {
-    alert('Please select an image file')
-    return
-  }
+const handleFileSelection = async (file: File) => {
+  // TODO: File type checking, size limits, etc.
+  // TODO: Add file size validation (10MB limit)
+  // TODO: Add dimension validation (5000x5000px limit)
 
   try {
-    console.log('📤 Processing upload:', file.name)
+    // Store file reference for insert
+    currentFile.value = file
 
-    // Use the proper image manager to load and store the file
-    const tempAsset = await uploadImage(file, 'image')
+    // Cache image using ImageManager (stores in uploadTemp only)
+    await imageManager.cacheTemporaryImage(file)
 
-    // Store in reserved uploadTemp slot (not general images)
-    const uploadTempAsset: ImageAsset = {
-      id: '__temp__upload',
-      url: `file://${file.name}`, // ✅ Original file reference
-      blobUrl: tempAsset.blobUrl, // ✅ Blob URL for display
-      blobId: tempAsset.blobId, // ✅ IndexedDB key (img_uploadTemp)
-      name: 'uploadTemp',
-      type: 'image' as const,
-      image: tempAsset.image,
-      dimensions: tempAsset.dimensions,
-      loaded: true,
-      isUploaded: true,
-    }
-
-    // Store in reserved.uploadTemp (not general images)
-    imageStore.reserved.uploadTemp = uploadTempAsset
-    uploadedImage.value = uploadTempAsset
-
-    // Remove from general images store if it was added there
-    if (imageStore.images[tempAsset.id]) {
-      delete imageStore.images[tempAsset.id]
-    }
-
-    console.log('✅ Image processed and stored in IndexedDB:', tempAsset.blobId)
+    console.log('✅ Temporary image loaded and ready for preview')
   } catch (error) {
     console.error('❌ Failed to process image:', error)
-    alert('Failed to load image')
   }
 }
 
 const handleInsert = async () => {
-  if (!uploadedImage.value) return
+  if (!currentFile.value || !imageManager.hasUploadTemp()) return
 
-  // Get the original file for the upload
-  const file = fileInput.value?.files?.[0]
-  if (!file) {
-    console.error('❌ No file available for insert')
+  const file = currentFile.value
+  const creativeId = canvasData.getCreativeId()
+
+  if (!creativeId) {
+    console.error('❌ No creative ID available')
     return
   }
 
   try {
-    isUploading.value = true
+    console.log('📤 Starting API upload for:', file.name)
 
-    // Call smart business logic (handles success/error flows internally)
-    const result = await creativeAPI.insertAsset('3fa85f64-5717-4562-b3fc-2c963f66afa6', file)
+    const result = await creativeAPI.insertAsset(creativeId, file, {
+      type: 'image',
+      name: altText.value || file.name.replace(/\.[^/.]+$/, ''),
+    })
 
-    if (result.success) {
-      // SUCCESS: uploadTemp already cleaned by useCreativeAPI, toasts shown
-      console.log('✅ Insert successful:', result.message)
-      emit('insert', result.assetId || '')
+    if (result.success && result.assetId) {
+      console.log('✅ API upload successful:', result.assetId)
+
+      // Clear local UI state (uploadTemp already cleared in insertAsset)
+      currentFile.value = null
+      altText.value = ''
+
+      if (fileInput.value) {
+        fileInput.value.value = ''
+      }
+
+      // Navigate back to edit view
       emit('navigate', 'edit')
+
+      console.log('✅ Upload complete, navigating to edit view')
+    } else {
+      // API upload failed - uploadTemp stays for retry
+      console.error('❌ API upload failed:', result.message)
     }
-    // ERROR: temp asset preserved, error toast shown by useCreativeAPI
-    // Component stays on upload screen so user can try again
-  } finally {
-    isUploading.value = false
+  } catch (error) {
+    console.error('❌ Upload error:', error)
+    // uploadTemp stays for retry
   }
 }
 
-const handleRemoveImage = async () => {
-  console.log('🗑️ Removing uploaded image')
+const handleRemoveImage = () => {
+  // Clear uploadTemp through imageManager
+  imageManager.clearUploadTemp()
 
-  // Clear the uploadedImage ref
-  uploadedImage.value = null
-
-  // Clear uploadTemp from reserved store
-  imageStore.reserved.uploadTemp = null
-
-  // Clear alt text
+  // Clear local state
+  currentFile.value = null
   altText.value = ''
 
-  // Reset file input
   if (fileInput.value) {
     fileInput.value.value = ''
   }
-
-  console.log('✅ Upload memory and IndexedDB cleared')
 }
 </script>
 
@@ -365,6 +368,29 @@ const handleRemoveImage = async () => {
 .remove-icon {
   font-size: 20px;
   line-height: 1;
+}
+
+.error-content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+}
+
+.error-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.error-text {
+  font-size: 14px;
+  color: #dc3545;
+  margin: 0;
+  line-height: 1.4;
 }
 
 .upload-limits {

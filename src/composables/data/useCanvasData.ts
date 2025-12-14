@@ -7,6 +7,52 @@ import type { CreativeContentData } from '@/types/creative'
 export type { AdUnit, CanvasElement, LayerDefinition }
 
 /**
+ * Calculate auto-crop for image fitting
+ * Pure function with no external dependencies
+ */
+const calculateAutoCrop = (
+  imageWidth: number,
+  imageHeight: number,
+  elementWidth: number,
+  elementHeight: number,
+): { x: number; y: number; width: number; height: number } | null => {
+  // Validate inputs
+  if (imageWidth <= 0 || imageHeight <= 0 || elementWidth <= 0 || elementHeight <= 0) {
+    return null
+  }
+  if (isNaN(imageWidth) || isNaN(imageHeight) || isNaN(elementWidth) || isNaN(elementHeight)) {
+    return null
+  }
+
+  // Calculate aspect ratios
+  const displayRatio = elementWidth / elementHeight
+  const imageRatio = imageWidth / imageHeight
+
+  let cropWidth: number, cropHeight: number, cropX: number, cropY: number
+
+  if (imageRatio > displayRatio) {
+    // Image is wider than display - crop left/right
+    cropHeight = imageHeight
+    cropWidth = imageHeight * displayRatio
+    cropX = (imageWidth - cropWidth) / 2
+    cropY = 0
+  } else {
+    // Image is taller than display - crop top/bottom
+    cropWidth = imageWidth
+    cropHeight = imageWidth / displayRatio
+    cropX = 0
+    cropY = (imageHeight - cropHeight) / 2
+  }
+
+  return {
+    x: Math.round(cropX),
+    y: Math.round(cropY),
+    width: Math.round(cropWidth),
+    height: Math.round(cropHeight),
+  }
+}
+
+/**
  * Pure data CRUD operations - Direct interface to canvas store
  * This is the only composable that should directly access the canvas store
  */
@@ -129,11 +175,36 @@ export function useCanvasData() {
       if (adUnit?.elements[elementId]) {
         const element = adUnit.elements[elementId]
 
-        // ⚠️ ENFORCE: Image changes MUST include crop
+        // Auto-provide crop when changing image
         if (updates.image !== undefined && element.type === 'image' && updates.crop === undefined) {
-          console.error('❌ Image update rejected: Crop is required when changing image')
-          console.trace()
-          return
+          // Handle null case - if image is being set to null, no crop needed
+          if (updates.image === null) {
+            // Allow null image update without crop
+            adUnit.elements[elementId] = { ...adUnit.elements[elementId], ...updates }
+            return
+          }
+
+          const imageStore = useImageStore()
+          const imageData = imageStore.images[updates.image] // Now TypeScript knows it's not null
+
+          if (imageData?.dimensions && element.width && element.height) {
+            const crop = calculateAutoCrop(
+              imageData.dimensions.naturalWidth,
+              imageData.dimensions.naturalHeight,
+              element.width,
+              element.height,
+            )
+
+            if (crop) {
+              updates.crop = crop
+            } else {
+              console.error('❌ Image update rejected: Could not calculate crop')
+              return
+            }
+          } else {
+            console.error('❌ Image update rejected: Missing image dimensions or element size')
+            return
+          }
         }
 
         adUnit.elements[elementId] = { ...adUnit.elements[elementId], ...updates }
@@ -171,34 +242,15 @@ export function useCanvasData() {
                     const imageData = imageStore.images[newImageId]
 
                     if (imageData?.dimensions) {
-                      const naturalWidth = imageData.dimensions.naturalWidth
-                      const naturalHeight = imageData.dimensions.naturalHeight
+                      const crop = calculateAutoCrop(
+                        imageData.dimensions.naturalWidth,
+                        imageData.dimensions.naturalHeight,
+                        element.width,
+                        element.height,
+                      )
 
-                      // Calculate aspect-ratio-preserving crop
-                      const displayRatio = element.width / element.height
-                      const imageRatio = naturalWidth / naturalHeight
-
-                      let cropWidth: number, cropHeight: number, cropX: number, cropY: number
-
-                      if (imageRatio > displayRatio) {
-                        // Image is wider than display - crop left/right
-                        cropHeight = naturalHeight
-                        cropWidth = naturalHeight * displayRatio
-                        cropX = (naturalWidth - cropWidth) / 2
-                        cropY = 0
-                      } else {
-                        // Image is taller than display - crop top/bottom
-                        cropWidth = naturalWidth
-                        cropHeight = naturalWidth / displayRatio
-                        cropX = 0
-                        cropY = (naturalHeight - cropHeight) / 2
-                      }
-
-                      elementUpdates.crop = {
-                        x: Math.round(cropX),
-                        y: Math.round(cropY),
-                        width: Math.round(cropWidth),
-                        height: Math.round(cropHeight),
+                      if (crop) {
+                        elementUpdates.crop = crop
                       }
                     }
                   }
@@ -289,7 +341,8 @@ export function useCanvasData() {
 
       const imageStore = useImageStore()
 
-      return {
+      // Convert to plain objects to avoid Proxy cloning issues in IndexedDB
+      const plainData = {
         creative_id: store.creative_id,
         adUnits: Object.fromEntries(
           Object.entries(store.adUnits).map(([key, adUnit]) => [
@@ -314,6 +367,9 @@ export function useCanvasData() {
           name: asset.name || 'Unnamed',
         })),
       }
+
+      // Use JSON parse/stringify to ensure fully plain objects (removes any remaining Proxy references)
+      return JSON.parse(JSON.stringify(plainData))
     },
 
     /**
@@ -364,5 +420,8 @@ export function useCanvasData() {
       store.creative_id = null
       store.isInitialized = false
     },
+
+    // ========== UTILITIES ==========
+    calculateAutoCrop,
   }
 }

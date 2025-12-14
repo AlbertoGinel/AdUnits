@@ -1,5 +1,5 @@
 ﻿<template>
-  <CanvasScreenSkeleton v-if="suspenseState.isLoading" />
+  <CanvasScreenSkeleton v-if="!suspenseManager.appReady" />
 
   <div v-else ref="containerRef" class="canvas-screen">
     <v-stage
@@ -26,10 +26,10 @@ import { useTools } from '@/composables/Tools/useTools'
 import BulkModeView from '@/components/konva/BulkModeView.vue'
 import FocusModeView from '@/components/konva/FocusModeView.vue'
 import CanvasScreenSkeleton from './CanvasScreenSkeleton.vue'
-import { useErrorHandler } from '@/composables/errors/useErrorHandler'
+import { useSuspenseManager } from '@/composables/feedbackAsync/useSuspenseManager'
 
-// Error handler for suspense state
-const { suspenseState } = useErrorHandler()
+// Suspense manager for loading state
+const suspenseManager = useSuspenseManager()
 
 const containerRef = ref<HTMLElement | null>(null)
 const viewState = useViewState()

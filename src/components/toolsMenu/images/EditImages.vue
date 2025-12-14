@@ -35,8 +35,10 @@
     <UploadLibrary
       :show="true"
       type="image"
-      @insert="handleInsertImage"
-      @navigate="$emit('navigate', $event)"
+      :images="availableImages"
+      @insert-requested="handleInsertImage"
+      @upload-requested="$emit('navigate', 'upload')"
+      @image-selected="(id) => console.log('Selected:', id)"
     />
   </div>
 </template>
@@ -48,7 +50,7 @@ import { useImageManager } from '@/composables/setupImages/useImageManager'
 import UploadLibrary from './UploadLibrary.vue'
 
 const { isCropping, startCrop, applyCrop, cancelCrop } = useCropping()
-const { getCurrentImage } = useImageManager()
+const imageManager = useImageManager()
 
 defineEmits<{
   navigate: [subView: string]
@@ -56,9 +58,31 @@ defineEmits<{
 
 const altText = ref('')
 
+// Prepare images for UploadLibrary
+const availableImages = computed(() => {
+  const imageIds = imageManager.getImagesByType('image')
+
+  return imageIds.map((id) => {
+    const metadata = imageManager.getImageMetadata(id)
+    const imageElement = imageManager.getImageOptimized(id)
+
+    return {
+      id,
+      name: metadata?.name || id,
+      image: imageElement,
+    }
+  })
+})
+
 const currentImage = computed(() => {
-  const imageData = getCurrentImage()
-  return imageData?.url || ''
+  // Get current image ID (context-aware)
+  const currentImageId = imageManager.getCurrentImage()
+
+  if (!currentImageId) return ''
+
+  // Get HTMLImageElement and return its src
+  const imageElement = imageManager.getImageOptimized(currentImageId)
+  return imageElement.src
 })
 
 const handleStartCrop = () => {
@@ -73,10 +97,12 @@ const handleCancelCrop = () => {
   cancelCrop()
 }
 
-const handleInsertImage = () => {}
+const handleInsertImage = (imageId: string) => {
+  console.log('Inserting image with ID:', imageId)
+  imageManager.setCurrentImage(imageId)
+}
 </script>
 
-<!-- filepath: c:\AlbertosProjects\banner-editor\src\components\toolsMenu\images\EditImages.vue -->
 <style scoped>
 .tool-menu {
   display: flex;

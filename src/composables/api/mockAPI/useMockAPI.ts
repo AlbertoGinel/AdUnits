@@ -155,6 +155,8 @@ interface StoredAsset {
   path: string // URL when GET, blob when POST (asymmetric)
   error: string
   blob?: Blob // Only for uploaded assets in storage
+  name?: string
+  mimeType?: string
 }
 
 interface StoredCreativeData {
@@ -390,15 +392,18 @@ function createMockDatabase() {
    */
   const insertAsset = async (creativeId: string, file: File): Promise<StoredAsset> => {
     // Generate new random ID for the asset
-    const newAssetId = `img-${crypto.randomUUID()}`
+    const newAssetId = `${crypto.randomUUID()}`
 
     // Extract metadata from File object (simulating multipart processing)
     const asset: StoredAsset = {
       id: newAssetId,
       type: 'image',
       creative_id: creativeId,
-      path: `file://${file.name}`, // Use original filename
+      path: `file://${file.name}`,
       error: '',
+      blob: file,
+      name: file.name,
+      mimeType: file.type,
     }
 
     // Store in assets store
@@ -413,6 +418,47 @@ function createMockDatabase() {
     })
 
     return asset
+  }
+
+  /**
+   * Get a single asset by id
+   */
+  const getAssetById = async (assetId: string): Promise<StoredAsset | null> => {
+    const database = await initDB()
+
+    return new Promise((resolve, reject) => {
+      const transaction = database.transaction([STORES.ASSETS], 'readonly')
+      const store = transaction.objectStore(STORES.ASSETS)
+      const request = store.get(assetId)
+
+      request.onsuccess = () => resolve(request.result || null)
+      request.onerror = () => reject(request.error)
+    })
+  }
+
+  /**
+   * Update an asset (e.g., attach blob after fetching seeded file)
+   */
+  const upsertAsset = async (asset: StoredAsset): Promise<void> => {
+    await performStoreOperation(STORES.ASSETS, 'readwrite', (store) => store.put(asset))
+  }
+
+  /**
+   * Update creative data
+   */
+  const updateCreativeData = async (
+    creativeId: string,
+    data: CreativeContentData,
+    version: number,
+  ): Promise<void> => {
+    const stored: StoredCreativeData = {
+      id: creativeId,
+      creative_id: creativeId,
+      version,
+      data,
+    }
+    await performStoreOperation(STORES.CREATIVE_DATA, 'readwrite', (store) => store.put(stored))
+    console.log('✅ Updated creative data:', creativeId)
   }
 
   /**
@@ -457,7 +503,10 @@ function createMockDatabase() {
     seedDatabase,
     getAllAssets,
     getCreativeData,
+    getAssetById,
+    upsertAsset,
     insertAsset,
+    updateCreativeData,
     deleteAsset,
     clearDatabase,
   }
@@ -467,9 +516,9 @@ function createMockDatabase() {
  * Mock API Configuration
  */
 const MOCK_CONFIG = {
-  errorRate: 0, //errorRate 100% is 1.0
-  minDelay: 1000,
-  maxDelay: 5000,
+  errorRate: 0.0, //errorRate 100% is 1.0
+  minDelay: 100,
+  maxDelay: 800,
   enableErrors: true,
 }
 
@@ -483,6 +532,41 @@ const MOCK_CONFIG = {
  */
 export function useMockAPI() {
   const mockDB = createMockDatabase()
+
+  // In-memory registry to reuse object URLs during a session
+  const urlRegistry = new Map<string, string>()
+
+  const ensureBlobUrlForAsset = async (asset: StoredAsset): Promise<string> => {
+    const existing = urlRegistry.get(asset.id)
+    if (existing) return existing
+
+    let blob = asset.blob
+    try {
+      // If no blob yet (seeded asset), try to fetch from its static path once and persist
+      if (!blob && asset.path && !asset.path.startsWith('blob:')) {
+        const res = await fetch(asset.path)
+        blob = await res.blob()
+        const updated: StoredAsset = {
+          ...asset,
+          blob,
+          mimeType: asset.mimeType || blob.type,
+        }
+        await mockDB.upsertAsset(updated)
+        asset = updated
+      }
+    } catch {
+      // If fetching fails, keep going; caller may handle missing URL
+    }
+
+    if (blob) {
+      const objectUrl = URL.createObjectURL(blob)
+      urlRegistry.set(asset.id, objectUrl)
+      return objectUrl
+    }
+
+    // Fallback to original path if blob could not be created
+    return asset.path
+  }
 
   const simulateNetworkCall = async <T>(successResponse: T, operationName: string): Promise<T> => {
     const delay =
@@ -522,10 +606,24 @@ export function useMockAPI() {
       await mockDB.seedDatabase()
       const assets = await mockDB.getAllAssets(creativeId)
 
+      // Generate blob URLs uniformly for all assets
+      const content = await Promise.all(
+        assets.map(async (asset) => {
+          const path = await ensureBlobUrlForAsset(asset)
+          return {
+            id: asset.id,
+            type: asset.type,
+            creative_id: asset.creative_id,
+            path,
+            error: asset.error,
+          }
+        }),
+      )
+
       return await simulateNetworkCall(
         {
           status: 200,
-          content: assets.map(({ ...asset }) => asset),
+          content,
         },
         'fetchAssets',
       )
@@ -583,13 +681,14 @@ export function useMockAPI() {
       console.log(`   File: ${file.name} (${file.size} bytes, ${file.type})`)
 
       const insertedAsset = await mockDB.insertAsset(creativeId, file)
+      const path = await ensureBlobUrlForAsset(insertedAsset)
 
       return await simulateNetworkCall(
         {
           status: 200,
           message: 'Asset inserted successfully',
           assetId: insertedAsset.id,
-          path: insertedAsset.path,
+          path,
         },
         'insertAsset',
       )
@@ -611,6 +710,14 @@ export function useMockAPI() {
     try {
       console.log(`🗑️ Mock API: Deleting asset ${assetId}`)
       const success = await mockDB.deleteAsset(assetId)
+      // Best-effort cleanup of registry; explicit URL.revokeObjectURL is optional for this mock
+      const existing = urlRegistry.get(assetId)
+      if (existing) {
+        try {
+          URL.revokeObjectURL(existing)
+        } catch {}
+        urlRegistry.delete(assetId)
+      }
 
       return await simulateNetworkCall(
         {
@@ -628,11 +735,16 @@ export function useMockAPI() {
   /**
    * PUT /api/v1/creative_data/{id}
    */
-  const updateCreative = async (creativeId: string) => {
+  const updateCreative = async (
+    creativeId: string,
+    payload: { version: number; data: CreativeContentData; creative_id: string },
+  ) => {
     try {
       console.log(`🔄 Mock API: Updating creative data for ${creativeId}`)
 
-      // In a real scenario, this would update the creative data in the database
+      // Persist the updated creative data to IndexedDB
+      await mockDB.updateCreativeData(creativeId, payload.data, payload.version)
+
       return await simulateNetworkCall(
         {
           status: 200,
@@ -641,7 +753,7 @@ export function useMockAPI() {
         'updateCreative',
       )
     } catch (error) {
-      console.error('❌ Failed to update creative data:', error)
+      console.error('❌ Failed to update creative:', error)
       return {
         status: 500,
         message: error instanceof Error ? error.message : 'Update failed',

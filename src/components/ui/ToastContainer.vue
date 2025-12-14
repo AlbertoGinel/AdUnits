@@ -2,7 +2,7 @@
 <template>
   <div class="toast-container">
     <div
-      v-for="toast in errorHandler.toasts.value"
+      v-for="toast in notifications.toasts.value"
       :key="toast.id"
       :class="['toast', `toast-${toast.type}`]"
     >
@@ -22,15 +22,15 @@
         </div>
       </div>
 
-      <button @click="errorHandler.removeToast(toast.id)" class="toast-close">×</button>
+      <button @click="notifications.removeToast(toast.id)" class="toast-close">×</button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useErrorHandler } from '@/composables/errors/useErrorHandler'
+import { useNotifications } from '@/composables/feedbackAsync/useNotifications'
 
-const errorHandler = useErrorHandler()
+const notifications = useNotifications()
 </script>
 
 <style scoped>

@@ -61,9 +61,14 @@
 </template>
 
 <script setup lang="ts">
-import { useErrorHandler } from '@/composables/errors/useErrorHandler'
+import { useSuspenseManager } from '@/composables/feedbackAsync/useSuspenseManager'
 
-const { suspenseState, retryCriticalDependencies } = useErrorHandler()
+const suspenseManager = useSuspenseManager()
+
+// Create a computed-like state object for template compatibility
+const suspenseState = {
+  isTimeout: false, // We don't have timeout in new system
+}
 </script>
 
 <style scoped>
