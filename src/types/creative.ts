@@ -52,6 +52,7 @@ export interface ImageMetadata {
   id: string
   type: 'image' | 'logo'
   name: string
+  altText: string
 }
 
 export interface CreativeContentData {

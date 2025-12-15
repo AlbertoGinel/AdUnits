@@ -14,6 +14,7 @@ export interface ImageAsset {
   url: string
   type?: 'image' | 'logo'
   name?: string
+  altText?: string
   dimensions?: ImageDimensions
 }
 

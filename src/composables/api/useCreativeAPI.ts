@@ -226,7 +226,7 @@ export function useCreativeAPI() {
   const insertAsset = async (
     creativeId: string,
     file: File,
-    metadata: { type: 'image' | 'logo'; name: string },
+    metadata: { type: 'image' | 'logo'; name: string; altText: string },
   ): Promise<InsertAssetResult> => {
     console.log(`📤 [${isDevelopment ? 'DEV' : 'PROD'}] Inserting asset:`, file.name)
 
@@ -286,6 +286,7 @@ export function useCreativeAPI() {
         uploadedPath,
         metadata.type,
         metadata.name,
+        metadata.altText,
       )
 
       // Clear uploadTemp after successfully adding to regular images

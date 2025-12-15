@@ -3,7 +3,8 @@ import { ref } from 'vue'
 import { useCreativeAPI } from '@/composables/api/useCreativeAPI'
 import { useCanvasData } from '@/composables/data/useCanvasData'
 import { useImageStore } from '@/stores/useImageStore'
-import type { AssetResponse, ImageMetadata } from '@/composables/api/useCreativeAPI'
+import type { AssetResponse } from '@/composables/api/useCreativeAPI'
+import type { ImageMetadata } from '@/types/creative'
 
 /**
  * Robust ID-centric Image Manager
@@ -196,6 +197,7 @@ function createImageManager() {
           id: asset.id,
           url: asset.path,
           name: metadata.name,
+          altText: metadata.altText ?? `${metadata.name} altText`,
           type: metadata.type as 'image' | 'logo',
           dimensions: {
             width: dimensions.width,
@@ -290,7 +292,7 @@ function createImageManager() {
   /**
    * Get image metadata by ID
    */
-  const getImageMetadata = (imageId: string): { id: string; type: string; name: string } | null => {
+  const getImageMetadata = (imageId: string): ImageMetadata | null => {
     const imageData = imageStore.getImage(imageId)
 
     if (!imageData) {
@@ -300,11 +302,13 @@ function createImageManager() {
     // Ensure type and name are defined with fallbacks
     const type = imageData.type || 'image'
     const name = imageData.name || imageData.id
+    const altText = imageData.altText ?? `${name} altText`
 
     return {
       id: imageData.id,
-      type: type,
+      type: type as 'image' | 'logo',
       name: name,
+      altText: altText,
     }
   }
 
@@ -452,6 +456,7 @@ function createImageManager() {
         id: imageId,
         url,
         name,
+        altText: '',
         type: 'image',
         dimensions: {
           width: dimensions.width,
@@ -480,6 +485,7 @@ function createImageManager() {
     path: string,
     type: 'image' | 'logo',
     name: string,
+    altText: string,
   ): Promise<void> => {
     try {
       // Cache the image first (load it)
@@ -491,6 +497,7 @@ function createImageManager() {
         url: path,
         type,
         name,
+        altText,
         dimensions: {
           width: dimensions.width,
           height: dimensions.height,
@@ -522,6 +529,19 @@ function createImageManager() {
   }
 
   /**
+   * Update image altText
+   */
+  const updateImageAltText = (imageId: string, altText: string): void => {
+    const imageData = imageStore.getImage(imageId)
+    if (imageData) {
+      imageStore.addImage({
+        ...imageData,
+        altText,
+      })
+    }
+  }
+
+  /**
    * Clear upload temporary image
    */
   const clearUploadTemp = (): void => {
@@ -548,6 +568,9 @@ function createImageManager() {
     getUploadTempImage,
     hasUploadTemp,
     clearUploadTemp,
+
+    // Image metadata updates
+    updateImageAltText,
 
     // Status checks
     isImageReady,

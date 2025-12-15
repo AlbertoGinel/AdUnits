@@ -137,9 +137,24 @@ const MOCK_CREATIVE_DATA = {
         },
       },
       images: [
-        { id: '6f5c3c22-9d3e-4c2c-9c7c-7bb8f6e3e3c1', type: 'image', name: 'goodYearWheels' },
-        { id: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9', type: 'logo', name: 'goodYearBlue' },
-        { id: '0d7a2c4b-2b54-4710-8b6d-2e2df91c4923', type: 'image', name: 'redBackground' },
+        {
+          id: '6f5c3c22-9d3e-4c2c-9c7c-7bb8f6e3e3c1',
+          type: 'image',
+          name: 'goodYearWheels',
+          altText: 'Goodyear car wheels on lifestyle photo',
+        },
+        {
+          id: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9',
+          type: 'logo',
+          name: 'goodYearBlue',
+          altText: 'Goodyear company logo in blue',
+        },
+        {
+          id: '0d7a2c4b-2b54-4710-8b6d-2e2df91c4923',
+          type: 'image',
+          name: 'redBackground',
+          altText: 'Red gradient background texture',
+        },
       ],
     } as CreativeContentData,
   },

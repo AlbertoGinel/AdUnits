@@ -365,6 +365,7 @@ export function useCanvasData() {
           id: asset.id || asset.url, // Fallback to URL if no ID
           type: asset.type || 'image',
           name: asset.name || 'Unnamed',
+          altText: asset.altText || `${asset.name || 'Unnamed'} altText`,
         })),
       }
 

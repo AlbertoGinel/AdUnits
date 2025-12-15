@@ -179,7 +179,8 @@ const handleInsert = async () => {
 
     const result = await creativeAPI.insertAsset(creativeId, file, {
       type: 'image',
-      name: altText.value || file.name.replace(/\.[^/.]+$/, ''),
+      name: file.name.replace(/\.[^/.]+$/, ''),
+      altText: altText.value || `${file.name.replace(/\.[^/.]+$/, '')} altText`,
     })
 
     if (result.success && result.assetId) {

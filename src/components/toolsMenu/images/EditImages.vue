@@ -44,7 +44,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { useCropping } from '@/composables/Tools/useCropping'
 import { useImageManager } from '@/composables/setupImages/useImageManager'
 import UploadLibrary from './UploadLibrary.vue'
@@ -56,7 +56,21 @@ defineEmits<{
   navigate: [subView: string]
 }>()
 
-const altText = ref('')
+// Two-way binding for altText
+const altText = computed({
+  get: () => {
+    const currentImageId = imageManager.getCurrentImage()
+    if (!currentImageId) return ''
+    const metadata = imageManager.getImageMetadata(currentImageId)
+    return metadata?.altText || ''
+  },
+  set: (value: string) => {
+    const currentImageId = imageManager.getCurrentImage()
+    if (currentImageId) {
+      imageManager.updateImageAltText(currentImageId, value)
+    }
+  },
+})
 
 // Prepare images for UploadLibrary
 const availableImages = computed(() => {
