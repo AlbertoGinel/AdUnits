@@ -9,9 +9,15 @@
       <div class="image-preview">
         <img :src="currentImage" alt="Lifestyle photo" class="preview-image" />
         <div class="image-actions">
-          <button v-if="!isCropping" class="btn-change" @click="handleStartCrop">Crop</button>
-          <button v-else class="btn-save" @click="handleSaveCrop">Save Crop</button>
-          <button v-if="isCropping" class="btn-cancel" @click="handleCancelCrop">Cancel</button>
+          <button
+            v-for="button in previewButtons"
+            :key="button.id"
+            :class="button.class"
+            :disabled="button.disabled"
+            @click="handleButtonClick(button.action)"
+          >
+            {{ button.label }}
+          </button>
         </div>
       </div>
     </div>
@@ -36,25 +42,36 @@
       :show="true"
       type="image"
       :images="availableImages"
-      @insert-requested="handleInsertImage"
       @upload-requested="$emit('navigate', 'upload')"
-      @image-selected="(id) => console.log('Selected:', id)"
+      @image-selected="(id) => (selectedLibraryImageId = id)"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useCropping } from '@/composables/Tools/useCropping'
 import { useImageManager } from '@/composables/setupImages/useImageManager'
+import { useTools } from '@/composables/Tools/useTools'
 import UploadLibrary from './UploadLibrary.vue'
 
-const { isCropping, startCrop, applyCrop, cancelCrop } = useCropping()
+const { startCrop, applyCrop, cancelCrop } = useCropping()
 const imageManager = useImageManager()
+const { getPreviewButtons } = useTools()
 
 defineEmits<{
   navigate: [subView: string]
 }>()
+
+// Track selected library image for button states
+const selectedLibraryImageId = ref<string | null>(null)
+
+// Computed preview buttons with context
+const previewButtons = computed(() => {
+  return getPreviewButtons({
+    hasLibrarySelection: !!selectedLibraryImageId.value,
+  })
+})
 
 // Two-way binding for altText
 const altText = computed({
@@ -114,6 +131,29 @@ const handleCancelCrop = () => {
 const handleInsertImage = (imageId: string) => {
   console.log('Inserting image with ID:', imageId)
   imageManager.setCurrentImage(imageId)
+}
+
+const handleButtonClick = (action: string) => {
+  // Route button actions to appropriate handlers
+  switch (action) {
+    case 'startCrop':
+      handleStartCrop()
+      break
+    case 'saveCrop':
+      handleSaveCrop()
+      break
+    case 'cancelCrop':
+      handleCancelCrop()
+      break
+    case 'changeImage':
+      if (selectedLibraryImageId.value) {
+        handleInsertImage(selectedLibraryImageId.value)
+        selectedLibraryImageId.value = null // Clear selection after use
+      }
+      break
+    default:
+      console.warn('Unknown action:', action)
+  }
 }
 </script>
 
@@ -194,6 +234,24 @@ const handleInsertImage = (imageId: string) => {
 .btn-more:hover {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
   transform: translateY(-1px);
+}
+
+.btn-change:disabled,
+.btn-save:disabled,
+.btn-cancel:disabled,
+.btn-more:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transform: none;
+}
+
+.btn-change:disabled:hover,
+.btn-save:disabled:hover,
+.btn-cancel:disabled:hover,
+.btn-more:disabled:hover {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transform: none;
 }
 
 .btn-save {

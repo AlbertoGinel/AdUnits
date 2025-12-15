@@ -17,8 +17,11 @@
 
       <!-- Image Elements -->
       <template v-else-if="elementData.element.type === 'image'">
-        <!-- Cropping mode -->
-        <ImageCropMode v-if="elementData.isCropping" :element="elementData.element" />
+        <!-- Cropping mode - only for 'image' element, never for 'logo' -->
+        <ImageCropMode
+          v-if="elementData.isCropping && elementData.elementId === 'image'"
+          :element="elementData.element"
+        />
 
         <!-- Normal mode with loaded image -->
         <v-image

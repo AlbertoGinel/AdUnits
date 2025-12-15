@@ -113,6 +113,40 @@ export function useCropping() {
     return visible.height / crop.height
   })
 
+  // Calculate scale to fit original image in visible area (for ImageCropMode)
+  const imageScale = computed(() => {
+    const crop = cropData.value
+    const visible = visibleArea.value
+    if (!crop || !crop.width || !visible || !visible.width) return 1
+    return visible.width / crop.width
+  })
+
+  // Calculate image position based on crop offset (for ImageCropMode)
+  const imagePosition = computed(() => {
+    const crop = cropData.value
+    const visible = visibleArea.value
+    if (!crop || !visible) return { x: visible?.x || 0, y: visible?.y || 0 }
+
+    const scale = imageScale.value
+    return {
+      x: visible.x - crop.x * scale,
+      y: visible.y - crop.y * scale,
+    }
+  })
+
+  // Check if everything is ready to render crop mode
+  const shouldRenderCropMode = computed(() => {
+    const hasImage = originalImage.value !== null
+    const hasCrop = cropData.value !== null
+    const hasCropDimensions =
+      cropData.value?.width !== undefined && cropData.value?.height !== undefined
+    const hasValidArea =
+      visibleArea.value !== null && visibleArea.value.width > 0 && visibleArea.value.height > 0
+    const hasDimensions = originalImageDimensions.value !== null
+
+    return hasImage && hasCrop && hasCropDimensions && hasValidArea && hasDimensions
+  })
+
   /**
    * Calculate cover crop for an image to fill visible area with no holes
    * Uses "cover" strategy - fills entire area, may crop edges
@@ -410,6 +444,57 @@ export function useCropping() {
     }
   }
 
+  /**
+   * Constrain crop based on Konva node state (for ImageCropMode drag/transform)
+   */
+  const constrainCropNode = (nodeState: {
+    x: number
+    y: number
+    scaleX: number
+    scaleY: number
+  }) => {
+    const crop = cropData.value
+    const dims = originalImageDimensions.value
+    const visible = visibleArea.value
+
+    if (!crop || !dims || !visible) return null
+
+    // Type guard: ensure width and height exist
+    if (crop.width === undefined || crop.height === undefined) return null
+
+    // Calculate deltas from expected position
+    const expectedX = imagePosition.value.x
+    const expectedY = imagePosition.value.y
+    const deltaX = nodeState.x - expectedX
+    const deltaY = nodeState.y - expectedY
+
+    // Convert deltas to original image space
+    const scale = imageScale.value
+    const imageDeltaX = deltaX / scale
+    const imageDeltaY = deltaY / scale
+
+    // Calculate new crop size from scale
+    // Use average of both scales to handle edge handles properly
+    const averageScale = (nodeState.scaleX + nodeState.scaleY) / 2
+    const newScale = scale * averageScale
+    const newCropWidth = visible.width / newScale
+    const newCropHeight = visible.height / newScale
+
+    // Calculate new crop with all changes
+    const newCrop = {
+      x: crop.x - imageDeltaX,
+      y: crop.y - imageDeltaY,
+      width: newCropWidth,
+      height: newCropHeight,
+    }
+
+    // Constrain to image bounds
+    newCrop.x = Math.max(0, Math.min(newCrop.x, dims.naturalWidth - newCrop.width))
+    newCrop.y = Math.max(0, Math.min(newCrop.y, dims.naturalHeight - newCrop.height))
+
+    return newCrop
+  }
+
   return {
     // State
     isCropping,
@@ -422,6 +507,9 @@ export function useCropping() {
     aspectRatio,
     scaleX,
     scaleY,
+    imageScale,
+    imagePosition,
+    shouldRenderCropMode,
 
     // Actions
     startCrop,
@@ -429,7 +517,7 @@ export function useCropping() {
     applyCrop,
     cancelCrop,
     calculateCoverCrop,
-    constrainCrop,
+    constrainCrop: constrainCropNode,
     canvasToImageCoords,
     imageToCanvasCoords,
   }

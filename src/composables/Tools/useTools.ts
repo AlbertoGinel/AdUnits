@@ -9,6 +9,48 @@ let sharedOnModeChangeCallback:
   | ((mode: 'bulkMode' | 'focusMode', id?: string | null) => void)
   | null = null
 
+// Button definitions for image preview
+const previewButtonDefinitions = {
+  change: {
+    id: 'change',
+    class: 'btn-change',
+    label: 'Change',
+    action: 'changeImage',
+    disabled: (context: { hasLibrarySelection: boolean }) => !context.hasLibrarySelection,
+  },
+  crop: {
+    id: 'crop',
+    class: 'btn-change',
+    label: 'Crop',
+    action: 'startCrop',
+    disabled: undefined as ((context: { hasLibrarySelection: boolean }) => boolean) | undefined,
+  },
+  save: {
+    id: 'save',
+    class: 'btn-save',
+    label: 'Save Crop',
+    action: 'saveCrop',
+    disabled: undefined as ((context: { hasLibrarySelection: boolean }) => boolean) | undefined,
+  },
+  cancel: {
+    id: 'cancel',
+    class: 'btn-cancel',
+    label: 'Cancel',
+    action: 'cancelCrop',
+    disabled: undefined as ((context: { hasLibrarySelection: boolean }) => boolean) | undefined,
+  },
+}
+
+// Mode configurations reference button IDs only
+const modeConfigurations = {
+  bulk: {
+    buttonIds: ['change'],
+  },
+  focus: {
+    buttonIds: (isCropping: boolean) => (isCropping ? ['save', 'cancel'] : ['crop', 'change']),
+  },
+}
+
 export const useTools = () => {
   const {
     setCurrentAdUnitId,
@@ -24,7 +66,7 @@ export const useTools = () => {
   } = useCanvasData()
   const { getAllLayers, updateLayer } = useLayers()
   const { updateElement } = useElements()
-  const { calculateCoverCrop } = useCropping()
+  const { calculateCoverCrop, isCropping, cancelCrop } = useCropping()
 
   const setOnModeChange = (
     callback: (mode: 'bulkMode' | 'focusMode', id?: string | null) => void,
@@ -36,6 +78,11 @@ export const useTools = () => {
   const switchMode = (mode: 'bulkMode' | 'focusMode', id?: string | null) => {
     console.log('🔄 switchMode called:', mode, id)
     if (mode === 'bulkMode') {
+      // Auto-cancel any active cropping when switching to bulk mode
+      if (isCropping.value) {
+        console.log('⚠️ Auto-canceling crop when switching to bulk mode')
+        cancelCrop()
+      }
       setCurrentAdUnitId(null)
       setCurrentView('bulkMode')
       console.log('→ Triggering callback for bulkMode')
@@ -249,6 +296,31 @@ export const useTools = () => {
     disclaimerBG: getAdUnitNamesWithVisibilityLockedTag('disclaimerBG'),
   }))
 
+  // Function to get preview buttons with context
+  const getPreviewButtons = (context: { hasLibrarySelection: boolean }) => {
+    const currentView = getCurrentView()
+    const mode = currentView === 'focusMode' ? 'focus' : 'bulk'
+    const config = modeConfigurations[mode]
+
+    // Get button IDs based on mode
+    let buttonIds: string[]
+    if (typeof config.buttonIds === 'function') {
+      buttonIds = config.buttonIds(isCropping.value)
+    } else {
+      buttonIds = config.buttonIds
+    }
+
+    // Map IDs to full button objects with evaluated disabled state
+    return buttonIds.map((id) => {
+      const buttonDef = previewButtonDefinitions[id as keyof typeof previewButtonDefinitions]
+      return {
+        ...buttonDef,
+        disabled: buttonDef.disabled ? buttonDef.disabled(context) : false,
+        handler: undefined, // Will implement later
+      }
+    })
+  }
+
   return {
     switchMode,
     setOnModeChange,
@@ -265,6 +337,8 @@ export const useTools = () => {
     // Computed locked lists
     lockedElementsByTag,
     lockedVisibilityElementsByTag,
+    // Preview buttons
+    getPreviewButtons,
     // Utility functions
     freeLayer,
   }

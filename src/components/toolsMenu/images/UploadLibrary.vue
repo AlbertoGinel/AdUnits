@@ -28,8 +28,6 @@
       <button @click="$emit('upload-requested')" class="btn-upload">
         Upload {{ type === 'logo' ? 'Logo' : 'Image' }}
       </button>
-
-      <button class="btn-insert" :disabled="!selectedImageId" @click="handleInsert">Insert</button>
     </div>
   </div>
 </template>
@@ -71,11 +69,6 @@ const selectImage = (id: string) => {
   if (newSelection) {
     emit('image-selected', newSelection)
   }
-}
-
-const handleInsert = () => {
-  if (!selectedImageId.value) return
-  emit('insert-requested', selectedImageId.value)
 }
 </script>
 
