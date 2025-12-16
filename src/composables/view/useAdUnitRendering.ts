@@ -25,6 +25,11 @@ export function useAdUnitRendering() {
   const cropping = useCropping()
 
   /**
+   * Elements to hide during cropping mode
+   */
+  const HIDE_DURING_CROP = ['logo', 'headline', 'subhead', 'cta', 'disclaimer', 'cta-background']
+
+  /**
    * Define rendering order (bottom to top)
    * Elements render in this order - later items appear on top
    */
@@ -58,10 +63,15 @@ export function useAdUnitRendering() {
         }
       }
 
+      // Determine visibility: base visibility AND not hidden during crop
+      const baseVisible = renderer.isElementVisible(element)
+      const hiddenDuringCrop = cropping.isCropping.value && HIDE_DURING_CROP.includes(elementId)
+      const visible = baseVisible && !hiddenDuringCrop
+
       return {
         elementId,
         element,
-        visible: renderer.isElementVisible(element),
+        visible,
         isCropping: cropping.isCropping.value,
         config,
         loadedImage:

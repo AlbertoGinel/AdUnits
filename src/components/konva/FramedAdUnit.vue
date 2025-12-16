@@ -3,11 +3,11 @@
   <v-group :config="{ x: position.x, y: position.y }">
     <!-- Ad Unit Frame Background -->
 
-    <!-- Frame Title -->
-    <v-text :config="titleConfig" />
+    <!-- Frame Title - hidden during cropping -->
+    <v-text v-if="!isCropping" :config="titleConfig" />
 
-    <!-- Edit Button -->
-    <v-text :config="editButtonConfig" @click="handleEditClick" />
+    <!-- Edit Button - hidden during cropping -->
+    <v-text v-if="!isCropping" :config="editButtonConfig" @click="handleEditClick" />
 
     <!-- AdUnit Content (positioned with contentOffset) -->
     <v-group :config="contentGroupConfig">
@@ -22,6 +22,7 @@ import type { AdUnit } from '@/stores/canvas'
 import AdUnitComponent from '@/components/konva/AdUnit.vue'
 import { useTools } from '@/composables/Tools/useTools'
 import { useViewState } from '@/composables/view/useViewState'
+import { useCropping } from '@/composables/Tools/useCropping'
 
 // ✅ Props
 interface Props {
@@ -32,6 +33,7 @@ interface Props {
 const props = defineProps<Props>()
 const { switchMode } = useTools()
 const viewState = useViewState()
+const { isCropping } = useCropping()
 
 // ✅ Title configuration
 const titleConfig = computed(() => ({

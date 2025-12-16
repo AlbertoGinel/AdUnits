@@ -234,6 +234,15 @@ export function useCanvasData() {
                   !element.locked
                 ) {
                   const newImageId = updates.defaultValue
+
+                  // Skip if image is already set (preserve crop data)
+                  if (element.image === newImageId) {
+                    console.log(
+                      `ℹ️ Image already set for ${adUnitId}/${elementId}, skipping cascade to preserve crop data`,
+                    )
+                    return
+                  }
+
                   elementUpdates.image = newImageId
 
                   // Auto-crop: Calculate aspect-ratio-preserving crop

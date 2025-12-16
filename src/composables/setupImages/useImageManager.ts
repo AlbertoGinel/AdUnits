@@ -385,6 +385,8 @@ function createImageManager() {
    * Set current image in bulk mode (internal)
    */
   const setCurrentImageBulk = (imageId: string): void => {
+    // Normal bulk mode: update layer (respects existing locks)
+    // Override handling is done in EditImages.vue before calling this
     canvasData.updateLayer('image', { defaultValue: imageId })
   }
 
@@ -392,7 +394,14 @@ function createImageManager() {
    * Set current image in focus mode for specific ad unit (internal)
    */
   const setCurrentImageFocusInternal = (adUnitId: string, imageId: string): void => {
-    canvasData.updateElement(adUnitId, 'image', { image: imageId })
+    // Check if image is already set for this ad unit
+    const currentImageId = getCurrentImageFocusInternal(adUnitId)
+    if (currentImageId === imageId) {
+      console.log(`ℹ️ Image already set for ${adUnitId}, skipping update to preserve crop data`)
+      return
+    }
+
+    canvasData.updateElement(adUnitId, 'image', { image: imageId, locked: true })
   }
 
   /**

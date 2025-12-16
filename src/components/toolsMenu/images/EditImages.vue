@@ -20,6 +20,14 @@
           </button>
         </div>
       </div>
+      <LockedInfo
+        v-if="selectedLibraryImageId !== null"
+        :locked-elements="lockedElementsByTag.image"
+        :override-value="overrideStates.imageOverride.value"
+        :is-bulk-mode="true"
+        field-name="image"
+        @update:override-value="overrideStates.imageOverride.value = $event"
+      />
     </div>
 
     <div class="alt-text-section">
@@ -42,8 +50,9 @@
       :show="true"
       type="image"
       :images="availableImages"
-      @upload-requested="$emit('navigate', 'upload')"
-      @image-selected="(id) => (selectedLibraryImageId = id)"
+      :selected-image-id="selectedLibraryImageId"
+      @upload-requested="handleNavigate('upload')"
+      @image-selected="(id) => (selectedLibraryImageId = id || null)"
     />
   </div>
 </template>
@@ -53,13 +62,16 @@ import { computed, ref } from 'vue'
 import { useCropping } from '@/composables/Tools/useCropping'
 import { useImageManager } from '@/composables/setupImages/useImageManager'
 import { useTools } from '@/composables/Tools/useTools'
+import { useCanvasData } from '@/composables/data/useCanvasData'
 import UploadLibrary from './UploadLibrary.vue'
+import LockedInfo from '@/components/toolsMenu/Subcomponets/LockedInfo.vue'
 
 const { startCrop, applyCrop, cancelCrop } = useCropping()
 const imageManager = useImageManager()
-const { getPreviewButtons } = useTools()
+const { getPreviewButtons, lockedElementsByTag, overrideStates, freeLayer } = useTools()
+const { getCurrentView } = useCanvasData()
 
-defineEmits<{
+const emit = defineEmits<{
   navigate: [subView: string]
 }>()
 
@@ -68,8 +80,16 @@ const selectedLibraryImageId = ref<string | null>(null)
 
 // Computed preview buttons with context
 const previewButtons = computed(() => {
+  const currentImageId = imageManager.getCurrentImage()
+  const isSameImage = selectedLibraryImageId.value === currentImageId
+  const currentView = getCurrentView()
+
+  // In focus mode, disable if same image (no point changing to same)
+  // In bulk mode, allow same image (might want to use override to unlock)
+  const shouldDisableSameImage = currentView === 'focusMode' && isSameImage
+
   return getPreviewButtons({
-    hasLibrarySelection: !!selectedLibraryImageId.value,
+    hasLibrarySelection: !!selectedLibraryImageId.value && !shouldDisableSameImage,
   })
 })
 
@@ -130,6 +150,15 @@ const handleCancelCrop = () => {
 
 const handleInsertImage = (imageId: string) => {
   console.log('Inserting image with ID:', imageId)
+
+  // Check if override is enabled
+  if (overrideStates.imageOverride.value) {
+    console.log('🔓 Image Override: Unlocking all images and applying cascade')
+    freeLayer('image')
+    // Reset override checkbox after use
+    overrideStates.imageOverride.value = false
+  }
+
   imageManager.setCurrentImage(imageId)
 }
 
@@ -154,6 +183,12 @@ const handleButtonClick = (action: string) => {
     default:
       console.warn('Unknown action:', action)
   }
+}
+
+const handleNavigate = (subView: string) => {
+  // Cancel crop when navigating away
+  cancelCrop()
+  emit('navigate', subView)
 }
 </script>
 

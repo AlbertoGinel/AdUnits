@@ -13,11 +13,14 @@
 import { ref } from 'vue'
 import ToolsBar from './ToolsBar.vue'
 import ToolsArea from './ToolsArea.vue'
+import { useCropping } from '@/composables/Tools/useCropping'
 
 const selectedTool = ref<string>('text')
 const activeSubView = ref<string>('default')
+const { cancelCrop } = useCropping()
 
 const handleToolSelected = (tool: string) => {
+  cancelCrop()
   selectedTool.value = tool
   activeSubView.value = 'default' // Reset to default view when switching tools
 }

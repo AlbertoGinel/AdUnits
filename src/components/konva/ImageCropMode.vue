@@ -1,7 +1,21 @@
 <!-- components/konva/ImageCropMode.vue -->
 <template>
-  <v-group v-if="shouldRenderCropMode">
-    <!-- Single full original image - draggable and resizable -->
+  <v-group v-if="shouldRenderCropMode" :config="{ name: 'crop-mode-root' }">
+    <!-- Dimmed full image (background layer) -->
+    <v-image
+      :config="{
+        x: imagePosition.x,
+        y: imagePosition.y,
+        width: originalImageDimensions!.naturalWidth * imageScale,
+        height: originalImageDimensions!.naturalHeight * imageScale,
+        image: imageElement!,
+        opacity: 0.4,
+        listening: false,
+        name: 'dimmed-background-image',
+      }"
+    />
+
+    <!-- Invisible draggable image - covers full area for interaction -->
     <v-image
       ref="imageRef"
       :config="{
@@ -11,13 +25,43 @@
         height: originalImageDimensions!.naturalHeight * imageScale,
         image: imageElement!,
         draggable: true,
-        transformable: true,
+        opacity: 0,
+        name: 'invisible-drag-layer',
       }"
       @dragmove="handleChange"
       @transform="handleChange"
+      @transformend="handleChange"
     />
 
-    <!-- Konva Transformer - provides handles automatically -->
+    <!-- Clipped group - visual only, shows bright image in crop area -->
+    <v-group
+      v-if="visibleArea"
+      :config="{
+        clip: {
+          x: visibleArea.x,
+          y: visibleArea.y,
+          width: visibleArea.width,
+          height: visibleArea.height,
+        },
+        listening: false,
+        name: 'clipped-crop-area',
+      }"
+    >
+      <!-- Bright image (clipped) - visual representation only -->
+      <v-image
+        :config="{
+          x: imagePosition.x,
+          y: imagePosition.y,
+          width: originalImageDimensions!.naturalWidth * imageScale,
+          height: originalImageDimensions!.naturalHeight * imageScale,
+          image: imageElement!,
+          listening: false,
+          name: 'bright-visual-image',
+        }"
+      />
+    </v-group>
+
+    <!-- Konva Transformer - provides resize handles -->
     <v-transformer
       ref="transformerRef"
       :config="{
@@ -32,29 +76,26 @@
           'bottom-center',
         ],
         keepRatio: true,
-        rotateEnabled: false, // ← Disable rotation
+        rotateEnabled: false,
         borderStroke: '#00aaff',
         borderStrokeWidth: 3,
         anchorFill: 'white',
         anchorStroke: '#00aaff',
         anchorStrokeWidth: 2,
         anchorSize: 10,
-      }"
-    />
+        name: 'crop-transformer',
+        boundBoxFunc: (oldBox: any, newBox: any) => {
+          // Prevent negative scales and flipping
+          const minWidth = 20
+          const minHeight = 20
 
-    <!-- Crop border (dashed red line) - FIXED showing the visible area -->
-    <v-rect
-      v-if="visibleArea"
-      :config="{
-        x: visibleArea.x,
-        y: visibleArea.y,
-        width: visibleArea.width,
-        height: visibleArea.height,
-        stroke: '#ff0000',
-        strokeWidth: 3,
-        dash: [10, 5],
-        listening: false,
-        name: 'visible-area-border',
+          // If new box would be too small, keep old box
+          if (newBox.width < minWidth || newBox.height < minHeight) {
+            return oldBox
+          }
+
+          return newBox
+        },
       }"
     />
   </v-group>

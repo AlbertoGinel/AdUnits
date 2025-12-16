@@ -9,7 +9,7 @@
         v-for="upload in images"
         :key="upload.id"
         class="upload-item"
-        :class="{ selected: selectedImageId === upload.id }"
+        :class="{ selected: props.selectedImageId === upload.id }"
         @click="selectImage(upload.id)"
       >
         <img
@@ -33,8 +33,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-
 interface ImageItem {
   id: string
   name: string
@@ -54,21 +52,14 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  'image-selected': [imageId: string]
+  'image-selected': [imageId: string | null]
   'upload-requested': []
   'insert-requested': [imageId: string]
 }>()
 
-// Use prop for selected state, but maintain local ref for UI responsiveness
-const selectedImageId = ref<string | null>(props.selectedImageId)
-
 const selectImage = (id: string) => {
-  const newSelection = selectedImageId.value === id ? null : id
-  selectedImageId.value = newSelection
-
-  if (newSelection) {
-    emit('image-selected', newSelection)
-  }
+  const newSelection = props.selectedImageId === id ? null : id
+  emit('image-selected', newSelection)
 }
 </script>
 
