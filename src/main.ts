@@ -4,6 +4,7 @@ import VueKonva from 'vue-konva'
 
 import App from './App.vue'
 import router from './router'
+import { useAppInitializer } from '@/composables/setupFrames/useAppInitializer'
 
 // Import stores to force early initialization
 import { useImageStore } from '@/stores/useImageStore'
@@ -26,5 +27,9 @@ console.log('✅ Stores initialized:', {
   canvas: !!canvasStore,
 })
 
-// Mount app first, then initialize data
+// Mount app first
 app.mount('#app')
+
+// Then start initialization (components will show skeleton until ready)
+const { initializeApp } = useAppInitializer()
+initializeApp()

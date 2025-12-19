@@ -1,6 +1,8 @@
 // composables/api/useCreativeAPI.ts
 import { useMockAPI } from './mockAPI/useMockAPI'
 import { useCanvasData } from '@/composables/data/useCanvasData'
+import { useSuspenseManager } from '@/composables/feedbackAsync/useSuspenseManager'
+import { useNotifications } from '@/composables/feedbackAsync/useNotifications'
 import type { CreativeContentData } from '@/types/creative'
 
 /**
@@ -48,40 +50,10 @@ export interface DeleteAssetResult {
 // Environment detection
 const isDevelopment = import.meta.env.DEV
 
-// Event emitters for error communication
-interface ErrorEventData {
-  type: string
-  culprit: string
-  error?: string
-  status?: number
-  message?: string
-  creativeId?: string
-  assetId?: string
-  fileName?: string
-  originalError?: string
-}
-
-const errorEvents = {
-  emit: (type: string, data: ErrorEventData) => {
-    const event = new CustomEvent(`creative-api-${type}`, { detail: data })
-    window.dispatchEvent(event)
-  },
-}
-
-interface ReadyEventData {
-  creativeId?: string
-  assets?: number
-}
-
-const readyEvents = {
-  emit: (type: string, data?: ReadyEventData) => {
-    const event = new CustomEvent(`creative-api-${type}`, { detail: data })
-    window.dispatchEvent(event)
-  },
-}
-
 export function useCreativeAPI() {
   const canvasData = useCanvasData()
+  const suspenseManager = useSuspenseManager()
+  const notifications = useNotifications()
 
   const getCreativeBundle = async (creativeId: string): Promise<CreativeBundle> => {
     console.log(`📡 [${isDevelopment ? 'DEV' : 'PROD'}] Fetching creative bundle:`, creativeId)
@@ -100,23 +72,11 @@ export function useCreativeAPI() {
       // Check for individual endpoint failures
       if (assetsResponse.status !== 200) {
         const error = new Error(`Assets endpoint failed: ${assetsResponse.status}`)
-        errorEvents.emit('bundle-error', {
-          type: 'assets-failure',
-          culprit: 'assets endpoint',
-          status: assetsResponse.status,
-          creativeId,
-        })
         throw error
       }
 
       if (creativeResponse.status !== 200) {
         const error = new Error(`Creative data endpoint failed: ${creativeResponse.status}`)
-        errorEvents.emit('bundle-error', {
-          type: 'creative-data-failure',
-          culprit: 'creative data endpoint',
-          status: creativeResponse.status,
-          creativeId,
-        })
         throw error
       }
 
@@ -130,8 +90,8 @@ export function useCreativeAPI() {
         images: (creativeData.images || []).length,
       })
 
-      // Emit ready event
-      readyEvents.emit('bundle-ready', { creativeId, assets: assets.length })
+      // Note: bundleReady is set by useAppInitializer after all steps complete
+      notifications.showSuccess('Bundle Loaded', 'Creative loaded successfully')
 
       return {
         assets,
@@ -140,12 +100,16 @@ export function useCreativeAPI() {
     } catch (error) {
       console.error('❌ Failed to fetch creative bundle:', error)
 
-      errorEvents.emit('bundle-error', {
-        type: 'bundle-failure',
-        culprit: 'unknown - both endpoints may have failed',
-        error: error instanceof Error ? error.message : 'Unknown error',
-        creativeId,
-      })
+      notifications.showError(
+        'Failed to Load Data',
+        error instanceof Error ? error.message : 'Unknown error',
+        [
+          {
+            label: 'Retry',
+            action: () => window.location.reload(),
+          },
+        ],
+      )
 
       throw error
     }
@@ -157,6 +121,8 @@ export function useCreativeAPI() {
   const updateCreative = async (creativeId: string): Promise<UpdateCreativeResult> => {
     console.log(`📤 [${isDevelopment ? 'DEV' : 'PROD'}] Updating creative:`, creativeId)
 
+    suspenseManager.setUpdateCreativeInProgress(true)
+
     try {
       // Get current state from Pinia
       const currentData = canvasData.exportToCreativeContentData()
@@ -164,13 +130,7 @@ export function useCreativeAPI() {
       console.log('Current data is here: ', currentData)
 
       if (!currentData) {
-        const error = new Error('Cannot export creative data - no creative_id set')
-        errorEvents.emit('update-error', {
-          type: 'export-failure',
-          culprit: 'local state',
-          error: error.message,
-          creativeId,
-        })
+        suspenseManager.setUpdateCreativeInProgress(false)
         return { success: false, message: 'No creative data to export' }
       }
 
@@ -188,28 +148,24 @@ export function useCreativeAPI() {
             body: JSON.stringify(payload),
           }).then((r) => r.json())
 
+      suspenseManager.setUpdateCreativeInProgress(false)
+
       if (response.status === 200) {
         console.log('✅ Creative updated successfully')
+        notifications.showSuccess('Saved!', 'Creative updated successfully')
         return { success: true, message: 'Creative updated successfully' }
       } else {
-        errorEvents.emit('update-error', {
-          type: 'api-failure',
-          culprit: 'update endpoint',
-          status: response.status,
-          message: response.message,
-          creativeId,
-        })
+        notifications.showError('Update Failed', response.message || 'Update failed')
         return { success: false, message: response.message || 'Update failed' }
       }
     } catch (error) {
       console.error('❌ Failed to update creative:', error)
 
-      errorEvents.emit('update-error', {
-        type: 'update-failure',
-        culprit: 'unknown',
-        error: error instanceof Error ? error.message : 'Unknown error',
-        creativeId,
-      })
+      suspenseManager.setUpdateCreativeInProgress(false)
+      notifications.showError(
+        'Update Failed',
+        error instanceof Error ? error.message : 'Update failed',
+      )
 
       return {
         success: false,
@@ -230,13 +186,7 @@ export function useCreativeAPI() {
   ): Promise<InsertAssetResult> => {
     console.log(`📤 [${isDevelopment ? 'DEV' : 'PROD'}] Inserting asset:`, file.name)
 
-    // Emit asset operation start
-    errorEvents.emit('asset-start', {
-      type: 'asset-insert-start',
-      culprit: 'asset upload',
-      fileName: file.name,
-      creativeId,
-    })
+    suspenseManager.setAssetOperationInProgress(true)
 
     let uploadedAssetId: string | null = null
 
@@ -256,14 +206,8 @@ export function useCreativeAPI() {
           })()
 
       if (uploadResponse.status !== 200) {
-        errorEvents.emit('asset-error', {
-          type: 'upload-failure',
-          culprit: 'asset upload endpoint',
-          status: uploadResponse.status,
-          message: uploadResponse.message,
-          fileName: file.name,
-          creativeId,
-        })
+        suspenseManager.setAssetOperationInProgress(false)
+        notifications.showError('Upload Failed', uploadResponse.message || 'Upload failed')
         return { success: false, message: uploadResponse.message || 'Upload failed' }
       }
 
@@ -336,41 +280,27 @@ export function useCreativeAPI() {
           console.log('✅ Rollback successful: Asset deleted')
         } catch (rollbackError) {
           console.error('💥 ROLLBACK FAILED:', rollbackError)
-          errorEvents.emit('asset-error', {
-            type: 'rollback-failure',
-            culprit: 'rollback mechanism',
-            error: rollbackError instanceof Error ? rollbackError.message : 'Rollback failed',
-            assetId: uploadedAssetId || undefined,
-            originalError: updateResponse.message,
-            creativeId,
-          })
+          suspenseManager.setAssetOperationInProgress(false)
+          notifications.showError(
+            'Critical Error',
+            `Update failed AND rollback failed. Asset ${uploadedAssetId} may be orphaned.`,
+          )
           return {
             success: false,
             message: `Update failed AND rollback failed. Asset ${uploadedAssetId} may be orphaned.`,
           }
         }
 
-        errorEvents.emit('asset-error', {
-          type: 'update-failure',
-          culprit: 'creative update endpoint',
-          status: updateResponse.status,
-          message: updateResponse.message,
-          assetId: uploadedAssetId || undefined,
-          creativeId,
-        })
+        suspenseManager.setAssetOperationInProgress(false)
+        notifications.showError('Update Failed', updateResponse.message || 'Creative update failed')
         return { success: false, message: updateResponse.message || 'Creative update failed' }
       }
 
       console.log('✅ Step 2 complete: Creative data updated')
       console.log('✅ Asset insertion successful:', uploadedAssetId)
 
-      // Emit success event
-      errorEvents.emit('asset-complete', {
-        type: 'asset-insert-success',
-        culprit: 'asset upload',
-        assetId: uploadedAssetId || undefined,
-        creativeId,
-      })
+      suspenseManager.setAssetOperationInProgress(false)
+      notifications.showSuccess('Asset Uploaded', 'Image uploaded successfully')
 
       return {
         success: true,
@@ -399,14 +329,11 @@ export function useCreativeAPI() {
           console.log('✅ Rollback successful')
         } catch (rollbackError) {
           console.error('💥 ROLLBACK FAILED:', rollbackError)
-          errorEvents.emit('asset-error', {
-            type: 'rollback-failure',
-            culprit: 'rollback mechanism',
-            error: rollbackError instanceof Error ? rollbackError.message : 'Rollback failed',
-            assetId: uploadedAssetId || undefined,
-            originalError: error instanceof Error ? error.message : 'Unknown error',
-            creativeId,
-          })
+          suspenseManager.setAssetOperationInProgress(false)
+          notifications.showError(
+            'Critical Error',
+            `Insertion failed AND rollback failed. Asset ${uploadedAssetId} may be orphaned.`,
+          )
           return {
             success: false,
             message: `Insertion failed AND rollback failed. Asset ${uploadedAssetId} may be orphaned.`,
@@ -414,13 +341,11 @@ export function useCreativeAPI() {
         }
       }
 
-      errorEvents.emit('asset-error', {
-        type: 'insertion-failure',
-        culprit: 'unknown',
-        error: error instanceof Error ? error.message : 'Unknown error',
-        fileName: file.name,
-        creativeId,
-      })
+      suspenseManager.setAssetOperationInProgress(false)
+      notifications.showError(
+        'Asset Upload Failed',
+        error instanceof Error ? error.message : 'Asset insertion failed',
+      )
 
       return {
         success: false,
@@ -436,13 +361,7 @@ export function useCreativeAPI() {
   const deleteAsset = async (creativeId: string, assetId: string): Promise<DeleteAssetResult> => {
     console.log(`🗑️ [${isDevelopment ? 'DEV' : 'PROD'}] Deleting asset:`, assetId)
 
-    // Emit asset operation start
-    errorEvents.emit('asset-start', {
-      type: 'asset-delete-start',
-      culprit: 'asset delete',
-      assetId,
-      creativeId,
-    })
+    suspenseManager.setAssetOperationInProgress(true)
 
     let originalCreativeData: CreativeContentData | null = null
 
@@ -475,14 +394,8 @@ export function useCreativeAPI() {
           }).then((r) => r.json())
 
       if (updateResponse.status !== 200) {
-        errorEvents.emit('asset-error', {
-          type: 'update-failure',
-          culprit: 'creative update endpoint',
-          status: updateResponse.status,
-          message: updateResponse.message,
-          assetId,
-          creativeId,
-        })
+        suspenseManager.setAssetOperationInProgress(false)
+        notifications.showError('Update Failed', updateResponse.message || 'Creative update failed')
         return { success: false, message: updateResponse.message || 'Creative update failed' }
       }
 
@@ -518,41 +431,27 @@ export function useCreativeAPI() {
           console.log('✅ Rollback successful: Creative data restored')
         } catch (rollbackError) {
           console.error('💥 ROLLBACK FAILED:', rollbackError)
-          errorEvents.emit('asset-error', {
-            type: 'rollback-failure',
-            culprit: 'rollback mechanism',
-            error: rollbackError instanceof Error ? rollbackError.message : 'Rollback failed',
-            assetId,
-            originalError: deleteResponse.message,
-            creativeId,
-          })
+          suspenseManager.setAssetOperationInProgress(false)
+          notifications.showError(
+            'Critical Error',
+            `Delete failed AND rollback failed. Creative data may be inconsistent.`,
+          )
           return {
             success: false,
             message: `Delete failed AND rollback failed. Creative data may be inconsistent.`,
           }
         }
 
-        errorEvents.emit('asset-error', {
-          type: 'delete-failure',
-          culprit: 'asset delete endpoint',
-          status: deleteResponse.status,
-          message: deleteResponse.message,
-          assetId,
-          creativeId,
-        })
+        suspenseManager.setAssetOperationInProgress(false)
+        notifications.showError('Delete Failed', deleteResponse.message || 'Asset deletion failed')
         return { success: false, message: deleteResponse.message || 'Asset deletion failed' }
       }
 
       console.log('✅ Step 2 complete: Asset deleted')
       console.log('✅ Asset deletion successful:', assetId)
 
-      // Emit success event
-      errorEvents.emit('asset-complete', {
-        type: 'asset-delete-success',
-        culprit: 'asset delete',
-        assetId,
-        creativeId,
-      })
+      suspenseManager.setAssetOperationInProgress(false)
+      notifications.showSuccess('Asset Deleted', 'Image deleted successfully')
 
       return { success: true, message: 'Asset deleted successfully' }
     } catch (error) {
@@ -581,14 +480,11 @@ export function useCreativeAPI() {
           console.log('✅ Rollback successful')
         } catch (rollbackError) {
           console.error('💥 ROLLBACK FAILED:', rollbackError)
-          errorEvents.emit('asset-error', {
-            type: 'rollback-failure',
-            culprit: 'rollback mechanism',
-            error: rollbackError instanceof Error ? rollbackError.message : 'Rollback failed',
-            assetId,
-            originalError: error instanceof Error ? error.message : 'Unknown error',
-            creativeId,
-          })
+          suspenseManager.setAssetOperationInProgress(false)
+          notifications.showError(
+            'Critical Error',
+            `Deletion failed AND rollback failed. Creative data may be inconsistent.`,
+          )
           return {
             success: false,
             message: `Deletion failed AND rollback failed. Creative data may be inconsistent.`,
@@ -596,13 +492,11 @@ export function useCreativeAPI() {
         }
       }
 
-      errorEvents.emit('asset-error', {
-        type: 'deletion-failure',
-        culprit: 'unknown',
-        error: error instanceof Error ? error.message : 'Unknown error',
-        assetId,
-        creativeId,
-      })
+      suspenseManager.setAssetOperationInProgress(false)
+      notifications.showError(
+        'Asset Delete Failed',
+        error instanceof Error ? error.message : 'Asset deletion failed',
+      )
 
       return {
         success: false,

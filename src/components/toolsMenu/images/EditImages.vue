@@ -1,59 +1,67 @@
 <!-- tools/images/EditImages.vue -->
 <template>
   <div class="tool-menu">
-    <h3 class="menu-title">Edit main image</h3>
-    <p class="menu-subtitle">Across ad sizes</p>
+    <!-- Show message if no image in focus mode -->
+    <div v-if="isFocusMode && !hasImage" class="no-elements-message">
+      <p>This ad unit does not contain an image element.</p>
+    </div>
 
-    <div class="image-section">
-      <h4 class="section-title">Lifestyle photo</h4>
-      <div class="image-preview">
-        <img :src="currentImage" alt="Lifestyle photo" class="preview-image" />
-        <div class="image-actions">
-          <button
-            v-for="button in previewButtons"
-            :key="button.id"
-            :class="button.class"
-            :disabled="button.disabled"
-            @click="handleButtonClick(button.action)"
-          >
-            {{ button.label }}
-          </button>
+    <!-- Normal image editing content -->
+    <template v-else>
+      <h3 class="menu-title">Edit main image</h3>
+      <p class="menu-subtitle">Across ad sizes</p>
+
+      <div class="image-section">
+        <h4 class="section-title">Lifestyle photo</h4>
+        <div class="image-preview">
+          <img :src="currentImage" alt="Lifestyle photo" class="preview-image" />
+          <div class="image-actions">
+            <button
+              v-for="button in previewButtons"
+              :key="button.id"
+              :class="button.class"
+              :disabled="button.disabled"
+              @click="handleButtonClick(button.action)"
+            >
+              {{ button.label }}
+            </button>
+          </div>
         </div>
+        <LockedInfo
+          v-if="selectedLibraryImageId !== null"
+          :locked-elements="lockedElementsByTag.image"
+          :override-value="overrideStates.imageOverride.value"
+          :is-bulk-mode="true"
+          field-name="image"
+          @update:override-value="overrideStates.imageOverride.value = $event"
+        />
       </div>
-      <LockedInfo
-        v-if="selectedLibraryImageId !== null"
-        :locked-elements="lockedElementsByTag.image"
-        :override-value="overrideStates.imageOverride.value"
-        :is-bulk-mode="true"
-        field-name="image"
-        @update:override-value="overrideStates.imageOverride.value = $event"
-      />
-    </div>
 
-    <div class="alt-text-section">
-      <h4 class="section-title">Alt text*</h4>
-      <p class="section-description">
-        Alt text should be a long-form description of what's visually represented in your ad.
-      </p>
-      <input
-        v-model="altText"
-        type="text"
-        class="alt-text-input"
-        placeholder="Image's alternate text goes here"
-        maxlength="150"
-      />
-      <div class="character-count">Character count: {{ altText.length }}/150</div>
-    </div>
+      <div class="alt-text-section">
+        <h4 class="section-title">Alt text*</h4>
+        <p class="section-description">
+          Alt text should be a long-form description of what's visually represented in your ad.
+        </p>
+        <input
+          v-model="altText"
+          type="text"
+          class="alt-text-input"
+          placeholder="Image's alternate text goes here"
+          maxlength="150"
+        />
+        <div class="character-count">Character count: {{ altText.length }}/150</div>
+      </div>
 
-    <!-- Upload Library Component -->
-    <UploadLibrary
-      :show="true"
-      type="image"
-      :images="availableImages"
-      :selected-image-id="selectedLibraryImageId"
-      @upload-requested="handleNavigate('upload')"
-      @image-selected="(id) => (selectedLibraryImageId = id || null)"
-    />
+      <!-- Upload Library Component -->
+      <UploadLibrary
+        :show="true"
+        type="image"
+        :images="availableImages"
+        :selected-image-id="selectedLibraryImageId"
+        @upload-requested="handleNavigate('upload')"
+        @image-selected="(id) => (selectedLibraryImageId = id || null)"
+      />
+    </template>
   </div>
 </template>
 
@@ -68,8 +76,10 @@ import LockedInfo from '@/components/toolsMenu/Subcomponets/LockedInfo.vue'
 
 const { startCrop, applyCrop, cancelCrop } = useCropping()
 const imageManager = useImageManager()
-const { getPreviewButtons, lockedElementsByTag, overrideStates, freeLayer } = useTools()
+const { getPreviewButtons, lockedElementsByTag, overrideStates, freeLayer, hasImage } = useTools()
 const { getCurrentView } = useCanvasData()
+
+const isFocusMode = computed(() => getCurrentView() === 'focusMode')
 
 const emit = defineEmits<{
   navigate: [subView: string]
@@ -347,5 +357,18 @@ const handleNavigate = (subView: string) => {
   font-size: 12px;
   color: #6c757d;
   text-align: right;
+}
+
+.no-elements-message {
+  padding: 24px;
+  text-align: center;
+  color: #6c757d;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.no-elements-message p {
+  margin: 0;
+  font-size: 14px;
 }
 </style>

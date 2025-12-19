@@ -3,7 +3,8 @@ import { ref } from 'vue'
 import { useCreativeAPI } from '@/composables/api/useCreativeAPI'
 import { useCanvasData } from '@/composables/data/useCanvasData'
 import { useImageStore } from '@/stores/useImageStore'
-import type { AssetResponse } from '@/composables/api/useCreativeAPI'
+import { useSuspenseManager } from '@/composables/feedbackAsync/useSuspenseManager'
+import type { AssetResponse, CreativeBundle } from '@/composables/api/useCreativeAPI'
 import type { ImageMetadata } from '@/types/creative'
 
 /**
@@ -11,26 +12,6 @@ import type { ImageMetadata } from '@/types/creative'
  * Coordinates with useCreativeAPI for complete image asset management
  * Provides synchronous image access after initialization
  */
-
-interface ImageManagerErrorData {
-  type: string
-  culprit: string
-  error?: string
-  imageId?: string
-  url?: string
-  creativeId?: string
-}
-
-// Event emitters for error communication
-const imageManagerEvents = {
-  emit: (
-    type: string,
-    data: ImageManagerErrorData | { creativeId?: string; totalImages?: number },
-  ) => {
-    const event = new CustomEvent(`image-manager-${type}`, { detail: data })
-    window.dispatchEvent(event)
-  },
-}
 
 // Singleton instance
 let sharedImageManager: ReturnType<typeof createImageManager> | null = null
@@ -48,10 +29,14 @@ function createImageManager() {
   const isReady = ref(false)
   const fallbackImage = ref<HTMLImageElement | null>(null)
 
+  // Cache for the actual, loaded HTMLImageElement objects
+  const imageElementCache = new Map<string, HTMLImageElement>()
+
   // Store integrations
   const creativeAPI = useCreativeAPI()
   const canvasData = useCanvasData()
   const imageStore = useImageStore()
+  const suspenseManager = useSuspenseManager()
 
   /**
    * Create fallback image element with special ID
@@ -71,8 +56,9 @@ function createImageManager() {
   /**
    * Initialize image manager with creative bundle
    * Calls useCreativeAPI and handles complete initialization
+   * Returns the fetched bundle for use by caller
    */
-  const initialize = async (creativeId: string): Promise<void> => {
+  const initialize = async (creativeId: string): Promise<CreativeBundle> => {
     console.log('🖼️ ImageManager: Initializing with creative:', creativeId)
 
     try {
@@ -80,6 +66,7 @@ function createImageManager() {
       isInitialized.value = false
       isReady.value = false
       imageStore.clearImages()
+      suspenseManager.setImagesCached(false)
 
       // Fetch creative bundle from API
       const bundle = await creativeAPI.getCreativeBundle(creativeId)
@@ -101,24 +88,11 @@ function createImageManager() {
 
         if (!asset) {
           console.warn('⚠️ Image metadata without corresponding asset:', imageMetadata.id)
-          imageManagerEvents.emit('error', {
-            type: 'integrity-mismatch',
-            culprit: 'missing asset',
-            imageId: imageMetadata.id,
-            creativeId,
-          })
           continue
         }
 
         if (asset.error) {
           console.warn('⚠️ Asset has error:', asset.id, asset.error)
-          imageManagerEvents.emit('error', {
-            type: 'asset-error',
-            culprit: 'asset endpoint',
-            error: asset.error,
-            imageId: asset.id,
-            creativeId,
-          })
           continue
         }
 
@@ -130,20 +104,15 @@ function createImageManager() {
       )
 
       // Start bulk caching immediately
-      await bulkCacheImages(validImages, creativeId)
+      await bulkCacheImages(validImages)
 
       isInitialized.value = true
       console.log('✅ ImageManager: Initialization complete')
+
+      return bundle
     } catch (error) {
       console.error('❌ ImageManager: Initialization failed:', error)
-
-      imageManagerEvents.emit('error', {
-        type: 'initialization-failure',
-        culprit: 'image manager',
-        error: error instanceof Error ? error.message : 'Unknown error',
-        creativeId,
-      })
-
+      suspenseManager.setImagesCached(false)
       throw error
     }
   }
@@ -154,28 +123,43 @@ function createImageManager() {
    */
   const cacheImage = async (
     url: string,
-  ): Promise<{ width: number; height: number; aspectRatio: number }> => {
-    return new Promise<{ width: number; height: number; aspectRatio: number }>(
-      (resolve, reject) => {
-        const img = new Image()
+    imageId: string,
+  ): Promise<{ width: number; height: number; aspectRatio: number; element: HTMLImageElement }> => {
+    return new Promise<{
+      width: number
+      height: number
+      aspectRatio: number
+      element: HTMLImageElement
+    }>((resolve, reject) => {
+      const img = new Image()
 
-        img.onload = () => {
-          const dimensions = {
-            width: img.naturalWidth,
-            height: img.naturalHeight,
-            aspectRatio: img.naturalWidth / img.naturalHeight,
-          }
-          resolve(dimensions)
+      img.onload = async () => {
+        try {
+          // CRITICAL: decode() ensures bitmap is ready for canvas operations
+          await img.decode()
+        } catch {
+          // decode() can fail on some images, but they may still work
+          console.warn(`⚠️ decode() failed for ${imageId}`)
         }
 
-        img.onerror = () => {
-          reject(new Error('Failed to load image'))
+        const dimensions = {
+          width: img.naturalWidth,
+          height: img.naturalHeight,
+          aspectRatio: img.naturalWidth / img.naturalHeight,
+          element: img,
         }
+        // Store the fully decoded element in the cache
+        imageElementCache.set(imageId, img)
+        resolve(dimensions)
+      }
 
-        // Start loading
-        img.src = url
-      },
-    )
+      img.onerror = (err) => {
+        console.error(`Failed to load image: ${imageId}`, err)
+        reject(err)
+      }
+
+      img.src = url
+    })
   }
 
   /**
@@ -183,16 +167,13 @@ function createImageManager() {
    */
   const bulkCacheImages = async (
     validImages: Array<{ asset: AssetResponse; metadata: ImageMetadata }>,
-    creativeId: string,
   ): Promise<void> => {
     console.log('🚀 ImageManager: Starting bulk cache for', validImages.length, 'images')
 
-    // Cache all images - load them and add to Pinia store
     const loadPromises = validImages.map(async ({ asset, metadata }) => {
       try {
-        const dimensions = await cacheImage(asset.path)
+        const { width, height, aspectRatio } = await cacheImage(asset.path, asset.id)
 
-        // Add to Pinia store after successful load
         imageStore.addImage({
           id: asset.id,
           url: asset.path,
@@ -200,45 +181,28 @@ function createImageManager() {
           altText: metadata.altText ?? `${metadata.name} altText`,
           type: metadata.type as 'image' | 'logo',
           dimensions: {
-            width: dimensions.width,
-            height: dimensions.height,
-            naturalWidth: dimensions.width,
-            naturalHeight: dimensions.height,
-            aspectRatio: dimensions.aspectRatio,
+            width,
+            height,
+            naturalWidth: width,
+            naturalHeight: height,
+            aspectRatio,
           },
         })
-
-        console.log('✅ Image cached:', asset.id, metadata.name)
-      } catch {
-        console.error('❌ Image cache failed:', asset.id, asset.path)
-        imageManagerEvents.emit('error', {
-          type: 'cache-failure',
-          culprit: 'image loading',
-          error: 'Failed to load image',
-          imageId: asset.id,
-          url: asset.path,
-          creativeId,
-        })
+        console.log('✅ Image cached:', asset.id, metadata.name, asset.path)
+      } catch (error) {
+        console.error('❌ Image cache failed:', asset.id, asset.path, error)
       }
     })
 
-    // Wait for all images to complete (load or error)
     await Promise.all(loadPromises)
 
-    // Check if all images loaded successfully
     const stats = getCacheStats()
-
     if (stats.error > 0) {
       console.warn(`⚠️ ImageManager: ${stats.error} images failed to load`)
     }
 
     isReady.value = true
-
-    imageManagerEvents.emit('images-ready', {
-      creativeId,
-      totalImages: stats.total,
-    })
-
+    suspenseManager.setImagesCached(true)
     console.log('✅ ImageManager: Bulk caching complete:', stats)
   }
 
@@ -252,22 +216,26 @@ function createImageManager() {
       return createFallbackImage()
     }
 
+    // Return the cached HTMLImageElement (singleton)
+    const cachedElement = imageElementCache.get(imageId)
+    if (cachedElement) {
+      return cachedElement
+    }
+
+    // HMR Safety Net & Fallback
+    // If cache is empty but image data exists in Pinia, recreate element from URL
     const imageData = imageStore.getImage(imageId)
-
-    if (!imageData) {
-      console.warn('🖼️ ImageManager: Image not found:', imageId)
-      return createFallbackImage()
+    if (imageData) {
+      console.warn('⚠️ ImageManager: Cache miss, recreating element for:', imageId)
+      const img = new Image()
+      img.src = imageData.url
+      imageElementCache.set(imageId, img) // Re-cache it
+      return img
     }
 
-    if (!imageData.dimensions) {
-      console.warn('🖼️ ImageManager: Image not ready:', imageId)
-      return createFallbackImage()
-    }
-
-    // Create image element from stored URL
-    const img = new Image()
-    img.src = imageData.url
-    return img
+    // Final fallback if no data exists at all
+    console.error('❌ ImageManager: Image not found in cache or store:', imageId)
+    return createFallbackImage()
   }
 
   /**
@@ -340,6 +308,7 @@ function createImageManager() {
    */
   const clearCache = () => {
     imageStore.clearImages()
+    imageElementCache.clear()
     isInitialized.value = false
     isReady.value = false
     fallbackImage.value = null
@@ -457,8 +426,8 @@ function createImageManager() {
     const name = file.name.replace(/\.[^/.]+$/, '')
 
     try {
-      // Only cache the image, don't add to store yet
-      const dimensions = await cacheImage(url)
+      // Pass imageId to cache the element correctly
+      const { width, height, aspectRatio } = await cacheImage(url, imageId)
 
       // Store in uploadTemp with cached data
       imageStore.setUploadTempImage({
@@ -468,11 +437,11 @@ function createImageManager() {
         altText: '',
         type: 'image',
         dimensions: {
-          width: dimensions.width,
-          height: dimensions.height,
-          naturalWidth: dimensions.width,
-          naturalHeight: dimensions.height,
-          aspectRatio: dimensions.aspectRatio,
+          width,
+          height,
+          naturalWidth: width,
+          naturalHeight: height,
+          aspectRatio,
         },
       })
 
@@ -497,10 +466,8 @@ function createImageManager() {
     altText: string,
   ): Promise<void> => {
     try {
-      // Cache the image first (load it)
-      const dimensions = await cacheImage(path)
+      const { width, height, aspectRatio } = await cacheImage(path, assetId)
 
-      // Add to Pinia store with dimensions
       imageStore.addImage({
         id: assetId,
         url: path,
@@ -508,17 +475,15 @@ function createImageManager() {
         name,
         altText,
         dimensions: {
-          width: dimensions.width,
-          height: dimensions.height,
-          naturalWidth: dimensions.width,
-          naturalHeight: dimensions.height,
-          aspectRatio: dimensions.aspectRatio,
+          width,
+          height,
+          naturalWidth: width,
+          naturalHeight: height,
+          aspectRatio,
         },
       })
-
-      console.log('✅ Added uploaded image to store:', assetId)
     } catch (error) {
-      console.error('❌ Failed to add uploaded image:', assetId, error)
+      console.error('❌ Failed to add uploaded image:', error)
       throw error
     }
   }

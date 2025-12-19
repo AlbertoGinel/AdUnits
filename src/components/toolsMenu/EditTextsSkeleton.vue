@@ -1,75 +1,37 @@
 <!-- components/toolsMenu/EditTextsSkeleton.vue -->
 <template>
   <div class="tool-menu">
-    <h3 class="menu-title">Edit texts</h3>
+    <h3 class="skeleton-section-title skeleton-loading"></h3>
 
     <!-- Main headline skeleton -->
     <div class="text-section">
-      <div
-        class="skeleton-section-title"
-        :class="{ 'skeleton-loading': !suspenseState.isTimeout }"
-      ></div>
-      <div
-        class="skeleton-text-input-area"
-        :class="{ 'skeleton-loading': !suspenseState.isTimeout }"
-      ></div>
+      <div class="skeleton-section-title skeleton-loading"></div>
+      <div class="skeleton-text-input-area skeleton-loading"></div>
     </div>
 
     <!-- Sub headline skeleton -->
     <div class="text-section">
-      <div
-        class="skeleton-section-title"
-        :class="{ 'skeleton-loading': !suspenseState.isTimeout }"
-      ></div>
-      <div
-        class="skeleton-text-input-area"
-        :class="{ 'skeleton-loading': !suspenseState.isTimeout }"
-      ></div>
+      <div class="skeleton-section-title skeleton-loading"></div>
+      <div class="skeleton-text-input-area skeleton-loading"></div>
     </div>
 
     <!-- Button CTA skeleton -->
     <div class="text-section">
-      <div
-        class="skeleton-section-title"
-        :class="{ 'skeleton-loading': !suspenseState.isTimeout }"
-      ></div>
-      <div
-        class="skeleton-text-input-area small"
-        :class="{ 'skeleton-loading': !suspenseState.isTimeout }"
-      ></div>
+      <div class="skeleton-section-title skeleton-loading"></div>
+      <div class="skeleton-text-input-area small skeleton-loading"></div>
     </div>
 
     <hr class="divider" />
 
     <!-- Disclaimer skeleton -->
     <div class="disclaimer-section">
-      <div
-        class="skeleton-section-title"
-        :class="{ 'skeleton-loading': !suspenseState.isTimeout }"
-      ></div>
-      <div
-        class="skeleton-disclaimer-textarea"
-        :class="{ 'skeleton-loading': !suspenseState.isTimeout }"
-      ></div>
-    </div>
-
-    <!-- Retry overlay when timeout -->
-    <div v-if="suspenseState.isTimeout" class="retry-overlay">
-      <button @click="retryCriticalDependencies" class="retry-button">Retry</button>
+      <div class="skeleton-section-title skeleton-loading"></div>
+      <div class="skeleton-disclaimer-textarea skeleton-loading"></div>
     </div>
   </div>
 </template>
 
-<script setup lang="ts">
-import { useSuspenseManager } from '@/composables/feedbackAsync/useSuspenseManager'
-
-const suspenseManager = useSuspenseManager()
-
-// Create a computed-like state object for template compatibility
-const suspenseState = {
-  isTimeout: false, // We don't have timeout in new system
-}
-</script>
+<script setup lang="ts"></script>
 
 <style scoped>
 /* Match EditTexts.vue exactly */

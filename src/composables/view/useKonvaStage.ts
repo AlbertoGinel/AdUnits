@@ -1,5 +1,5 @@
 // composables/view/useKonvaStage.ts
-import { ref, reactive, computed, onMounted, onBeforeUnmount, type Ref } from 'vue'
+import { ref, reactive, computed, type Ref } from 'vue'
 import { useCanvasManager } from './useCanvasManager'
 import type Konva from 'konva'
 
@@ -17,11 +17,11 @@ interface KonvaEvent {
  * Manages Konva stage zoom/pan with responsive container sizing
  * Ephemeral UI state (not persisted)
  */
-export function useKonvaStage(containerRef: Ref<HTMLElement | null>) {
+export function useKonvaStage(
+  containerRef: Ref<HTMLElement | null>,
+  isReady: Ref<boolean> = ref(true),
+) {
   const canvasManager = useCanvasManager()
-
-  // Container dimensions (observed)
-  const containerSize = reactive({ width: 0, height: 0 })
 
   // Zoom/Pan state
   const scale = ref(1)
@@ -35,18 +35,56 @@ export function useKonvaStage(containerRef: Ref<HTMLElement | null>) {
   const PADDING = 5
 
   /**
+   * Get container dimensions directly from DOM
+   */
+  const getContainerSize = () => {
+    if (!containerRef.value) return { width: 0, height: 0 }
+    const rect = containerRef.value.getBoundingClientRect()
+
+    // CRITICAL: Ensure minimum dimensions to prevent 0x0 canvas
+    const width = Math.max(rect.width, 800) // Minimum 800px width
+    const height = Math.max(rect.height, 600) // Minimum 600px height
+
+    console.log('🎯 KonvaStage: Container size:', {
+      rectWidth: rect.width,
+      rectHeight: rect.height,
+      usedWidth: width,
+      usedHeight: height,
+    })
+
+    return { width, height }
+  }
+
+  /**
    * Stage configuration for v-stage component
    */
-  const stageConfig = computed(() => ({
-    width: containerSize.width,
-    height: containerSize.height,
-    scaleX: scale.value,
-    scaleY: scale.value,
-    x: position.x,
-    y: position.y,
-    draggable: false,
-    pixelRatio: window.devicePixelRatio || 1,
-  }))
+  const stageConfig = computed(() => {
+    // Always provide safe minimum dimensions
+    if (!isReady.value || !containerRef.value) {
+      return {
+        width: 800, // Safe minimum width
+        height: 600, // Safe minimum height
+        scaleX: 1,
+        scaleY: 1,
+        x: 0,
+        y: 0,
+        draggable: false,
+        pixelRatio: window.devicePixelRatio || 1,
+      }
+    }
+
+    const { width, height } = getContainerSize()
+    return {
+      width,
+      height,
+      scaleX: scale.value,
+      scaleY: scale.value,
+      x: position.x,
+      y: position.y,
+      draggable: false,
+      pixelRatio: window.devicePixelRatio || 1,
+    }
+  })
 
   /**
    * Content bounds from store (stage dimensions)
@@ -63,8 +101,7 @@ export function useKonvaStage(containerRef: Ref<HTMLElement | null>) {
    * Calculate optimal zoom to fit content with padding
    */
   function zoomToFit() {
-    const containerWidth = containerSize.width
-    const containerHeight = containerSize.height
+    const { width: containerWidth, height: containerHeight } = getContainerSize()
     const contentWidth = contentBounds.value.width
     const contentHeight = contentBounds.value.height
 
@@ -83,26 +120,16 @@ export function useKonvaStage(containerRef: Ref<HTMLElement | null>) {
     scale.value = newScale
     position.x = centerX
     position.y = topY
-
-    console.log('🎯 Zoom to fit:', {
-      container: `${containerWidth}x${containerHeight}`,
-      content: `${contentWidth}x${contentHeight}`,
-      scale: newScale.toFixed(2),
-      position: { x: Math.round(centerX), y: Math.round(topY) },
-    })
   }
 
   /**
    * Zoom to specific ad unit (focus mode)
    */
   function zoomToAdUnit(adUnitId: string) {
-    console.log('🎯 Zoom to ad unit is being executed 🎯🎯🎯🎯')
-
     const adUnit = canvasManager.getAdUnit(adUnitId)
     if (!adUnit) return
 
-    const containerWidth = containerSize.width
-    const containerHeight = containerSize.height
+    const { width: containerWidth, height: containerHeight } = getContainerSize()
     if (containerWidth === 0 || containerHeight === 0) return
 
     // Frame dimensions (ignore position - in focus mode, frame is at 0,0)
@@ -130,14 +157,6 @@ export function useKonvaStage(containerRef: Ref<HTMLElement | null>) {
 
     // Align to top vertically
     position.y = PADDING
-
-    console.log('🎯 Zoom to ad unit:', {
-      adUnitId,
-      frameDimensions: `w:${frameWidth}, h:${frameHeight}`,
-      effectiveSize: `w:${effectiveWidth.toFixed(0)}, h:${effectiveHeight.toFixed(0)}`,
-      scale: newScale.toFixed(2),
-      stagePosition: { x: Math.round(position.x), y: Math.round(position.y) },
-    })
   }
 
   /**
@@ -237,51 +256,16 @@ export function useKonvaStage(containerRef: Ref<HTMLElement | null>) {
     scale.value = 1
     const contentWidth = contentBounds.value.width
     const contentHeight = contentBounds.value.height
-    position.x = (containerSize.width - contentWidth) / 2
-    position.y = (containerSize.height - contentHeight) / 2
+    const { width, height } = getContainerSize()
+    position.x = (width - contentWidth) / 2
+    position.y = (height - contentHeight) / 2
   }
-
-  /**
-   * Observe container size changes
-   */
-  let resizeObserver: ResizeObserver | null = null
-
-  function observeContainer() {
-    if (!containerRef.value) return
-
-    resizeObserver = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        const { width, height } = entry.contentRect
-        containerSize.width = width
-        containerSize.height = height
-      }
-    })
-
-    resizeObserver.observe(containerRef.value)
-  }
-
-  function stopObserving() {
-    if (resizeObserver) {
-      resizeObserver.disconnect()
-      resizeObserver = null
-    }
-  }
-
-  // Setup
-  onMounted(() => {
-    observeContainer()
-  })
-
-  onBeforeUnmount(() => {
-    stopObserving()
-  })
 
   return {
     // State
     stageConfig,
     scale,
     position,
-    containerSize,
     isPanning,
 
     // Actions

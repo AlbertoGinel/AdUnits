@@ -1,21 +1,29 @@
 <!-- ToolsArea.vue - Smart Router with Sub-Views -->
 <template>
   <div class="tool-area">
-    <component
-      :is="currentComponent"
-      v-if="currentComponent"
-      @navigate="$emit('navigate', $event)"
-    />
-    <EmptyState v-else />
+    <EditTextsSkeleton v-if="!suspenseManager.bundleReady.value" />
+
+    <template v-else>
+      <component
+        :is="currentComponent"
+        v-if="currentComponent"
+        @navigate="$emit('navigate', $event)"
+      />
+      <EmptyState v-else />
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, type Component } from 'vue'
+import { useSuspenseManager } from '@/composables/feedbackAsync/useSuspenseManager'
 import EditTexts from './toolsMenu/EditTexts.vue'
 import EditImages from './toolsMenu/images/EditImages.vue'
 import UploadImages from './toolsMenu/images/UploadImages.vue'
 import EmptyState from './toolsMenu/EmptyState.vue'
+import EditTextsSkeleton from './toolsMenu/EditTextsSkeleton.vue'
+
+const suspenseManager = useSuspenseManager()
 
 interface Props {
   activeTool?: string

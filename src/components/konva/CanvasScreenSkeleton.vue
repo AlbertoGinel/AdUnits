@@ -1,7 +1,7 @@
 ﻿<template>
   <div class="skeleton-canvas">
-    <!-- Grid pattern for bulk mode skeleton -->
-    <div v-if="viewState?.isBulkMode?.value" class="bulk-mode-parent">
+    <!-- Always show bulk mode skeleton as default (since that's the initial view) -->
+    <div class="bulk-mode-parent">
       <div class="div1"></div>
       <div class="div2"></div>
       <div class="div3"></div>
@@ -12,18 +12,11 @@
       <div class="div8"></div>
       <div class="div9"></div>
     </div>
-
-    <!-- Single focused item for focus mode skeleton -->
-    <div v-else-if="viewState?.isFocusMode?.value" class="focus-mode-parent">
-      <div class="div1"></div>
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useViewState } from '@/composables/view/useViewState'
-
-const viewState = useViewState()
+// No imports needed - just show static skeleton
 </script>
 
 <style scoped>

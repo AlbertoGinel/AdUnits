@@ -1,5 +1,5 @@
 ﻿<template>
-  <CanvasScreenSkeleton v-if="!suspenseManager.appReady" />
+  <CanvasScreenSkeleton v-if="!bundleReady" />
 
   <div v-else ref="containerRef" class="canvas-screen">
     <v-stage
@@ -19,37 +19,34 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useViewState } from '@/composables/view/useViewState'
 import { useKonvaStage } from '@/composables/view/useKonvaStage'
 import { useTools } from '@/composables/Tools/useTools'
+import { useSuspenseManager } from '@/composables/feedbackAsync/useSuspenseManager'
 import BulkModeView from '@/components/konva/BulkModeView.vue'
 import FocusModeView from '@/components/konva/FocusModeView.vue'
 import CanvasScreenSkeleton from './CanvasScreenSkeleton.vue'
-import { useSuspenseManager } from '@/composables/feedbackAsync/useSuspenseManager'
 
-// Suspense manager for loading state
+// Pure reactive state
 const suspenseManager = useSuspenseManager()
-
+const bundleReady = computed(() => suspenseManager.bundleReady.value)
 const containerRef = ref<HTMLElement | null>(null)
 const viewState = useViewState()
-const stage = useKonvaStage(containerRef)
+
+// Stage controller (pure computed, no observers)
+const stage = useKonvaStage(containerRef, bundleReady)
+
+// Clean version - no debug logs
+
+// Tools setup (one-time)
 const tools = useTools()
-
-// Setup zoom callback when mode changes
-onMounted(() => {
-  console.log('🔧 Registering zoom callback')
-  tools.setOnModeChange((mode, id) => {
-    console.log('📢 Mode changed:', mode, id)
-
-    if (mode === 'bulkMode') {
-      console.log('→ Calling zoomToFit()')
-      stage.zoomToFit()
-    } else if (mode === 'focusMode' && id) {
-      console.log('→ Calling zoomToAdUnit(', id, ')')
-      stage.zoomToAdUnit(id)
-    }
-  })
+tools.setOnModeChange((mode, id) => {
+  if (mode === 'bulkMode') {
+    stage.zoomToFit()
+  } else if (mode === 'focusMode' && id) {
+    stage.zoomToAdUnit(id)
+  }
 })
 </script>
 

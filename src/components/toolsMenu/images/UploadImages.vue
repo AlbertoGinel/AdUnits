@@ -106,7 +106,7 @@ const currentFile = ref<File | null>(null)
 
 // Computed properties
 const hasFile = computed(() => imageManager.hasUploadTemp())
-const isUploading = computed(() => !suspenseManager.loadingImagesMenuReady.value)
+const isUploading = computed(() => suspenseManager.assetOperationInProgress.value)
 const previewImage = computed(() => {
   const uploadTemp = imageManager.getUploadTempImage()
   if (!uploadTemp) return null
@@ -180,7 +180,7 @@ const handleInsert = async () => {
     const result = await creativeAPI.insertAsset(creativeId, file, {
       type: 'image',
       name: file.name.replace(/\.[^/.]+$/, ''),
-      altText: altText.value || `${file.name.replace(/\.[^/.]+$/, '')} altText`,
+      altText: altText.value || '',
     })
 
     if (result.success && result.assetId) {

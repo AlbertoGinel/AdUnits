@@ -1,9 +1,8 @@
 <template>
   <!-- Renders multiple FramedAdUnits at their frameConfig positions -->
-
   <v-group>
     <FramedAdUnit
-      v-for="adUnit in allAdUnits"
+      v-for="adUnit in adUnitsArray"
       :key="adUnit.id"
       :ad-unit="adUnit"
       :position="{
@@ -19,7 +18,10 @@ import { computed } from 'vue'
 import { useAdUnits } from '@/composables/data/useAdUnits'
 import FramedAdUnit from '@/components/konva/FramedAdUnit.vue'
 
-// ✅ Computed optimization - only recalculate when adUnits change
+// Get ad units
 const { getAllAdUnits } = useAdUnits()
 const allAdUnits = computed(() => getAllAdUnits())
+const adUnitsArray = computed(() => Object.values(allAdUnits.value))
+
+// Clean version - uses actual frameConfig positions
 </script>

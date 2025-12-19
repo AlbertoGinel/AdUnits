@@ -290,14 +290,14 @@ function createMockDatabase() {
     let isSeeded = false
 
     return async () => {
+      // ✅ EARLY EXIT: Check in-memory flag first (no logs)
       if (isSeeded) {
-        console.log('📊 Database already seeded, skipping...')
         return
       }
 
+      // ✅ EARLY EXIT: Check if already seeding (minimal log)
       if (isSeeding) {
-        console.log('⏳ Database seeding in progress, waiting...')
-        // Wait for seeding to complete
+        console.log('(🌱 Seeding) ⏳ Database seeding in progress, waiting...')
         while (isSeeding) {
           await new Promise((resolve) => setTimeout(resolve, 100))
         }
@@ -305,33 +305,51 @@ function createMockDatabase() {
       }
 
       isSeeding = true
-      console.log('🌱 Seeding MockDatabase with default data...')
 
       try {
-        // Check if the UUID creative exists (the one the app actually uses)
+        // ✅ Check database BEFORE logging anything
         const uuidCreative = await getCreativeData('3fa85f64-5717-4562-b3fc-2c963f66afa6')
 
         if (uuidCreative) {
-          console.log('📊 Database already seeded with UUID creative, skipping...')
+          // Data exists, mark as seeded and exit silently
           isSeeded = true
           isSeeding = false
           return
         }
 
-        console.log('🔄 Seeding database with UUID creative data...')
+        // ✅ Only log if we're actually seeding
+        console.log('(🌱 Seeding) 🌱 Seeding MockDatabase with default data...')
+        console.log('(🌱 Seeding) 🔄 Seeding database with UUID creative data...')
 
         // Use embedded data instead of importing JSON files
         const defaultAssets = MOCK_ASSETS_DATA.content
         const defaultCreative = MOCK_CREATIVE_DATA.creativeData
 
-        // Store assets using put() instead of add() to avoid constraint errors
+        // ✅ Fetch images and store as blobs (like a real database)
+        console.log('(🌱 Seeding) 📥 Fetching and storing image blobs...')
         for (const asset of defaultAssets) {
-          await performStoreOperation(STORES.ASSETS, 'readwrite', (store) =>
-            store.put({
-              ...asset,
-              creative_id: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
-            }),
-          )
+          try {
+            // Fetch the actual image data
+            const response = await fetch(asset.path)
+            const blob = await response.blob()
+
+            // Store with blob data, not import path
+            await performStoreOperation(STORES.ASSETS, 'readwrite', (store) =>
+              store.put({
+                id: asset.id,
+                type: asset.type,
+                creative_id: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+                path: '', // ✅ No path - data is in blob
+                error: '',
+                blob: blob,
+                name: asset.id,
+                mimeType: blob.type,
+              }),
+            )
+            console.log(`(🌱 Seeding)   ✅ Stored blob: ${asset.id} (${blob.size} bytes)`)
+          } catch (error) {
+            console.error(`(🌱 Seeding)   ❌ Failed to fetch ${asset.id}:`, error)
+          }
         }
 
         // Store creative data using put() instead of add()
@@ -344,10 +362,10 @@ function createMockDatabase() {
           }),
         )
 
-        console.log('✅ Database seeded with default data')
+        console.log('(🌱 Seeding) ✅ Database seeded with default data')
         isSeeded = true
       } catch (error) {
-        console.error('❌ Failed to seed database:', error)
+        console.error('(🌱 Seeding) ❌ Failed to seed database:', error)
         throw error
       } finally {
         isSeeding = false
@@ -531,56 +549,43 @@ function createMockDatabase() {
  * Mock API Configuration
  */
 const MOCK_CONFIG = {
-  errorRate: 0.0, //errorRate 100% is 1.0
-  minDelay: 100,
-  maxDelay: 800,
+  errorRate: 0.1, //errorRate 100% is 1.0
+  minDelay: 1000,
+  maxDelay: 3000,
   enableErrors: true,
 }
 
 /**
- * Mock API for development - using IndexedDB backend
- * Returns responses that match real API structure
+ * ✅ SINGLETON: Create ONE database instance at module level
+ * This ensures the database is initialized only once and reused across all API calls
  */
+const mockDB = createMockDatabase()
+
 /**
  * Mock API for development - using IndexedDB backend
  * Returns responses that match real API structure
  */
 export function useMockAPI() {
-  const mockDB = createMockDatabase()
-
   // In-memory registry to reuse object URLs during a session
   const urlRegistry = new Map<string, string>()
 
   const ensureBlobUrlForAsset = async (asset: StoredAsset): Promise<string> => {
+    // Check if we already have a blob URL for this asset
     const existing = urlRegistry.get(asset.id)
     if (existing) return existing
 
-    let blob = asset.blob
-    try {
-      // If no blob yet (seeded asset), try to fetch from its static path once and persist
-      if (!blob && asset.path && !asset.path.startsWith('blob:')) {
-        const res = await fetch(asset.path)
-        blob = await res.blob()
-        const updated: StoredAsset = {
-          ...asset,
-          blob,
-          mimeType: asset.mimeType || blob.type,
-        }
-        await mockDB.upsertAsset(updated)
-        asset = updated
-      }
-    } catch {
-      // If fetching fails, keep going; caller may handle missing URL
+    // ✅ Get blob from database (already stored during seeding or upload)
+    const blob = asset.blob
+
+    if (!blob) {
+      console.error(`❌ No blob data for asset ${asset.id}`)
+      return '' // No fallback - blob should always exist in real database
     }
 
-    if (blob) {
-      const objectUrl = URL.createObjectURL(blob)
-      urlRegistry.set(asset.id, objectUrl)
-      return objectUrl
-    }
-
-    // Fallback to original path if blob could not be created
-    return asset.path
+    // Create and cache object URL from blob
+    const objectUrl = URL.createObjectURL(blob)
+    urlRegistry.set(asset.id, objectUrl)
+    return objectUrl
   }
 
   const simulateNetworkCall = async <T>(successResponse: T, operationName: string): Promise<T> => {

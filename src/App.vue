@@ -1,40 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
-import { useAppInitializer } from '@/composables/setupFrames/useAppInitializer'
 import ToastContainer from '@/components/ui/ToastContainer.vue'
-
-// Initialize app on mount
-const { initializeApp } = useAppInitializer()
-
-// Guard against multiple initialization
-let isInitializing = false
-let isInitialized = false
-
-onMounted(async () => {
-  if (isInitializing) {
-    console.log('⚠️ App initialization already in progress, skipping...')
-    return
-  }
-
-  if (isInitialized) {
-    console.log('✅ App already initialized, skipping...')
-    return
-  }
-
-  isInitializing = true
-  console.log('🎬 App mounted, starting initialization...')
-
-  const success = await initializeApp()
-
-  if (success) {
-    isInitialized = true
-    console.log('🎉 App is ready to use!')
-  } else {
-    console.error('💥 App initialization failed - check console for errors')
-  }
-
-  isInitializing = false
-})
 </script>
 
 <template>

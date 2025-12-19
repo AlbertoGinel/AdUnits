@@ -3,12 +3,14 @@ import { ref } from 'vue'
 
 /**
  * Suspense Manager - Singleton for managing loading states
- * Coordinates with useCreativeAPI events to drive skeleton visibility
+ * Direct function calls from useCreativeAPI and useImageManager
  */
 
 interface SuspenseState {
-  appReady: boolean
-  loadingImagesMenuReady: boolean
+  bundleReady: boolean
+  imagesCached: boolean
+  assetOperationInProgress: boolean
+  updateCreativeInProgress: boolean
 }
 
 // Singleton instance
@@ -23,93 +25,68 @@ export function useSuspenseManager() {
 
 function createSuspenseManager() {
   // Internal state
-  const appReady = ref(false)
-  const loadingImagesMenuReady = ref(true) // Start ready, false during operations
+  const bundleReady = ref(false)
+  const imagesCached = ref(false)
+  const assetOperationInProgress = ref(false)
+  const updateCreativeInProgress = ref(false)
 
   /**
-   * Initialize event listeners for useCreativeAPI events
+   * State setters - called directly by useCreativeAPI and useImageManager
    */
-  const initializeListeners = () => {
-    // App initialization events
-    window.addEventListener('creative-api-bundle-ready', handleBundleReady)
-    window.addEventListener('creative-api-bundle-error', handleBundleError)
-
-    // Image operation events
-    window.addEventListener('creative-api-asset-start', handleImageOperationStart)
-    window.addEventListener('creative-api-asset-complete', handleImageOperationComplete)
-    window.addEventListener('creative-api-asset-error', handleImageOperationError)
+  const setBundleReady = (ready: boolean) => {
+    bundleReady.value = ready
   }
 
-  /**
-   * Event handlers
-   */
-  const handleBundleReady = () => {
-    console.log('📱 SuspenseManager: App ready')
-    appReady.value = true
+  const setImagesCached = (cached: boolean) => {
+    console.log('📱 (HERE cache!)  SuspenseManager: Images cached =', cached)
+    imagesCached.value = cached
   }
 
-  const handleBundleError = () => {
-    console.log('📱 SuspenseManager: App failed to load')
-    appReady.value = false
+  const setAssetOperationInProgress = (inProgress: boolean) => {
+    console.log('📱 SuspenseManager: Asset operation in progress =', inProgress)
+    assetOperationInProgress.value = inProgress
   }
 
-  const handleImageOperationStart = () => {
-    console.log('📱 SuspenseManager: Image operation started')
-    loadingImagesMenuReady.value = false
-  }
-
-  const handleImageOperationComplete = () => {
-    console.log('📱 SuspenseManager: Image operation completed')
-    loadingImagesMenuReady.value = true
-  }
-
-  const handleImageOperationError = () => {
-    console.log('📱 SuspenseManager: Image operation failed')
-    loadingImagesMenuReady.value = true
-  }
-
-  /**
-   * Manual state setters (for testing or edge cases)
-   */
-  const setAppReady = (ready: boolean) => {
-    appReady.value = ready
-  }
-
-  const setImagesMenuReady = (ready: boolean) => {
-    loadingImagesMenuReady.value = ready
+  const setUpdateCreativeInProgress = (inProgress: boolean) => {
+    console.log('📱 SuspenseManager: Update creative in progress =', inProgress)
+    updateCreativeInProgress.value = inProgress
   }
 
   /**
    * Reset all states (for testing)
    */
   const resetStates = () => {
-    appReady.value = false
-    loadingImagesMenuReady.value = true
+    bundleReady.value = false
+    imagesCached.value = false
+    assetOperationInProgress.value = false
+    updateCreativeInProgress.value = false
   }
 
   /**
    * Get current state snapshot
    */
   const getState = (): SuspenseState => ({
-    appReady: appReady.value,
-    loadingImagesMenuReady: loadingImagesMenuReady.value,
+    bundleReady: bundleReady.value,
+    imagesCached: imagesCached.value,
+    assetOperationInProgress: assetOperationInProgress.value,
+    updateCreativeInProgress: updateCreativeInProgress.value,
   })
-
-  // Initialize listeners on creation
-  initializeListeners()
 
   return {
     // Reactive state
-    appReady,
-    loadingImagesMenuReady,
+    bundleReady,
+    imagesCached,
+    assetOperationInProgress,
+    updateCreativeInProgress,
 
-    // Methods
-    setAppReady,
-    setImagesMenuReady,
+    // State setters
+    setBundleReady,
+    setImagesCached,
+    setAssetOperationInProgress,
+    setUpdateCreativeInProgress,
+
+    // Utilities
     resetStates,
     getState,
-
-    // Event handling
-    initializeListeners,
   }
 }

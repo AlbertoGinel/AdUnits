@@ -296,6 +296,28 @@ export const useTools = () => {
     disclaimerBG: getAdUnitNamesWithVisibilityLockedTag('disclaimerBG'),
   }))
 
+  // Element availability checks (for conditional rendering in focus mode)
+  const hasElementWithTag = (tag: string): boolean => {
+    const currentView = getCurrentView()
+
+    // In bulk mode, all elements are available
+    if (currentView === 'bulkMode') return true
+
+    // In focus mode, check if the current ad unit has the element
+    const focusedAdUnitId = getCurrentAdUnitId()
+    if (!focusedAdUnitId) return false
+
+    const elements = getElementsByTag(focusedAdUnitId, tag)
+    return elements.length > 0
+  }
+
+  const hasHeadline = computed(() => hasElementWithTag('headline'))
+  const hasSubhead = computed(() => hasElementWithTag('subhead'))
+  const hasCTA = computed(() => hasElementWithTag('cta'))
+  const hasDisclaimer = computed(() => hasElementWithTag('disclaimer'))
+  const hasImage = computed(() => hasElementWithTag('image'))
+  const hasLogo = computed(() => hasElementWithTag('logo'))
+
   // Function to get preview buttons with context
   const getPreviewButtons = (context: { hasLibrarySelection: boolean }) => {
     const currentView = getCurrentView()
@@ -337,6 +359,13 @@ export const useTools = () => {
     // Computed locked lists
     lockedElementsByTag,
     lockedVisibilityElementsByTag,
+    // Element availability
+    hasHeadline,
+    hasSubhead,
+    hasCTA,
+    hasDisclaimer,
+    hasImage,
+    hasLogo,
     // Preview buttons
     getPreviewButtons,
     // Utility functions

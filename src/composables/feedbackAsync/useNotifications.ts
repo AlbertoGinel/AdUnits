@@ -1,10 +1,9 @@
 // composables/feedbackAsync/useNotifications.ts
 import { ref } from 'vue'
-import { useSuspenseManager } from './useSuspenseManager'
 
 /**
  * Toast Notification Manager - Singleton for managing user feedback
- * Integrates with useSuspenseManager to show operation status
+ * Called directly by useCreativeAPI and other composables
  */
 
 interface ToastAction {
@@ -22,11 +21,6 @@ interface Toast {
   timestamp: number
 }
 
-interface NotificationState {
-  toasts: Toast[]
-  isVisible: boolean
-}
-
 // Singleton instance
 let sharedNotificationManager: ReturnType<typeof createNotificationManager> | null = null
 
@@ -42,28 +36,7 @@ function createNotificationManager() {
   const toasts = ref<Toast[]>([])
   const isVisible = ref(false)
 
-  // Integration with suspense manager
-  const suspenseManager = useSuspenseManager()
-
   let toastIdCounter = 0
-
-  /**
-   * Initialize event listeners for useCreativeAPI events
-   */
-  const initializeListeners = () => {
-    // Bundle loading events
-    window.addEventListener('creative-api-bundle-ready', handleBundleSuccess)
-    window.addEventListener('creative-api-bundle-error', handleBundleError)
-
-    // Asset operation events
-    window.addEventListener('creative-api-asset-start', handleAssetStart)
-    window.addEventListener('creative-api-asset-complete', handleAssetSuccess)
-    window.addEventListener('creative-api-asset-error', handleAssetError)
-
-    // Image manager events
-    window.addEventListener('image-manager-images-ready', handleImagesReady)
-    window.addEventListener('image-manager-error', handleImageError)
-  }
 
   /**
    * Create a new toast
@@ -125,70 +98,6 @@ function createNotificationManager() {
   }
 
   /**
-   * Event handlers
-   */
-  const handleBundleSuccess = () => {
-    createToast('success', 'App Ready', 'Creative loaded successfully', { duration: 2000 })
-  }
-
-  const handleBundleError = (event: CustomEvent) => {
-    const data = event.detail
-    createToast('error', 'Failed to Load Creative', data?.error || 'Unknown error occurred', {
-      persistent: true,
-      actions: [
-        {
-          label: 'Retry',
-          action: () => window.location.reload(),
-        },
-      ],
-    })
-  }
-
-  const handleAssetStart = (event: CustomEvent) => {
-    const data = event.detail
-    const operation = data?.type?.includes('insert') ? 'Uploading' : 'Deleting'
-    createToast('info', `${operation} Image`, 'Processing your request...', { duration: 1000 })
-  }
-
-  const handleAssetSuccess = (event: CustomEvent) => {
-    const data = event.detail
-    const operation = data?.type?.includes('insert') ? 'Uploaded' : 'Deleted'
-    createToast('success', `Image ${operation}`, 'Operation completed successfully')
-  }
-
-  const handleAssetError = (event: CustomEvent) => {
-    const data = event.detail
-    const operation = data?.type?.includes('insert') ? 'upload' : 'delete'
-
-    createToast('error', `Failed to ${operation} image`, data?.error || 'Please try again', {
-      persistent: true,
-      actions: [
-        {
-          label: 'Retry',
-          action: () => {
-            // The retry action would be handled by the component that initiated the operation
-            console.log('Retry action triggered')
-          },
-        },
-      ],
-    })
-  }
-
-  const handleImagesReady = () => {
-    createToast('success', 'Images Loaded', 'All images cached successfully', { duration: 2000 })
-  }
-
-  const handleImageError = (event: CustomEvent) => {
-    const data = event.detail
-    createToast(
-      'warning',
-      'Image Loading Issue',
-      `Some images failed to load: ${data?.error || 'Unknown error'}`,
-      { duration: 4000 },
-    )
-  }
-
-  /**
    * Manual toast methods
    */
   const showToast = (
@@ -234,9 +143,6 @@ function createNotificationManager() {
     persistent: toasts.value.filter((t) => t.persistent).length,
   })
 
-  // Initialize listeners on creation
-  initializeListeners()
-
   return {
     // Reactive state
     toasts,
@@ -253,8 +159,5 @@ function createNotificationManager() {
 
     // Utilities
     getStats,
-
-    // Event handling
-    initializeListeners,
   }
 }

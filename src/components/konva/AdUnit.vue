@@ -25,8 +25,10 @@
 
         <!-- Normal mode with loaded image -->
         <v-image
-          v-else-if="elementData.loadedImage && elementData.visible"
-          :config="elementData.config"
+          v-else-if="
+            elementData.loadedImage && elementData.visible && debugImageConfig(elementData)
+          "
+          :config="debugImageConfig(elementData)"
         />
 
         <!-- Fallback rectangle -->
@@ -63,4 +65,21 @@ const rendering = useAdUnitRendering()
 const renderableElements = computed(() => {
   return rendering.getAdUnitRenderableElements(props.adUnitId)
 })
+
+// Safe image config - ensures valid image before rendering
+const debugImageConfig = (elementData: {
+  config: object
+  loadedImage: HTMLImageElement | null
+}) => {
+  const config = elementData.config
+  const img = elementData.loadedImage
+
+  // Only return config if image is truly ready
+  if (img && img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
+    return config
+  }
+
+  // Return null to prevent rendering invalid images
+  return null
+}
 </script>

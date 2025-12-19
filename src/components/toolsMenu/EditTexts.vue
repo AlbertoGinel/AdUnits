@@ -1,14 +1,11 @@
 <!-- tools/EditTexts.vue -->
 <template>
-  <!-- Show skeleton when dependencies are loading -->
-  <EditTextsSkeleton v-if="!suspenseManager.appReady || !areCriticalDependenciesReady()" />
-
-  <!-- Normal content when dependencies are ready -->
-  <div v-else class="tool-menu">
+  <div class="tool-menu">
     <h3 class="menu-title">Edit texts</h3>
 
-    <!-- Main headline -->
+    <!-- Main headline - only show if ad unit has it -->
     <TextFieldSection
+      v-if="hasHeadline"
       title="Main headline"
       placeholder="The ad's main headline goes into this bar"
       v-model="headlineValue"
@@ -18,8 +15,9 @@
       @update:override-state="overrideStates.headlineOverride.value = $event"
     />
 
-    <!-- Sub headline -->
+    <!-- Sub headline - only show if ad unit has it -->
     <TextFieldSection
+      v-if="hasSubhead"
       title="Sub headline"
       placeholder="The ad's sub headline goes into this bar"
       v-model="subheadValue"
@@ -29,8 +27,9 @@
       @update:override-state="overrideStates.subheadOverride.value = $event"
     />
 
-    <!-- Button CTA -->
+    <!-- Button CTA - only show if ad unit has it -->
     <TextFieldSection
+      v-if="hasCTA"
       title="Button CTA"
       placeholder="SHOP NOW"
       v-model="ctaValue"
@@ -41,10 +40,12 @@
       @update:override-state="overrideStates.ctaOverride.value = $event"
     />
 
-    <hr class="divider" />
+    <!-- Only show divider if we have disclaimer AND at least one text field above -->
+    <hr v-if="hasDisclaimer && (hasHeadline || hasSubhead || hasCTA)" class="divider" />
 
-    <!-- Disclaimer -->
+    <!-- Disclaimer - only show if ad unit has it -->
     <DisclaimerSection
+      v-if="hasDisclaimer"
       v-model:text="disclaimerValue"
       v-model:visibility="disclaimerVisibility"
       v-model:bg-visibility="disclaimerBGVisibility"
@@ -60,6 +61,11 @@
         overrideStates.disclaimerBGVisibilityOverride.value = $event
       "
     />
+
+    <!-- Show message if no text elements exist in focus mode -->
+    <div v-if="isFocusMode && !hasAnyTextElements" class="no-elements-message">
+      <p>This ad unit does not contain any text elements.</p>
+    </div>
   </div>
 </template>
 
@@ -90,19 +96,13 @@
 </style>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useTools } from '@/composables/Tools/useTools'
-import { useSuspenseManager } from '@/composables/feedbackAsync/useSuspenseManager'
+import { useCanvasData } from '@/composables/data/useCanvasData'
 import TextFieldSection from './Subcomponets/TextFieldSection.vue'
 import DisclaimerSection from './Subcomponets/DisclaimerSection.vue'
-import EditTextsSkeleton from './EditTextsSkeleton.vue'
 
-// Suspense manager for loading state
-const suspenseManager = useSuspenseManager()
-
-// Check if critical dependencies are ready
-const areCriticalDependenciesReady = () => {
-  return suspenseManager.appReady.value
-}
+const { getCurrentView } = useCanvasData()
 
 const {
   headlineValue,
@@ -114,7 +114,17 @@ const {
   overrideStates,
   lockedElementsByTag,
   lockedVisibilityElementsByTag,
+  hasHeadline,
+  hasSubhead,
+  hasCTA,
+  hasDisclaimer,
 } = useTools()
+
+const isFocusMode = computed(() => getCurrentView() === 'focusMode')
+
+const hasAnyTextElements = computed(
+  () => hasHeadline.value || hasSubhead.value || hasCTA.value || hasDisclaimer.value,
+)
 </script>
 
 <style scoped>
@@ -140,5 +150,18 @@ const {
   border: none;
   border-top: 1px solid #dee2e6;
   margin: 16px 0;
+}
+
+.no-elements-message {
+  padding: 24px;
+  text-align: center;
+  color: #6c757d;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.no-elements-message p {
+  margin: 0;
+  font-size: 14px;
 }
 </style>
