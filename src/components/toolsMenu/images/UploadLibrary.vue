@@ -28,6 +28,14 @@
       <button @click="$emit('upload-requested')" class="btn-upload">
         Upload {{ type === 'logo' ? 'Logo' : 'Image' }}
       </button>
+      <button
+        v-if="showInsertButton"
+        @click="props.selectedImageId && $emit('insert-requested', props.selectedImageId)"
+        :disabled="!props.selectedImageId"
+        class="btn-insert"
+      >
+        Insert
+      </button>
     </div>
   </div>
 </template>
@@ -44,11 +52,13 @@ interface Props {
   type: 'image' | 'logo'
   images: ImageItem[]
   selectedImageId?: string | null
+  showInsertButton?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   type: 'image',
   selectedImageId: null,
+  showInsertButton: false,
 })
 
 const emit = defineEmits<{

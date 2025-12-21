@@ -549,7 +549,7 @@ function createMockDatabase() {
  * Mock API Configuration
  */
 const MOCK_CONFIG = {
-  errorRate: 0.1, //errorRate 100% is 1.0
+  errorRate: 0.0, //errorRate 100% is 1.0
   minDelay: 1000,
   maxDelay: 3000,
   enableErrors: true,

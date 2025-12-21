@@ -39,6 +39,13 @@ const previewButtonDefinitions = {
     action: 'cancelCrop',
     disabled: undefined as ((context: { hasLibrarySelection: boolean }) => boolean) | undefined,
   },
+  remove: {
+    id: 'remove',
+    class: 'btn-remove',
+    label: 'Remove Image',
+    action: 'removeImage',
+    disabled: undefined as ((context: { hasLibrarySelection: boolean }) => boolean) | undefined,
+  },
 }
 
 // Mode configurations reference button IDs only

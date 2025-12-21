@@ -1,6 +1,8 @@
 <!-- tools/images/UploadImages.vue -->
 <template>
   <div class="tool-menu">
+    <button @click="control.currentScreen.value = 'edit'" class="btn-secondary">Cancel</button>
+
     <h3 class="menu-title">Upload images</h3>
     <p class="menu-subtitle">Upload your photo and assign alt text</p>
 
@@ -73,9 +75,6 @@
 
     <!-- Actions -->
     <div class="action-buttons">
-      <button @click="$emit('navigate', 'edit')" class="btn-secondary" :disabled="isUploading">
-        Cancel
-      </button>
       <button @click="handleInsert" :disabled="!hasFile || isUploading" class="btn-primary">
         {{ isUploading ? 'Uploading...' : 'Insert Image' }}
       </button>
@@ -89,10 +88,10 @@ import { useImageManager } from '@/composables/setupImages/useImageManager'
 import { useSuspenseManager } from '@/composables/feedbackAsync/useSuspenseManager'
 import { useCreativeAPI } from '@/composables/api/useCreativeAPI'
 import { useCanvasData } from '@/composables/data/useCanvasData'
+import { useEditImagesControl } from './useEditImagesControl'
 
-const emit = defineEmits<{
-  navigate: [subView: string]
-}>()
+// 🎮 Connect to shared composable
+const control = useEditImagesControl()
 
 const imageManager = useImageManager()
 const suspenseManager = useSuspenseManager()
@@ -194,8 +193,8 @@ const handleInsert = async () => {
         fileInput.value.value = ''
       }
 
-      // Navigate back to edit view
-      emit('navigate', 'edit')
+      // Navigate back using composable
+      control.currentScreen.value = 'edit'
 
       console.log('✅ Upload complete, navigating to edit view')
     } else {
