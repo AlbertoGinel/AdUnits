@@ -172,6 +172,7 @@ export function useEditImagesControl() {
     hasImage,
     availableImages,
     currentImage: currentImageUrl,
+    currentImageId, // Add this for SmartImage
     altText,
     previewButtons,
 

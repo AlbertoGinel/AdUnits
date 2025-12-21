@@ -7,6 +7,7 @@
 
     <PreviewImage
       :current-image="control.currentImage.value"
+      :current-image-id="control.currentImageId.value || ''"
       :has-image="control.hasImage.value"
       :preview-buttons="control.previewButtons.value"
       :is-focus-mode="control.isFocusMode.value"

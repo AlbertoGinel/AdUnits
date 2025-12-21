@@ -11,7 +11,12 @@
       <div class="image-section">
         <h4 class="section-title">Lifestyle photo</h4>
         <div class="image-preview">
-          <img :src="currentImage" alt="Lifestyle photo" class="preview-image" />
+          <SmartImage
+            :image-id="currentImageId"
+            alt="Lifestyle photo"
+            class-name="preview-imageElem"
+            :show-fallback-text="true"
+          />
           <div class="image-actions">
             <button
               v-for="button in previewButtons.filter((btn: any) => btn)"
@@ -47,11 +52,12 @@
 </template>
 
 <script setup lang="ts">
-//import LockedInfo from '@/components/toolsMenu/Subcomponets/LockedInfo.vue'
+import SmartImage from '@/composables/setupImages/SmartImage.vue'
 
 interface Props {
   // 📷 Basic image display data
   currentImage: string
+  currentImageId: string
   isFocusMode: boolean
   hasImage: boolean
   altText?: string
@@ -123,7 +129,7 @@ const updateAltText = (value: string) => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.preview-image {
+.preview-imageElem {
   width: 100%;
   height: auto;
   display: block;

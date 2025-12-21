@@ -527,6 +527,21 @@ function createImageManager() {
     imageStore.setUploadTempImage(null)
   }
 
+  /**
+   * Check if image ID represents an empty/fallback state
+   */
+  const isEmptyImage = (imageId: string | null | undefined): boolean => {
+    return !imageId || imageId === '' || imageId === '__fallback__'
+  }
+
+  /**
+   * Check if current image should show fallback
+   */
+  const shouldShowFallback = (): boolean => {
+    const currentImageId = getCurrentImage()
+    return isEmptyImage(currentImageId)
+  }
+
   return {
     // State
     isInitialized,
@@ -562,5 +577,7 @@ function createImageManager() {
     // Utilities
     getCacheStats,
     clearCache,
+    isEmptyImage,
+    shouldShowFallback,
   }
 }
