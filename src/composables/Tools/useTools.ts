@@ -4,63 +4,9 @@ import { useLayers } from '@/composables/data/useLayers'
 import { useElements } from '@/composables/data/useElements'
 import { useCropping } from '@/composables/Tools/useCropping'
 
-// Shared callback for zoom updates (singleton)
-let sharedOnModeChangeCallback:
-  | ((mode: 'bulkMode' | 'focusMode', id?: string | null) => void)
-  | null = null
-
 // Tool selection state (singleton)
 const selectedTool = ref<string>('text')
 const activeSubView = ref<string>('default')
-
-// Button definitions for image preview
-const previewButtonDefinitions = {
-  change: {
-    id: 'change',
-    class: 'btn-change',
-    label: 'Change',
-    action: 'changeImage',
-    disabled: (context: { hasLibrarySelection: boolean }) => !context.hasLibrarySelection,
-  },
-  crop: {
-    id: 'crop',
-    class: 'btn-change',
-    label: 'Crop',
-    action: 'startCrop',
-    disabled: undefined as ((context: { hasLibrarySelection: boolean }) => boolean) | undefined,
-  },
-  save: {
-    id: 'save',
-    class: 'btn-save',
-    label: 'Save Crop',
-    action: 'saveCrop',
-    disabled: undefined as ((context: { hasLibrarySelection: boolean }) => boolean) | undefined,
-  },
-  cancel: {
-    id: 'cancel',
-    class: 'btn-cancel',
-    label: 'Cancel',
-    action: 'cancelCrop',
-    disabled: undefined as ((context: { hasLibrarySelection: boolean }) => boolean) | undefined,
-  },
-  remove: {
-    id: 'remove',
-    class: 'btn-remove',
-    label: 'Remove Image',
-    action: 'removeImage',
-    disabled: undefined as ((context: { hasLibrarySelection: boolean }) => boolean) | undefined,
-  },
-}
-
-// Mode configurations reference button IDs only
-const modeConfigurations = {
-  bulk: {
-    buttonIds: ['change'],
-  },
-  focus: {
-    buttonIds: (isCropping: boolean) => (isCropping ? ['save', 'cancel'] : ['crop', 'change']),
-  },
-}
 
 export const useTools = () => {
   const {
@@ -79,35 +25,29 @@ export const useTools = () => {
   const { updateElement } = useElements()
   const { calculateCoverCrop, isCropping, cancelCrop } = useCropping()
 
-  const setOnModeChange = (
-    callback: (mode: 'bulkMode' | 'focusMode', id?: string | null) => void,
-  ) => {
-    console.log('🔧 setOnModeChange: Callback registered (SINGLETON)')
-    sharedOnModeChangeCallback = callback
+  const switchToBulkMode = () => {
+    console.log('🔄 Switching to bulk mode')
+
+    // Auto-cancel any active cropping when switching to bulk mode
+    if (isCropping.value) {
+      console.log('⚠️ Auto-canceling crop when switching to bulk mode')
+      cancelCrop()
+    }
+
+    setCurrentAdUnitId(null)
+    setCurrentView('bulkMode')
   }
 
-  const switchMode = (mode: 'bulkMode' | 'focusMode', id?: string | null) => {
-    console.log('🔄 switchMode called:', mode, id)
-    if (mode === 'bulkMode') {
-      // Auto-cancel any active cropping when switching to bulk mode
-      if (isCropping.value) {
-        console.log('⚠️ Auto-canceling crop when switching to bulk mode')
-        cancelCrop()
-      }
-      setCurrentAdUnitId(null)
-      setCurrentView('bulkMode')
-      console.log('→ Triggering callback for bulkMode')
-      sharedOnModeChangeCallback?.('bulkMode')
-    } else if (mode === 'focusMode') {
-      if (!id) {
-        console.warn('Focus mode requires an ad unit ID')
-        return
-      }
-      setCurrentAdUnitId(id)
-      setCurrentView('focusMode')
-      console.log('→ Triggering callback for focusMode:', id)
-      sharedOnModeChangeCallback?.('focusMode', id)
+  const switchToFocusMode = (adUnitId: string) => {
+    console.log('🔄 Switching to focus mode for:', adUnitId)
+
+    if (!adUnitId) {
+      console.warn('Focus mode requires an ad unit ID')
+      return
     }
+
+    setCurrentAdUnitId(adUnitId)
+    setCurrentView('focusMode')
   }
 
   // Override states for each field (must be defined first)
@@ -302,10 +242,14 @@ export const useTools = () => {
   }))
 
   // Computed lists of visibility locked elements by tag
-  const lockedVisibilityElementsByTag = computed(() => ({
-    disclaimer: getAdUnitNamesWithVisibilityLockedTag('disclaimer'),
-    disclaimerBG: getAdUnitNamesWithVisibilityLockedTag('disclaimerBG'),
-  }))
+  const lockedVisibilityElementsByTag = computed(() => {
+    const result = {
+      disclaimer: getAdUnitNamesWithVisibilityLockedTag('disclaimer'),
+      disclaimerBG: getAdUnitNamesWithVisibilityLockedTag('disclaimerBG'),
+    }
+    console.log('🔍 lockedVisibilityElementsByTag computed:', result)
+    return result
+  })
 
   // Element availability checks (for conditional rendering in focus mode)
   const hasElementWithTag = (tag: string): boolean => {
@@ -329,31 +273,6 @@ export const useTools = () => {
   const hasImage = computed(() => hasElementWithTag('image'))
   const hasLogo = computed(() => hasElementWithTag('logo'))
 
-  // Function to get preview buttons with context
-  const getPreviewButtons = (context: { hasLibrarySelection: boolean }) => {
-    const currentView = getCurrentView()
-    const mode = currentView === 'focusMode' ? 'focus' : 'bulk'
-    const config = modeConfigurations[mode]
-
-    // Get button IDs based on mode
-    let buttonIds: string[]
-    if (typeof config.buttonIds === 'function') {
-      buttonIds = config.buttonIds(isCropping.value)
-    } else {
-      buttonIds = config.buttonIds
-    }
-
-    // Map IDs to full button objects with evaluated disabled state
-    return buttonIds.map((id) => {
-      const buttonDef = previewButtonDefinitions[id as keyof typeof previewButtonDefinitions]
-      return {
-        ...buttonDef,
-        disabled: buttonDef.disabled ? buttonDef.disabled(context) : false,
-        handler: undefined, // Will implement later
-      }
-    })
-  }
-
   // Tool selection handlers
   const handleToolSelected = (tool: string) => {
     console.log('🎯 useTools.handleToolSelected called with:', tool)
@@ -368,8 +287,8 @@ export const useTools = () => {
   }
 
   return {
-    switchMode,
-    setOnModeChange,
+    switchToBulkMode,
+    switchToFocusMode,
     // Smart v-models
     headlineValue,
     subheadValue,
@@ -390,8 +309,6 @@ export const useTools = () => {
     hasDisclaimer,
     hasImage,
     hasLogo,
-    // Preview buttons
-    getPreviewButtons,
     // Tool selection state
     selectedTool,
     activeSubView,

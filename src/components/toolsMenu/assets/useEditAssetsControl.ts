@@ -2,39 +2,60 @@ import { ref, computed } from 'vue'
 import { useCropping } from '@/composables/Tools/useCropping'
 import { useImageManager } from '@/composables/setupImages/useImageManager'
 import { useCanvasData } from '@/composables/data/useCanvasData'
+import { useLayers } from '@/composables/data/useLayers'
+import { useElements } from '@/composables/data/useElements'
 import { useTools } from '@/composables/Tools/useTools'
 
+const ASSET_DISPLAY = {
+  image: { singular: 'image', plural: 'Images' },
+  logo: { singular: 'logo', plural: 'Logos' },
+} as const
+
 // 🏠 Singleton state - shared across all component instances
-const currentScreen = ref<'edit' | 'change' | 'upload'>('edit')
+const currentAssetScreen = ref<'edit' | 'change' | 'upload'>('edit')
 const selectedLibraryAssetId = ref<string | null>(null)
 
 export function useEditAssetsControl() {
   // 🎯 Core dependencies
   const { startCrop, applyCrop, cancelCrop, isCropping } = useCropping()
   const imageManager = useImageManager()
-  const { getCurrentView } = useCanvasData()
+  const { getCurrentView, getCurrentAdUnitId, getElementsByTag } = useCanvasData()
+  const { getAllLayers, updateLayer } = useLayers()
+  const { updateElement } = useElements()
   const tools = useTools()
 
-  // Determine asset type based on selected tool
   const assetType = computed(() => {
-    const result = tools.selectedTool.value === 'logos' ? 'logo' : 'image'
-    console.log(
-      '🎯 useEditAssetsControl - selectedTool:',
-      tools.selectedTool.value,
-      'assetType:',
-      result,
-    )
-    return result
+    return tools.selectedTool.value === 'logos' ? 'logo' : 'image'
   })
+
+  const assetDisplayText = computed(() => ASSET_DISPLAY[assetType.value])
+
   const isLogoMode = computed(() => assetType.value === 'logo')
 
-  console.log('🔍 useEditAssetsControl called, currentScreen:', currentScreen.value)
+  console.log('🔍 useEditAssetsControl called, currentAssetScreen:', currentAssetScreen.value)
 
   // 🎯 Computed state from canvas
   const isFocusMode = computed(() => getCurrentView() === 'focusMode')
 
-  // 🖼️ Asset management (generic for images/logos)
-  const currentAssetId = computed(() => imageManager.getCurrentImage())
+  // 🖼️ Asset management (generic for images/logos based on current tag)
+  const currentTag = computed(() => (isLogoMode.value ? 'logo' : 'image'))
+
+  const currentAssetId = computed(() => {
+    const tag = currentTag.value
+    const currentView = getCurrentView()
+    const currentAdUnitId = getCurrentAdUnitId()
+
+    if (currentView === 'focusMode' && currentAdUnitId) {
+      // Focus mode: get from current ad unit element
+      const elements = getElementsByTag(currentAdUnitId, tag)
+      return elements[0]?.text || elements[0]?.image || ''
+    } else {
+      // Bulk mode: get from layer value
+      const layers = getAllLayers()
+      return layers[tag]?.defaultValue || ''
+    }
+  })
+
   const hasAsset = computed(() => !!currentAssetId.value)
 
   const currentAssetUrl = computed(() => {
@@ -57,77 +78,96 @@ export function useEditAssetsControl() {
     })
   })
 
-  // 📝 Alt text with two-way binding (only for images, not logos)
+  // 📝 Alt text with two-way binding (for both images and logos)
   const altText = computed({
     get: () => {
-      if (isLogoMode.value) return '' // Logos don't have alt text
-      const currentAssetId = imageManager.getCurrentImage()
-      if (!currentAssetId) return ''
-      const metadata = imageManager.getImageMetadata(currentAssetId)
+      const assetId = currentAssetId.value
+      if (!assetId) return ''
+      const metadata = imageManager.getImageMetadata(assetId)
       return metadata?.altText || ''
     },
     set: (value: string) => {
-      if (isLogoMode.value) return // Logos don't have alt text
-      const currentAssetId = imageManager.getCurrentImage()
-      if (currentAssetId) {
-        imageManager.updateImageAltText(currentAssetId, value)
+      const assetId = currentAssetId.value
+      if (assetId) {
+        imageManager.updateImageAltText(assetId, value)
       }
     },
   })
 
-  // 🔘 Preview buttons based on current screen and state
-  const previewButtons = computed(() => {
-    const buttons = []
+  // 🔘 Button sets - clearly defined for each state
+  const buttonSets = {
+    // When cropping is active (images only)
+    cropping: [
+      {
+        id: 'saveCrop',
+        label: 'Save Crop',
+        action: 'saveCrop',
+        class: 'btn-save',
+      },
+      {
+        id: 'cancelCrop',
+        label: 'Cancel',
+        action: 'cancelCrop',
+        class: 'btn-cancel',
+      },
+    ],
 
-    // Crop button - only in focus mode, not currently cropping, and NOT for logos
-    if (isFocusMode.value && hasAsset.value && !isCropping.value && !isLogoMode.value) {
-      buttons.push({
-        id: 'startCrop',
-        label: 'Crop',
-        action: 'startCrop',
-        class: 'btn-crop',
-      })
-    }
-
-    // Save/Cancel crop buttons - only when cropping (not for logos)
-    if (isFocusMode.value && isCropping.value && hasAsset.value && !isLogoMode.value) {
-      buttons.push(
-        {
-          id: 'saveCrop',
-          label: 'Save Crop',
-          action: 'saveCrop',
-          class: 'btn-save',
-        },
-        {
-          id: 'cancelCrop',
-          label: 'Cancel',
-          action: 'cancelCrop',
-          class: 'btn-cancel',
-        },
-      )
-    }
-
-    // Screen-specific buttons
-    if (currentScreen.value === 'edit' && hasAsset.value) {
-      buttons.push({
+    // Edit screen buttons
+    edit: (isLogo: boolean) => [
+      // Crop button only for images in focus mode
+      ...(!isLogo && isFocusMode.value && !isCropping.value
+        ? [
+            {
+              id: 'startCrop',
+              label: 'Crop',
+              action: 'startCrop',
+              class: 'btn-crop',
+            },
+          ]
+        : []),
+      // Change button always available when asset exists
+      {
         id: 'change',
         label: 'Change',
         action: 'changeAsset',
         class: 'btn-change',
-      })
-    }
+      },
+    ],
 
-    if (currentScreen.value === 'change' && hasAsset.value) {
-      const removeLabel = isLogoMode.value ? 'Remove Logo' : 'Remove Image'
-      buttons.push({
+    // Change screen buttons
+    change: (isLogo: boolean) => [
+      {
         id: 'remove',
-        label: removeLabel,
+        label: isLogo ? 'Remove Logo' : 'Remove Image',
         action: 'removeAsset',
         class: 'btn-remove',
-      })
+      },
+    ],
+
+    // No asset state
+    empty: [],
+  }
+
+  // 🔘 Preview buttons based on current state
+  const previewButtons = computed(() => {
+    if (!hasAsset.value) return buttonSets.empty
+
+    // Priority 1: If cropping, only show cropping buttons
+    if (isFocusMode.value && isCropping.value && !isLogoMode.value) {
+      return buttonSets.cropping
     }
 
-    return buttons
+    // Priority 2: Screen-based button sets
+    switch (currentAssetScreen.value) {
+      case 'edit':
+        return buttonSets.edit(isLogoMode.value)
+
+      case 'change':
+        return buttonSets.change(isLogoMode.value)
+
+      default:
+        return buttonSets.empty
+    }
   })
 
   // 🎬 Button click handler - what happens when user clicks buttons?
@@ -147,8 +187,8 @@ export function useEditAssetsControl() {
 
       case 'changeAsset':
         // Navigate to change view
-        currentScreen.value = 'change'
-        console.log('🚀 Navigating to change view', currentScreen.value)
+        currentAssetScreen.value = 'change'
+        console.log('🚀 Navigating to change view', currentAssetScreen.value)
         break
 
       case 'removeAsset':
@@ -164,8 +204,8 @@ export function useEditAssetsControl() {
 
   // 🔄 Navigation handler for Add Asset button
   const handleAddAsset = () => {
-    currentScreen.value = 'upload'
-    console.log('🚀 Navigating to upload view', currentScreen.value)
+    currentAssetScreen.value = 'upload'
+    console.log('🚀 Navigating to upload view', currentAssetScreen.value)
   }
 
   // 📷 Asset selection handler - called from UploadLibrary component
@@ -177,14 +217,31 @@ export function useEditAssetsControl() {
   const handleInsertRequested = (assetId: string) => {
     const assetTypeLabel = isLogoMode.value ? 'logo' : 'image'
     console.log(`🔄 Insert ${assetTypeLabel} clicked with ID:`, assetId)
-    imageManager.setCurrentImage(assetId)
+
+    // Use the correct field model based on asset type
+    if (isLogoMode.value) {
+      // Update logo through tools logo field model (create if needed)
+      const tag = currentTag.value
+      const currentView = getCurrentView()
+      const currentAdUnitId = getCurrentAdUnitId()
+
+      if (currentView === 'focusMode' && currentAdUnitId) {
+        updateElement(currentAdUnitId, tag, { text: assetId })
+      } else {
+        updateLayer(tag, { defaultValue: assetId })
+      }
+    } else {
+      // Use existing image manager for images
+      imageManager.setCurrentImage(assetId)
+    }
+
     selectedLibraryAssetId.value = null // Clear selection after use
   }
 
   return {
     // State
     selectedLibraryAssetId,
-    currentScreen,
+    currentAssetScreen,
     assetType,
     isLogoMode,
 
@@ -195,6 +252,7 @@ export function useEditAssetsControl() {
     currentAsset: currentAssetUrl,
     currentAssetId, // Add this for SmartImage
     altText,
+    assetDisplayText,
     previewButtons,
 
     // Actions

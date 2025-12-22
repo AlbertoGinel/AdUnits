@@ -2,9 +2,9 @@
 <template>
   <div class="tool-menu">
     <!-- Edit Screen -->
-    <template v-if="control.currentScreen.value === 'edit'">
+    <template v-if="control.currentAssetScreen.value === 'edit'">
       <!-- Page header -->
-      <h3 class="menu-title">Edit main {{ assetTypeDisplay.slice(0, -1).toLowerCase() }}</h3>
+      <h3 class="menu-title">Edit main {{ control.assetDisplayText.value.singular }}</h3>
       <p class="menu-subtitle">Across ad sizes</p>
       <PreviewAsset
         :current-asset="control.currentAsset.value"
@@ -20,16 +20,16 @@
 
       <div class="action-buttons">
         <button @click="control.handleAddAsset" class="btn-add-image">
-          Add {{ assetTypeDisplay.slice(0, -1) }}
+          Add {{ control.assetDisplayText.value.singular }}
         </button>
       </div>
     </template>
 
     <!-- Change Screen -->
-    <ChangeAssets v-else-if="control.currentScreen.value === 'change'" />
+    <ChangeAssets v-else-if="control.currentAssetScreen.value === 'change'" />
 
     <!-- Upload Screen -->
-    <UploadAsset v-else-if="control.currentScreen.value === 'upload'" />
+    <UploadAsset v-else-if="control.currentAssetScreen.value === 'upload'" />
   </div>
 </template>
 
@@ -42,18 +42,6 @@ import { useEditAssetsControl } from './useEditAssetsControl'
 
 // 🎮 Get all the logic from clean composable
 const control = useEditAssetsControl()
-
-// Computed properties
-const assetTypeDisplay = computed(() => {
-  const result = control.assetType.value === 'image' ? 'Images' : 'Logos'
-  console.log(
-    '🎯 EditAssets computed - selectedTool:',
-    control.assetType.value,
-    'assetTypeDisplay:',
-    result,
-  )
-  return result
-})
 
 // 🎯 Simple handlers for component events
 const handleAltTextUpdate = (value: string) => {

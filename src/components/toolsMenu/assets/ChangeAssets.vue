@@ -1,8 +1,8 @@
 <!-- tools/assets/ChangeAssets.vue -->
 <template>
   <div>
-    <button @click="control.currentScreen.value = 'edit'" class="btn-secondary">Cancel</button>
-    <h3 class="menu-title">Change {{ assetTypeDisplay.slice(0, -1).toLowerCase() }}</h3>
+    <button @click="control.currentAssetScreen.value = 'edit'" class="btn-secondary">Cancel</button>
+    <h3 class="menu-title">Change {{ control.assetDisplayText.value.singular }}</h3>
     <p class="menu-subtitle">Across ad sizes</p>
 
     <PreviewAsset
@@ -31,16 +31,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import PreviewAsset from './PreviewAsset.vue'
 import UploadLibrary from './UploadLibrary.vue'
 import { useEditAssetsControl } from './useEditAssetsControl'
 
 // 🎮 Use shared composable instance
 const control = useEditAssetsControl()
-
-// Computed properties
-const assetTypeDisplay = computed(() => (control.assetType.value === 'image' ? 'Images' : 'Logos'))
 
 // 🎯 Simple handlers for component events
 const handleAltTextUpdate = (value: string) => {

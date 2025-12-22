@@ -31,7 +31,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-const { switchMode } = useTools()
+const { switchToBulkMode, switchToFocusMode } = useTools()
 const viewState = useViewState()
 const { isCropping } = useCropping()
 
@@ -67,16 +67,13 @@ const contentGroupConfig = computed(() => ({
   y: props.adUnit.frameConfig.contentOffset.y,
 }))
 
-// ✅ Handle edit button click - conditional behavior based on current mode
 const handleEditClick = () => {
   const isInFocusMode = viewState.isFocusMode.value
 
   if (isInFocusMode) {
-    // Switch back to bulk mode
-    switchMode('bulkMode', null)
+    switchToBulkMode()
   } else {
-    // Switch to focus mode for this ad unit
-    switchMode('focusMode', props.adUnit.id)
+    switchToFocusMode(props.adUnit.id)
   }
 }
 </script>

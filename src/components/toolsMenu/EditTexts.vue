@@ -44,23 +44,7 @@
     <hr v-if="hasDisclaimer && (hasHeadline || hasSubhead || hasCTA)" class="divider" />
 
     <!-- Disclaimer - only show if ad unit has it -->
-    <DisclaimerSection
-      v-if="hasDisclaimer"
-      v-model:text="disclaimerValue"
-      v-model:visibility="disclaimerVisibility"
-      v-model:bg-visibility="disclaimerBGVisibility"
-      :locked-text-elements="lockedElementsByTag.disclaimer"
-      :locked-visibility-elements="lockedVisibilityElementsByTag.disclaimer"
-      :locked-bg-elements="lockedVisibilityElementsByTag.disclaimerBG"
-      :override-states="overrideStates"
-      @update:disclaimer-override="overrideStates.disclaimerOverride.value = $event"
-      @update:disclaimer-visibility-override="
-        overrideStates.disclaimerVisibilityOverride.value = $event
-      "
-      @update:disclaimer-b-g-visibility-override="
-        overrideStates.disclaimerBGVisibilityOverride.value = $event
-      "
-    />
+    <DisclaimerSection v-if="hasDisclaimer" />
 
     <!-- Show message if no text elements exist in focus mode -->
     <div v-if="isFocusMode && !hasAnyTextElements" class="no-elements-message">
@@ -99,8 +83,8 @@
 import { computed } from 'vue'
 import { useTools } from '@/composables/Tools/useTools'
 import { useCanvasData } from '@/composables/data/useCanvasData'
-import TextFieldSection from './Subcomponets/TextFieldSection.vue'
-import DisclaimerSection from './Subcomponets/DisclaimerSection.vue'
+import TextFieldSection from './textFields/TextFieldSection.vue'
+import DisclaimerSection from './textFields/DisclaimerSection.vue'
 
 const { getCurrentView } = useCanvasData()
 
@@ -108,12 +92,8 @@ const {
   headlineValue,
   subheadValue,
   ctaValue,
-  disclaimerValue,
-  disclaimerVisibility,
-  disclaimerBGVisibility,
   overrideStates,
   lockedElementsByTag,
-  lockedVisibilityElementsByTag,
   hasHeadline,
   hasSubhead,
   hasCTA,

@@ -22,7 +22,6 @@
 import { ref, computed } from 'vue'
 import { useViewState } from '@/composables/view/useViewState'
 import { useKonvaStage } from '@/composables/view/useKonvaStage'
-import { useTools } from '@/composables/Tools/useTools'
 import { useSuspenseManager } from '@/composables/feedbackAsync/useSuspenseManager'
 import BulkModeView from '@/components/konva/BulkModeView.vue'
 import FocusModeView from '@/components/konva/FocusModeView.vue'
@@ -38,16 +37,6 @@ const viewState = useViewState()
 const stage = useKonvaStage(containerRef, bundleReady)
 
 // Clean version - no debug logs
-
-// Tools setup (one-time)
-const tools = useTools()
-tools.setOnModeChange((mode, id) => {
-  if (mode === 'bulkMode') {
-    stage.zoomToFit()
-  } else if (mode === 'focusMode' && id) {
-    stage.zoomToAdUnit(id)
-  }
-})
 </script>
 
 <style scoped>

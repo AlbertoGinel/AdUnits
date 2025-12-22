@@ -3,20 +3,13 @@
   <div class="text-section">
     <h4 class="section-title">{{ title }}</h4>
     <input
-      :value="modelValue"
-      @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
+      v-model="field.fieldValue.value"
       class="text-input-area"
       :class="{ small: size === 'small' }"
-      :placeholder="placeholder"
+      :placeholder="field.placeholder"
     />
 
-    <LockedInfo
-      :field-name="fieldName"
-      :locked-elements="lockedElements || []"
-      :override-value="overrideState?.value || false"
-      :is-bulk-mode="isBulkMode"
-      @update:override-value="$emit('update:overrideState', $event)"
-    />
+    <LockedInfo :field="field" lock-type="text" />
   </div>
 </template>
 
@@ -66,26 +59,27 @@
 </style>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useCanvasData } from '@/composables/data/useCanvasData'
-import LockedInfo from '@/components/toolsMenu/Subcomponets/LockedInfo.vue'
+import LockedInfo from '@/components/toolsMenu/textFields/LockedInfo.vue'
+import { useTextField } from './useTextFields'
 
 interface Props {
   title: string
-  placeholder: string
-  modelValue: string
   fieldName: string
-  lockedElements?: string[]
-  overrideState?: { value: boolean }
   size?: 'normal' | 'small'
 }
 
-defineProps<Props>()
-defineEmits<{
-  'update:modelValue': [value: string]
-  'update:overrideState': [value: boolean]
-}>()
+const props = defineProps<Props>()
 
-const { getCurrentView } = useCanvasData()
-const isBulkMode = computed(() => getCurrentView() === 'bulkMode')
+const field = useTextField(props.fieldName, {
+  type: 'input',
+  hasVisibility: false,
+  hasBgVisibility: false,
+  maxLength: 200,
+  placeholder: `Enter ${props.fieldName} text here...`,
+  customMessages: {
+    text: 'Does not apply on:',
+    visibility: '',
+    bgVisibility: '',
+  },
+})
 </script>

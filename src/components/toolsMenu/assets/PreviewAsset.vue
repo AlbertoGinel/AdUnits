@@ -31,18 +31,24 @@
         </div>
       </div>
 
-      <!-- Alt text section (only for images, not logos) -->
-      <div v-if="!isLogoMode && altText !== undefined" class="alt-text-section">
+      <!-- Alt text section (for both images AND logos) -->
+      <div v-if="altText !== undefined" class="alt-text-section">
         <h4 class="section-title">Alt text*</h4>
         <p class="section-description">
-          Alt text should be a long-form description of what's visually represented in your ad.
+          {{
+            isLogoMode
+              ? 'Alt text should describe what the logo says or represents for screen readers.'
+              : "Alt text should be a long-form description of what's visually represented in your ad."
+          }}
         </p>
         <input
           :value="altText"
           @input="updateAltText(($event.target as HTMLInputElement)?.value || '')"
           type="text"
           class="alt-text-input"
-          placeholder="Image's alternate text goes here"
+          :placeholder="
+            isLogoMode ? 'Logo description goes here' : 'Image\'s alternate text goes here'
+          "
           maxlength="150"
         />
         <div class="character-count">Character count: {{ altText?.length || 0 }}/150</div>

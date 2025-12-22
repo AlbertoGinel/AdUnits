@@ -1,11 +1,11 @@
 <!-- tools/assets/UploadAssets.vue -->
 <template>
   <div class="tool-menu">
-    <button @click="control.currentScreen.value = 'edit'" class="btn-secondary">Cancel</button>
+    <button @click="control.currentAssetScreen.value = 'edit'" class="btn-secondary">Cancel</button>
 
-    <h3 class="menu-title">Upload {{ assetTypeDisplay }}</h3>
+    <h3 class="menu-title">Upload {{ control.assetDisplayText.value.plural }}</h3>
     <p class="menu-subtitle">
-      Upload your {{ assetTypeDisplay.toLowerCase() }}
+      Upload your {{ control.assetDisplayText.value.plural.toLowerCase() }}
       {{ control.isLogoMode.value ? '' : 'and assign alt text' }}
     </p>
 
@@ -23,7 +23,7 @@
       <!-- Show upload prompt when no asset -->
       <div v-if="!hasFile" class="drop-zone-content">
         <span class="upload-icon">📁</span>
-        <p class="drop-text">Drag {{ assetTypeDisplay.toLowerCase() }} here</p>
+        <p class="drop-text">Drag {{ control.assetDisplayText.value.plural.toLowerCase() }} here</p>
         <p class="browse-text">or browse</p>
       </div>
 
@@ -32,7 +32,7 @@
         <img
           v-if="previewImage"
           :src="previewImage.src"
-          :alt="`${assetTypeDisplay.slice(0, -1)} preview`"
+          :alt="`${control.assetDisplayText.value.singular} preview`"
           class="preview-image"
         />
         <div v-else-if="error" class="error-content">
@@ -40,7 +40,7 @@
           <p class="error-text">{{ error }}</p>
         </div>
         <button @click.stop="handleRemoveImage" class="btn-remove">
-          <span>Remove {{ assetTypeDisplay.slice(0, -1).toLowerCase() }}</span>
+          <span>Remove {{ control.assetDisplayText.value.singular.toLowerCase() }}</span>
           <span class="remove-icon">⊗</span>
         </button>
       </div>
@@ -79,7 +79,7 @@
     <!-- Actions -->
     <div class="action-buttons">
       <button @click="handleInsert" :disabled="!hasFile || isUploading" class="btn-primary">
-        {{ isUploading ? 'Uploading...' : `Insert ${assetTypeDisplay.slice(0, -1)}` }}
+        {{ isUploading ? 'Uploading...' : `Insert ${control.assetDisplayText.value.singular}` }}
       </button>
     </div>
   </div>
@@ -107,7 +107,6 @@ const altText = ref('')
 const currentFile = ref<File | null>(null)
 
 // Computed properties
-const assetTypeDisplay = computed(() => (control.assetType.value === 'image' ? 'Images' : 'Logos'))
 const hasFile = computed(() => imageManager.hasUploadTemp())
 const isUploading = computed(() => suspenseManager.assetOperationInProgress.value)
 const previewImage = computed(() => {
@@ -198,7 +197,7 @@ const handleInsert = async () => {
       }
 
       // Navigate back using composable
-      control.currentScreen.value = 'edit'
+      control.currentAssetScreen.value = 'edit'
 
       console.log('✅ Upload complete, navigating to edit view')
     } else {
