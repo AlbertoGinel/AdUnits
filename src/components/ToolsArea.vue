@@ -18,8 +18,8 @@
 import { computed, type Component } from 'vue'
 import { useSuspenseManager } from '@/composables/feedbackAsync/useSuspenseManager'
 import EditTexts from './toolsMenu/EditTexts.vue'
-import EditImages from './toolsMenu/images/EditImages.vue'
-import UploadImages from './toolsMenu/images/UploadImages.vue'
+import EditImages from './toolsMenu/assets/EditAssets.vue'
+import UploadImages from './toolsMenu/assets/UploadAsset.vue'
 import EmptyState from './toolsMenu/EmptyState.vue'
 import EditTextsSkeleton from './toolsMenu/EditTextsSkeleton.vue'
 
@@ -48,17 +48,36 @@ const toolRegistry: Record<string, Record<string, Component>> = {
     edit: EditImages,
     upload: UploadImages,
   },
+  logos: {
+    default: EditImages, // Same component as images, but will show logo flavor
+    edit: EditImages,
+    upload: UploadImages,
+  },
 }
 
 // Get current component to display
 const currentComponent = computed(() => {
-  if (!props.activeTool) return null
+  console.log('🎯 ToolsArea - activeTool:', props.activeTool, 'activeSubView:', props.activeSubView)
+
+  if (!props.activeTool) {
+    console.log('❌ No activeTool provided')
+    return null
+  }
 
   const tool = toolRegistry[props.activeTool]
-  if (!tool) return null
+  if (!tool) {
+    console.log(
+      '❌ No tool found for:',
+      props.activeTool,
+      'Available tools:',
+      Object.keys(toolRegistry),
+    )
+    return null
+  }
 
-  // Return sub-view component or fallback to default
-  return tool[props.activeSubView] || tool.default
+  const component = tool[props.activeSubView] || tool.default
+  console.log('✅ Component selected:', component?.name || 'unknown', 'for tool:', props.activeTool)
+  return component
 })
 </script>
 

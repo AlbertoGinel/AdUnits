@@ -9,6 +9,10 @@ let sharedOnModeChangeCallback:
   | ((mode: 'bulkMode' | 'focusMode', id?: string | null) => void)
   | null = null
 
+// Tool selection state (singleton)
+const selectedTool = ref<string>('text')
+const activeSubView = ref<string>('default')
+
 // Button definitions for image preview
 const previewButtonDefinitions = {
   change: {
@@ -350,6 +354,19 @@ export const useTools = () => {
     })
   }
 
+  // Tool selection handlers
+  const handleToolSelected = (tool: string) => {
+    console.log('🎯 useTools.handleToolSelected called with:', tool)
+    cancelCrop()
+    selectedTool.value = tool
+    activeSubView.value = 'default' // Reset to default view when switching tools
+    console.log('🎯 useTools - selectedTool updated to:', selectedTool.value)
+  }
+
+  const handleNavigate = (subView: string) => {
+    activeSubView.value = subView
+  }
+
   return {
     switchMode,
     setOnModeChange,
@@ -375,6 +392,11 @@ export const useTools = () => {
     hasLogo,
     // Preview buttons
     getPreviewButtons,
+    // Tool selection state
+    selectedTool,
+    activeSubView,
+    handleToolSelected,
+    handleNavigate,
     // Utility functions
     freeLayer,
   }

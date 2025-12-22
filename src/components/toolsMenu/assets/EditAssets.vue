@@ -1,43 +1,59 @@
-<!-- tools/images/EditImages.vue -->
+<!-- tools/assets/EditAssets.vue -->
 <template>
   <div class="tool-menu">
     <!-- Edit Screen -->
     <template v-if="control.currentScreen.value === 'edit'">
       <!-- Page header -->
-      <h3 class="menu-title">Edit main image</h3>
+      <h3 class="menu-title">Edit main {{ assetTypeDisplay.slice(0, -1).toLowerCase() }}</h3>
       <p class="menu-subtitle">Across ad sizes</p>
-      <PreviewImage
-        :current-image="control.currentImage.value"
-        :current-image-id="control.currentImageId.value || ''"
-        :has-image="control.hasImage.value"
+      <PreviewAsset
+        :current-asset="control.currentAsset.value"
+        :current-asset-id="control.currentAssetId.value || ''"
+        :has-asset="control.hasAsset.value"
         :preview-buttons="control.previewButtons.value"
         :is-focus-mode="control.isFocusMode.value"
         :alt-text="control.altText.value"
+        :is-logo-mode="control.isLogoMode.value"
         @button-click="control.handleButtonClick"
         @update:alt-text="handleAltTextUpdate"
       />
 
       <div class="action-buttons">
-        <button @click="control.handleAddImage" class="btn-add-image">Add Image</button>
+        <button @click="control.handleAddAsset" class="btn-add-image">
+          Add {{ assetTypeDisplay.slice(0, -1) }}
+        </button>
       </div>
     </template>
 
     <!-- Change Screen -->
-    <ChangeImages v-else-if="control.currentScreen.value === 'change'" />
+    <ChangeAssets v-else-if="control.currentScreen.value === 'change'" />
 
     <!-- Upload Screen -->
-    <UploadImages v-else-if="control.currentScreen.value === 'upload'" />
+    <UploadAsset v-else-if="control.currentScreen.value === 'upload'" />
   </div>
 </template>
 
 <script setup lang="ts">
-import PreviewImage from './PreviewImage.vue'
-import ChangeImages from './ChangeImages.vue'
-import UploadImages from './UploadImages.vue'
-import { useEditImagesControl } from './useEditImagesControl'
+import { computed } from 'vue'
+import PreviewAsset from './PreviewAsset.vue'
+import ChangeAssets from './ChangeAssets.vue'
+import UploadAsset from './UploadAsset.vue'
+import { useEditAssetsControl } from './useEditAssetsControl'
 
 // 🎮 Get all the logic from clean composable
-const control = useEditImagesControl()
+const control = useEditAssetsControl()
+
+// Computed properties
+const assetTypeDisplay = computed(() => {
+  const result = control.assetType.value === 'image' ? 'Images' : 'Logos'
+  console.log(
+    '🎯 EditAssets computed - selectedTool:',
+    control.assetType.value,
+    'assetTypeDisplay:',
+    result,
+  )
+  return result
+})
 
 // 🎯 Simple handlers for component events
 const handleAltTextUpdate = (value: string) => {

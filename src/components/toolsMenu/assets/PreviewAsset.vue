@@ -1,19 +1,19 @@
-<!-- components/toolsMenu/images/PreviewImage.vue -->
+<!-- components/toolsMenu/assets/PreviewAsset.vue -->
 <template>
   <div class="preview-container">
-    <!-- Show message if no image in focus mode -->
-    <div v-if="isFocusMode && !hasImage" class="no-elements-message">
-      <p>This ad unit does not contain an image element.</p>
+    <!-- Show message if no asset in focus mode -->
+    <div v-if="isFocusMode && !hasAsset" class="no-elements-message">
+      <p>This ad unit does not contain {{ isLogoMode ? 'a logo' : 'an image' }} element.</p>
     </div>
 
-    <!-- Normal image editing content -->
+    <!-- Normal asset editing content -->
     <template v-else>
       <div class="image-section">
-        <h4 class="section-title">Lifestyle photo</h4>
+        <h4 class="section-title">{{ isLogoMode ? 'Logo' : 'Lifestyle photo' }}</h4>
         <div class="image-preview">
           <SmartImage
-            :image-id="currentImageId"
-            alt="Lifestyle photo"
+            :image-id="currentAssetId"
+            :alt="isLogoMode ? 'Logo' : 'Lifestyle photo'"
             class-name="preview-imageElem"
             :show-fallback-text="true"
           />
@@ -31,8 +31,8 @@
         </div>
       </div>
 
-      <!-- Alt text section (only if altText prop provided) -->
-      <div v-if="altText !== undefined" class="alt-text-section">
+      <!-- Alt text section (only for images, not logos) -->
+      <div v-if="!isLogoMode && altText !== undefined" class="alt-text-section">
         <h4 class="section-title">Alt text*</h4>
         <p class="section-description">
           Alt text should be a long-form description of what's visually represented in your ad.
@@ -55,12 +55,13 @@
 import SmartImage from '@/composables/setupImages/SmartImage.vue'
 
 interface Props {
-  // 📷 Basic image display data
-  currentImage: string
-  currentImageId: string
+  // 📷 Basic asset display data
+  currentAsset: string
+  currentAssetId: string
   isFocusMode: boolean
-  hasImage: boolean
+  hasAsset: boolean
   altText?: string
+  isLogoMode?: boolean
 
   // 🔘 Button configuration
   previewButtons: Array<{
@@ -72,7 +73,9 @@ interface Props {
   }>
 }
 
-defineProps<Props>()
+withDefaults(defineProps<Props>(), {
+  isLogoMode: false,
+})
 
 const emit = defineEmits<{
   'button-click': [action: string]

@@ -1,10 +1,13 @@
-<!-- tools/images/UploadImages.vue -->
+<!-- tools/assets/UploadAssets.vue -->
 <template>
   <div class="tool-menu">
     <button @click="control.currentScreen.value = 'edit'" class="btn-secondary">Cancel</button>
 
-    <h3 class="menu-title">Upload images</h3>
-    <p class="menu-subtitle">Upload your photo and assign alt text</p>
+    <h3 class="menu-title">Upload {{ assetTypeDisplay }}</h3>
+    <p class="menu-subtitle">
+      Upload your {{ assetTypeDisplay.toLowerCase() }}
+      {{ control.isLogoMode.value ? '' : 'and assign alt text' }}
+    </p>
 
     <!-- Drop Zone / Preview -->
     <div
@@ -17,19 +20,19 @@
       :class="{ 'drag-over': isDragOver, 'has-image': hasFile }"
       :style="{ cursor: hasFile ? 'default' : 'pointer' }"
     >
-      <!-- Show upload prompt when no image -->
+      <!-- Show upload prompt when no asset -->
       <div v-if="!hasFile" class="drop-zone-content">
         <span class="upload-icon">📁</span>
-        <p class="drop-text">Drag photos here</p>
+        <p class="drop-text">Drag {{ assetTypeDisplay.toLowerCase() }} here</p>
         <p class="browse-text">or browse</p>
       </div>
 
-      <!-- Show preview when image uploaded -->
+      <!-- Show preview when asset uploaded -->
       <div v-else class="preview-content">
         <img
           v-if="previewImage"
           :src="previewImage.src"
-          alt="Upload preview"
+          :alt="`${assetTypeDisplay.slice(0, -1)} preview`"
           class="preview-image"
         />
         <div v-else-if="error" class="error-content">
@@ -37,7 +40,7 @@
           <p class="error-text">{{ error }}</p>
         </div>
         <button @click.stop="handleRemoveImage" class="btn-remove">
-          <span>Remove image</span>
+          <span>Remove {{ assetTypeDisplay.slice(0, -1).toLowerCase() }}</span>
           <span class="remove-icon">⊗</span>
         </button>
       </div>
@@ -57,8 +60,8 @@
       <p>• Maximum dimensions 5000x5000px</p>
     </div>
 
-    <!-- Alt Text Section -->
-    <div class="alt-text-section">
+    <!-- Alt Text Section (only for images, not logos) -->
+    <div v-if="!control.isLogoMode.value" class="alt-text-section">
       <h4 class="section-title">Alt text*</h4>
       <p class="section-description">
         Alt text should be a long-form description of what's visually represented in your ad.
@@ -76,7 +79,7 @@
     <!-- Actions -->
     <div class="action-buttons">
       <button @click="handleInsert" :disabled="!hasFile || isUploading" class="btn-primary">
-        {{ isUploading ? 'Uploading...' : 'Insert Image' }}
+        {{ isUploading ? 'Uploading...' : `Insert ${assetTypeDisplay.slice(0, -1)}` }}
       </button>
     </div>
   </div>
@@ -88,10 +91,10 @@ import { useImageManager } from '@/composables/setupImages/useImageManager'
 import { useSuspenseManager } from '@/composables/feedbackAsync/useSuspenseManager'
 import { useCreativeAPI } from '@/composables/api/useCreativeAPI'
 import { useCanvasData } from '@/composables/data/useCanvasData'
-import { useEditImagesControl } from './useEditImagesControl'
+import { useEditAssetsControl } from './useEditAssetsControl'
 
 // 🎮 Connect to shared composable
-const control = useEditImagesControl()
+const control = useEditAssetsControl()
 
 const imageManager = useImageManager()
 const suspenseManager = useSuspenseManager()
@@ -104,6 +107,7 @@ const altText = ref('')
 const currentFile = ref<File | null>(null)
 
 // Computed properties
+const assetTypeDisplay = computed(() => (control.assetType.value === 'image' ? 'Images' : 'Logos'))
 const hasFile = computed(() => imageManager.hasUploadTemp())
 const isUploading = computed(() => suspenseManager.assetOperationInProgress.value)
 const previewImage = computed(() => {
@@ -177,9 +181,9 @@ const handleInsert = async () => {
     console.log('📤 Starting API upload for:', file.name)
 
     const result = await creativeAPI.insertAsset(creativeId, file, {
-      type: 'image',
+      type: control.assetType.value, // Use the asset type from control
       name: file.name.replace(/\.[^/.]+$/, ''),
-      altText: altText.value || '',
+      altText: control.isLogoMode.value ? '' : altText.value || '', // Only include alt text for images
     })
 
     if (result.success && result.assetId) {
