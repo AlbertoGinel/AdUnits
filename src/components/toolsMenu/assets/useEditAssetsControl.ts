@@ -194,7 +194,12 @@ export function useEditAssetsControl() {
       case 'removeAsset':
         const assetTypeLabel = isLogoMode.value ? 'logo' : 'image'
         console.log(`🗑️ Remove ${assetTypeLabel} clicked`)
-        imageManager.setCurrentImage('')
+
+        if (isLogoMode.value) {
+          imageManager.setCurrentLogo('')
+        } else {
+          imageManager.setCurrentImage('')
+        }
         break
 
       default:
@@ -226,7 +231,7 @@ export function useEditAssetsControl() {
       const currentAdUnitId = getCurrentAdUnitId()
 
       if (currentView === 'focusMode' && currentAdUnitId) {
-        updateElement(currentAdUnitId, tag, { text: assetId })
+        updateElement(currentAdUnitId, tag, { image: assetId })
       } else {
         updateLayer(tag, { defaultValue: assetId })
       }

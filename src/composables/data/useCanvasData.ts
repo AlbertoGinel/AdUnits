@@ -1,5 +1,6 @@
 import { useCanvasStore } from '@/stores/canvas'
 import { useImageStore } from '@/stores/useImageStore'
+import { useHelperContentData } from './useHelperContentData'
 import type { AdUnit, CanvasElement, LayerDefinition } from '@/stores/canvas'
 import type { CreativeContentData } from '@/types/creative'
 
@@ -175,17 +176,21 @@ export function useCanvasData() {
       if (adUnit?.elements[elementId]) {
         const element = adUnit.elements[elementId]
 
-        // Auto-provide crop when changing image
-        if (updates.image !== undefined && element.type === 'image' && updates.crop === undefined) {
+        // Auto-provide crop when changing image (only for image tags, not logos)
+        if (
+          updates.image !== undefined &&
+          element.type === 'image' &&
+          element.tag === 'image' &&
+          updates.crop === undefined
+        ) {
           // Handle null case - if image is being set to null, no crop needed
-          if (updates.image === null) {
-            // Allow null image update without crop
+          if (updates.image === null || updates.image === '') {
             adUnit.elements[elementId] = { ...adUnit.elements[elementId], ...updates }
             return
           }
 
           const imageStore = useImageStore()
-          const imageData = imageStore.images[updates.image] // Now TypeScript knows it's not null
+          const imageData = imageStore.images[updates.image]
 
           if (imageData?.dimensions && element.width && element.height) {
             const crop = calculateAutoCrop(
@@ -210,11 +215,15 @@ export function useCanvasData() {
         adUnit.elements[elementId] = { ...adUnit.elements[elementId], ...updates }
       }
     },
+
     updateLayer: (layerId: string, updates: Partial<LayerDefinition>) => {
       if (store.layers[layerId]) {
         store.layers[layerId] = { ...store.layers[layerId], ...updates }
 
-        // Auto-cascade: When layer properties change, update matching elements
+        // Get reference to updateElement function
+        const canvasData = useCanvasData()
+
+        // Auto-cascade: When layer properties change, update matching elements using updateElement
         Object.keys(store.adUnits).forEach((adUnitId) => {
           const adUnit = store.adUnits[adUnitId]
           if (adUnit) {
@@ -222,70 +231,47 @@ export function useCanvasData() {
               if (element.tag === layerId) {
                 const elementUpdates: Partial<CanvasElement> = {}
 
-                // Text cascade: Update unlocked elements when defaultValue changes
+                // Universal cascade: Update unlocked elements when defaultValue changes
                 if (updates.defaultValue !== undefined && !element.locked) {
-                  elementUpdates.text = updates.defaultValue
-                }
+                  const newValue = updates.defaultValue
 
-                // Image cascade: Update unlocked image elements when defaultValue changes
-                if (
-                  updates.defaultValue !== undefined &&
-                  element.type === 'image' &&
-                  !element.locked
-                ) {
-                  const newImageId = updates.defaultValue
-
-                  // Skip if image is already set (preserve crop data)
-                  if (element.image === newImageId) {
-                    console.log(
-                      `ℹ️ Image already set for ${adUnitId}/${elementId}, skipping cascade to preserve crop data`,
-                    )
-                    return
-                  }
-
-                  elementUpdates.image = newImageId
-
-                  // Auto-crop: Calculate aspect-ratio-preserving crop
-                  if (element.width && element.height && newImageId) {
-                    const imageStore = useImageStore()
-                    const imageData = imageStore.images[newImageId]
-
-                    if (imageData?.dimensions) {
-                      const crop = calculateAutoCrop(
-                        imageData.dimensions.naturalWidth,
-                        imageData.dimensions.naturalHeight,
-                        element.width,
-                        element.height,
-                      )
-
-                      if (crop) {
-                        elementUpdates.crop = crop
+                  // For image elements, determine which field to update based on tag
+                  if (element.type === 'image') {
+                    if (element.tag === 'image') {
+                      // Image elements: update 'image' field (triggers auto-crop in updateElement)
+                      const currentValue = element.image
+                      if (currentValue === newValue) {
+                        console.log(
+                          `ℹ️ Image already set for ${adUnitId}/${elementId}, skipping cascade`,
+                        )
+                        return
                       }
+                      elementUpdates.image = newValue
+                    } else if (element.tag === 'logo') {
+                      const currentValue = element.text
+                      if (currentValue === newValue) {
+                        return
+                      }
+                      elementUpdates.image = newValue
                     }
+                  } else {
+                    // For text elements, update the 'text' field
+                    elementUpdates.text = newValue
                   }
                 }
 
-                // Visibility cascade: Update disclaimer elements when visibility changes
+                // Visibility cascade: Update elements when visibility changes
                 if (
                   updates.visibility !== undefined &&
-                  layerId === 'disclaimer' &&
+                  (layerId === 'disclaimer' || layerId === 'disclaimerBG') &&
                   !element.visibilityLock
                 ) {
                   elementUpdates.visibility = updates.visibility
                 }
 
-                // Visibility cascade: Update disclaimerBG elements when visibility changes
-                if (
-                  updates.visibility !== undefined &&
-                  layerId === 'disclaimerBG' &&
-                  !element.visibilityLock
-                ) {
-                  elementUpdates.visibility = updates.visibility
-                }
-
-                // Apply updates if any exist
+                // Apply updates using updateElement (this handles auto-crop for images automatically)
                 if (Object.keys(elementUpdates).length > 0) {
-                  adUnit.elements[elementId] = { ...element, ...elementUpdates }
+                  canvasData.updateElement(adUnitId, elementId, elementUpdates)
                 }
               }
             })
@@ -343,82 +329,16 @@ export function useCanvasData() {
      * Convert Pinia store data to CreativeContentData for API
      */
     exportToCreativeContentData: (): CreativeContentData | null => {
-      if (!store.creative_id) {
-        console.warn('Cannot export: No creative_id set')
-        return null
-      }
-
-      const imageStore = useImageStore()
-
-      // Convert to plain objects to avoid Proxy cloning issues in IndexedDB
-      const plainData = {
-        creative_id: store.creative_id,
-        adUnits: Object.fromEntries(
-          Object.entries(store.adUnits).map(([key, adUnit]) => [
-            key,
-            {
-              elements: Object.fromEntries(
-                Object.entries(adUnit.elements).map(([elementKey, element]) => [
-                  elementKey,
-                  {
-                    ...element,
-                    // Only include relevant fields for CreativeContentData
-                  },
-                ]),
-              ),
-            },
-          ]),
-        ),
-        layers: { ...store.layers },
-        images: imageStore.getAllImages.map((asset) => ({
-          id: asset.id || asset.url, // Fallback to URL if no ID
-          type: asset.type || 'image',
-          name: asset.name || 'Unnamed',
-          altText: asset.altText || `${asset.name || 'Unnamed'} altText`,
-        })),
-      }
-
-      // Use JSON parse/stringify to ensure fully plain objects (removes any remaining Proxy references)
-      return JSON.parse(JSON.stringify(plainData))
+      const helper = useHelperContentData()
+      return helper.exportToCreativeContentData()
     },
 
     /**
      * Import CreativeContentData to Pinia stores
      */
-    importToCreativeContentData: (
-      stage: { width: number; height: number },
-      modelAdUnits: Record<string, AdUnit>,
-      creativeData: CreativeContentData,
-    ) => {
-      console.log('💾 Importing CreativeContentData to stores...')
-
-      // 1. Set creative ID
-      store.creative_id = creativeData.creative_id
-
-      // 2. Set stage dimensions
-      store.stage = stage
-      console.log(`📏 Stage: ${stage.width}x${stage.height}`)
-
-      // 3. Set ad units structure (models only)
-      store.adUnits = modelAdUnits
-
-      // 4. Apply creative content to ad units
-      Object.entries(creativeData.adUnits).forEach(([adUnitId, content]) => {
-        const adUnit = store.adUnits[adUnitId]
-        if (!adUnit) return
-
-        Object.entries(content.elements).forEach(([elementId, elementContent]) => {
-          if (adUnit.elements[elementId]) {
-            Object.assign(adUnit.elements[elementId], elementContent)
-          }
-        })
-      })
-
-      // 5. Set layers
-      store.layers = creativeData.layers
-      console.log(`📚 Layers: ${Object.keys(creativeData.layers).length}`)
-
-      console.log(`💾 Stores populated from CreativeContentData`)
+    importFromCreativeContentData: (creativeData: CreativeContentData) => {
+      const helper = useHelperContentData()
+      return helper.importFromCreativeContentData(creativeData)
     },
 
     // ========== RESET OPERATIONS ==========

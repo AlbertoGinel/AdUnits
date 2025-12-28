@@ -1,5 +1,6 @@
 // composables/view/useElementRenderer.ts
 import type { CanvasElement } from '@/stores/canvas'
+import { useImageManager } from '@/composables/setupImages/useImageManager'
 
 /**
  * Pure element rendering logic
@@ -60,17 +61,77 @@ export function useElementRenderer() {
         }
 
       case 'image':
-        return {
-          ...baseConfig,
-          width: element.width || 100,
-          height: element.height || 100,
-          // Crop if present
-          ...(element.crop && {
-            cropX: element.crop.x,
-            cropY: element.crop.y,
-            cropWidth: element.crop.width,
-            cropHeight: element.crop.height,
-          }),
+        // Handle different image types based on tag
+        if (element.tag === 'logo') {
+          // Logo-specific rendering with aspect ratio calculation
+          const imageManager = useImageManager()
+          const maxWidth = element.width || 100
+          const maxHeight = element.height || 100
+          const centerX = element.x
+          const centerY = element.y
+
+          // Get original logo dimensions
+          let actualWidth = maxWidth
+          let actualHeight = maxHeight
+          let finalX = centerX
+          let finalY = centerY
+
+          if (element.image) {
+            const dimensions = imageManager.getDimensionsById(element.image)
+            if (dimensions) {
+              const { naturalWidth, naturalHeight } = dimensions
+
+              console.log('🔍 Logo calculation:', {
+                naturalWidth,
+                naturalHeight,
+                maxWidth,
+                maxHeight,
+                aspectRatio: naturalWidth / naturalHeight,
+                maxAspectRatio: maxWidth / maxHeight,
+              })
+
+              // Calculate aspect ratio fit within max bounds
+              const aspectRatio = naturalWidth / naturalHeight
+              const maxAspectRatio = maxWidth / maxHeight
+
+              if (aspectRatio > maxAspectRatio) {
+                // Logo is wider, fit by width
+                actualWidth = maxWidth
+                actualHeight = maxWidth / aspectRatio
+              } else {
+                // Logo is taller, fit by height
+                actualHeight = maxHeight
+                actualWidth = maxHeight * aspectRatio
+              }
+
+              // Center the logo within the max bounds
+              finalX = centerX - actualWidth / 2
+              finalY = centerY - actualHeight / 2
+
+              console.log('🔍 Final result:', { actualWidth, actualHeight })
+            }
+          }
+
+          return {
+            x: finalX,
+            y: finalY,
+            width: actualWidth,
+            height: actualHeight,
+          }
+        } else {
+          // Standard image rendering (tag: 'image')
+          return {
+            ...baseConfig,
+            width: element.width || 100,
+            height: element.height || 100,
+            // Crop if present (mainly for images, not logos)
+            ...(element.crop && {
+              cropX: element.crop.x,
+              cropY: element.crop.y,
+              cropWidth: element.crop.width,
+              cropHeight: element.crop.height,
+            }),
+          }
         }
 
       default:

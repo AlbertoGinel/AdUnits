@@ -27,6 +27,13 @@ export interface TextElement {
   locked: boolean
 }
 
+export interface DisclaimerElement {
+  text: string
+  locked: boolean
+  visibility?: boolean
+  visibilityLock?: boolean
+}
+
 export interface AdUnitElements {
   image?: ImageElement
   logo?: LogoElement
@@ -34,6 +41,7 @@ export interface AdUnitElements {
   subhead?: TextElement
   cta?: TextElement
   background?: ImageElement
+  disclaimer?: DisclaimerElement
 }
 
 export interface AdUnitData {

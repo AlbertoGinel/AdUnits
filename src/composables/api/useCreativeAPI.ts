@@ -1,6 +1,8 @@
 // composables/api/useCreativeAPI.ts
 import { useMockAPI } from './mockAPI/useMockAPI'
 import { useCanvasData } from '@/composables/data/useCanvasData'
+import { useImageManager } from '@/composables/setupImages/useImageManager'
+import type { AddImageParams } from '@/composables/setupImages/useImageManager'
 import { useSuspenseManager } from '@/composables/feedbackAsync/useSuspenseManager'
 import { useNotifications } from '@/composables/feedbackAsync/useNotifications'
 import type { CreativeContentData } from '@/types/creative'
@@ -54,6 +56,7 @@ export function useCreativeAPI() {
   const canvasData = useCanvasData()
   const suspenseManager = useSuspenseManager()
   const notifications = useNotifications()
+  const imageManager = useImageManager()
 
   const getCreativeBundle = async (creativeId: string): Promise<CreativeBundle> => {
     console.log(`📡 [${isDevelopment ? 'DEV' : 'PROD'}] Fetching creative bundle:`, creativeId)
@@ -124,8 +127,9 @@ export function useCreativeAPI() {
     suspenseManager.setUpdateCreativeInProgress(true)
 
     try {
-      // Get current state from Pinia
-      const currentData = canvasData.exportToCreativeContentData()
+      // Get current state from Pinia and convert to plain object
+      const rawData = canvasData.exportToCreativeContentData()
+      const currentData = JSON.parse(JSON.stringify(rawData))
 
       console.log('Current data is here: ', currentData)
 
@@ -175,9 +179,8 @@ export function useCreativeAPI() {
   }
 
   /**
-   * Insert asset with transaction-like behavior
-   * Step 1: Upload asset -> Step 2: Update creative data
-   * Rollback: Delete asset if creative update fails
+   * Insert asset with simplified approach
+   * Upload -> Add to Pinia -> Export -> UpdateCreative -> Clear/Cleanup
    */
   const insertAsset = async (
     creativeId: string,
@@ -191,7 +194,7 @@ export function useCreativeAPI() {
     let uploadedAssetId: string | null = null
 
     try {
-      // Step 1: Upload asset with direct DEV/PROD switching
+      // Step 1: Upload asset
       console.log('Step 1: Uploading asset...')
       const uploadResponse = isDevelopment
         ? await useMockAPI().insertAsset(creativeId, file)
@@ -219,126 +222,64 @@ export function useCreativeAPI() {
         throw new Error('Asset upload succeeded but no assetId or path returned')
       }
 
-      // Add image to Pinia imageStore with the real assetId
-      // This must happen BEFORE Step 2 so exportToCreativeContentData includes it
-      const imageManager = await import('@/composables/setupImages/useImageManager').then((m) =>
-        m.useImageManager(),
-      )
-      const imageStore = (await import('@/stores/useImageStore')).useImageStore()
-      await imageManager.addUploadedImage(
-        uploadedAssetId,
-        uploadedPath,
-        metadata.type,
-        metadata.name,
-        metadata.altText,
-      )
+      // Step 2: Add image to Pinia with AddImageParams
+      console.log('Step 2: Adding to Pinia...')
+      const imageParams: AddImageParams = {
+        assetId: uploadedAssetId,
+        path: uploadedPath,
+        type: metadata.type,
+        name: metadata.name,
+        altText: metadata.altText,
+      }
+      await imageManager.addUploadedImage(imageParams)
+      console.log('✅ Step 2 complete: Image added to Pinia store')
 
-      // Clear uploadTemp after successfully adding to regular images
-      imageStore.setUploadTempImage(null)
-      console.log('✅ Image added to Pinia store with assetId:', uploadedAssetId)
-      console.log('✅ Cleared uploadTemp')
-
-      // Step 2: Update creative data to include new asset
-      console.log('Step 2: Updating creative data...')
-
-      // Export current data (now includes the new image with correct assetId)
-      const currentData = canvasData.exportToCreativeContentData()
+      // Step 3: Export current data
+      console.log('Step 3: Exporting current data...')
+      const rawData = canvasData.exportToCreativeContentData()
+      const currentData = JSON.parse(JSON.stringify(rawData))
       if (!currentData) {
         throw new Error('Cannot export creative data for update')
       }
+      console.log('✅ Step 3 complete: Data exported')
 
-      // Update via API with direct DEV/PROD switching
-      const payload = {
-        version: 1,
-        data: currentData,
-        creative_id: creativeId,
-      }
-      const updateResponse = isDevelopment
-        ? await useMockAPI().updateCreative(creativeId, payload)
-        : await fetch(`/api/v1/creative_data/${creativeId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-          }).then((r) => r.json())
+      // Step 4: Update creative
+      console.log('Step 4: Updating creative...')
+      const updateResult = await updateCreative(creativeId)
 
-      if (updateResponse.status !== 200) {
-        // Step 2 failed - rollback Step 1
-        console.warn('⚠️ Step 2 failed, rolling back Step 1...')
-
-        try {
-          if (uploadedAssetId) {
-            const rollbackResponse = await (isDevelopment
-              ? useMockAPI().deleteAsset(uploadedAssetId)
-              : fetch(`/api/v1/assets/${uploadedAssetId}`, { method: 'DELETE' }).then((r) =>
-                  r.json(),
-                ))
-
-            if (rollbackResponse.status !== 200) {
-              throw new Error(`Rollback failed: ${rollbackResponse.message}`)
-            }
-          }
-          console.log('✅ Rollback successful: Asset deleted')
-        } catch (rollbackError) {
-          console.error('💥 ROLLBACK FAILED:', rollbackError)
-          suspenseManager.setAssetOperationInProgress(false)
-          notifications.showError(
-            'Critical Error',
-            `Update failed AND rollback failed. Asset ${uploadedAssetId} may be orphaned.`,
-          )
-          return {
-            success: false,
-            message: `Update failed AND rollback failed. Asset ${uploadedAssetId} may be orphaned.`,
-          }
-        }
+      if (updateResult.success) {
+        // Step 5 Success: Clear uploadTemp
+        console.log('Step 5: Clearing uploadTemp...')
+        imageManager.clearUploadTemp()
+        console.log('✅ Step 5 complete: uploadTemp cleared')
 
         suspenseManager.setAssetOperationInProgress(false)
-        notifications.showError('Update Failed', updateResponse.message || 'Creative update failed')
-        return { success: false, message: updateResponse.message || 'Creative update failed' }
-      }
+        notifications.showSuccess('Asset Uploaded', 'Image uploaded successfully')
 
-      console.log('✅ Step 2 complete: Creative data updated')
-      console.log('✅ Asset insertion successful:', uploadedAssetId)
+        console.log('✅ Asset insertion successful:', uploadedAssetId)
+        return {
+          success: true,
+          message: 'Asset inserted successfully',
+          assetId: uploadedAssetId,
+          path: uploadedPath,
+        }
+      } else {
+        // Step 5 Failure: Remove from Pinia
+        console.log('Step 5: Removing from Pinia due to updateCreative failure...')
+        imageManager.removeImage(uploadedAssetId)
+        console.log('✅ Step 5 complete: Image removed from Pinia')
 
-      suspenseManager.setAssetOperationInProgress(false)
-      notifications.showSuccess('Asset Uploaded', 'Image uploaded successfully')
-
-      return {
-        success: true,
-        message: 'Asset inserted successfully',
-        assetId: uploadedAssetId || undefined,
-        path: uploadResponse.path,
+        suspenseManager.setAssetOperationInProgress(false)
+        notifications.showError('Update Failed', updateResult.message)
+        return { success: false, message: updateResult.message }
       }
     } catch (error) {
       console.error('❌ Asset insertion failed:', error)
 
-      // If we uploaded an asset but something else failed, try rollback
+      // If we added to Pinia, remove it
       if (uploadedAssetId) {
-        console.warn('⚠️ Attempting rollback of uploaded asset...')
-        try {
-          if (uploadedAssetId) {
-            const rollbackResponse = await (isDevelopment
-              ? useMockAPI().deleteAsset(uploadedAssetId)
-              : fetch(`/api/v1/assets/${uploadedAssetId}`, { method: 'DELETE' }).then((r) =>
-                  r.json(),
-                ))
-
-            if (rollbackResponse.status !== 200) {
-              throw new Error(`Rollback failed: ${rollbackResponse.message}`)
-            }
-          }
-          console.log('✅ Rollback successful')
-        } catch (rollbackError) {
-          console.error('💥 ROLLBACK FAILED:', rollbackError)
-          suspenseManager.setAssetOperationInProgress(false)
-          notifications.showError(
-            'Critical Error',
-            `Insertion failed AND rollback failed. Asset ${uploadedAssetId} may be orphaned.`,
-          )
-          return {
-            success: false,
-            message: `Insertion failed AND rollback failed. Asset ${uploadedAssetId} may be orphaned.`,
-          }
-        }
+        console.log('Removing failed upload from Pinia...')
+        imageManager.removeImage(uploadedAssetId)
       }
 
       suspenseManager.setAssetOperationInProgress(false)

@@ -72,6 +72,7 @@
         class="alt-text-input"
         placeholder="Image's alternate text goes here"
         maxlength="150"
+        :disabled="!hasFile"
       />
       <div class="character-count">Character count: {{ altText.length }}/150</div>
     </div>
@@ -103,8 +104,18 @@ const canvasData = useCanvasData()
 
 const fileInput = ref<HTMLInputElement | null>(null)
 const isDragOver = ref(false)
-const altText = ref('')
 const currentFile = ref<File | null>(null)
+
+// ✅ Reactive altText that syncs with uploadTemp in Pinia
+const altText = computed({
+  get: () => {
+    const uploadTemp = imageManager.getUploadTempImage()
+    return uploadTemp?.altText || ''
+  },
+  set: (value: string) => {
+    imageManager.updateUploadTempAltText(value)
+  },
+})
 
 // Computed properties
 const hasFile = computed(() => imageManager.hasUploadTemp())
@@ -152,17 +163,13 @@ const handleFileSelection = async (file: File) => {
   // TODO: Add file size validation (10MB limit)
   // TODO: Add dimension validation (5000x5000px limit)
 
-  try {
-    // Store file reference for insert
-    currentFile.value = file
+  // Store file reference for insert
+  currentFile.value = file
 
-    // Cache image using ImageManager (stores in uploadTemp only)
-    await imageManager.cacheTemporaryImage(file)
+  // Cache image using ImageManager - NO altText since it can change later
+  await imageManager.cacheTemporaryImage(file, control.assetType.value)
 
-    console.log('✅ Temporary image loaded and ready for preview')
-  } catch (error) {
-    console.error('❌ Failed to process image:', error)
-  }
+  console.log('✅ Temporary image loaded and ready for preview')
 }
 
 const handleInsert = async () => {
@@ -190,7 +197,6 @@ const handleInsert = async () => {
 
       // Clear local UI state (uploadTemp already cleared in insertAsset)
       currentFile.value = null
-      altText.value = ''
 
       if (fileInput.value) {
         fileInput.value.value = ''

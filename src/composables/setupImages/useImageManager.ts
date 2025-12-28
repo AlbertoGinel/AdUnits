@@ -1,10 +1,9 @@
 // composables/setupImages/useImageManager.ts
 import { ref } from 'vue'
-import { useCreativeAPI } from '@/composables/api/useCreativeAPI'
 import { useCanvasData } from '@/composables/data/useCanvasData'
-import { useImageStore } from '@/stores/useImageStore'
+import { useImageStore, type ImageAsset } from '@/stores/useImageStore'
 import { useSuspenseManager } from '@/composables/feedbackAsync/useSuspenseManager'
-import type { AssetResponse, CreativeBundle } from '@/composables/api/useCreativeAPI'
+import type { CreativeBundle } from '@/composables/api/useCreativeAPI'
 import type { ImageMetadata } from '@/types/creative'
 
 /**
@@ -14,6 +13,7 @@ import type { ImageMetadata } from '@/types/creative'
  */
 
 // Singleton instance
+
 let sharedImageManager: ReturnType<typeof createImageManager> | null = null
 
 export function useImageManager() {
@@ -21,6 +21,14 @@ export function useImageManager() {
     sharedImageManager = createImageManager()
   }
   return sharedImageManager
+}
+
+export type AddImageParams = {
+  assetId: string
+  path: string
+  type: 'image' | 'logo'
+  name: string
+  altText: string
 }
 
 function createImageManager() {
@@ -33,7 +41,6 @@ function createImageManager() {
   const imageElementCache = new Map<string, HTMLImageElement>()
 
   // Store integrations
-  const creativeAPI = useCreativeAPI()
   const canvasData = useCanvasData()
   const imageStore = useImageStore()
   const suspenseManager = useSuspenseManager()
@@ -51,70 +58,6 @@ function createImageManager() {
 
     fallbackImage.value = img
     return img
-  }
-
-  /**
-   * Initialize image manager with creative bundle
-   * Calls useCreativeAPI and handles complete initialization
-   * Returns the fetched bundle for use by caller
-   */
-  const initialize = async (creativeId: string): Promise<CreativeBundle> => {
-    console.log('🖼️ ImageManager: Initializing with creative:', creativeId)
-
-    try {
-      // Reset state
-      isInitialized.value = false
-      isReady.value = false
-      imageStore.clearImages()
-      suspenseManager.setImagesCached(false)
-
-      // Fetch creative bundle from API
-      const bundle = await creativeAPI.getCreativeBundle(creativeId)
-
-      console.log('📦 ImageManager: Got bundle:', {
-        assets: bundle.assets.length,
-        images: bundle.creativeData.images.length,
-      })
-
-      // Validate data integrity
-      const assetMap = new Map(bundle.assets.map((asset) => [asset.id, asset]))
-      //const imageMap = new Map(bundle.creativeData.images.map((img) => [img.id, img]))
-
-      // Check for mismatches
-      const validImages: Array<{ asset: AssetResponse; metadata: ImageMetadata }> = []
-
-      for (const imageMetadata of bundle.creativeData.images) {
-        const asset = assetMap.get(imageMetadata.id)
-
-        if (!asset) {
-          console.warn('⚠️ Image metadata without corresponding asset:', imageMetadata.id)
-          continue
-        }
-
-        if (asset.error) {
-          console.warn('⚠️ Asset has error:', asset.id, asset.error)
-          continue
-        }
-
-        validImages.push({ asset, metadata: imageMetadata })
-      }
-
-      console.log(
-        `🔍 ImageManager: ${validImages.length}/${bundle.creativeData.images.length} images are valid`,
-      )
-
-      // Start bulk caching immediately
-      await bulkCacheImages(validImages)
-
-      isInitialized.value = true
-      console.log('✅ ImageManager: Initialization complete')
-
-      return bundle
-    } catch (error) {
-      console.error('❌ ImageManager: Initialization failed:', error)
-      suspenseManager.setImagesCached(false)
-      throw error
-    }
   }
 
   /**
@@ -166,7 +109,7 @@ function createImageManager() {
    * Bulk cache all valid images
    */
   const bulkCacheImages = async (
-    validImages: Array<{ asset: AssetResponse; metadata: ImageMetadata }>,
+    validImages: Array<{ asset: CreativeBundle['assets'][0]; metadata: ImageMetadata }>,
   ): Promise<void> => {
     console.log('🚀 ImageManager: Starting bulk cache for', validImages.length, 'images')
 
@@ -412,30 +355,109 @@ function createImageManager() {
   }
 
   /**
+   * Get current logo in bulk mode (internal)
+   */
+  const getCurrentLogoBulk = (): string | null => {
+    const layer = canvasData.getLayer('logo')
+    return layer?.defaultValue || null
+  }
+
+  /**
+   * Get current logo in focus mode for specific ad unit (internal)
+   */
+  const getCurrentLogoFocusInternal = (adUnitId: string): string | null => {
+    const element = canvasData.getElement(adUnitId, 'logo')
+    return element?.text || null
+  }
+
+  /**
+   * Set current logo in bulk mode (internal)
+   */
+  const setCurrentLogoBulk = (logoId: string): void => {
+    canvasData.updateLayer('logo', { defaultValue: logoId })
+  }
+
+  /**
+   * Set current logo in focus mode for specific ad unit (internal)
+   */
+  const setCurrentLogoFocusInternal = (adUnitId: string, logoId: string): void => {
+    const currentLogoId = getCurrentLogoFocusInternal(adUnitId)
+
+    if (currentLogoId === logoId) {
+      console.log(`ℹ️ Logo already set for ${adUnitId}, skipping update`)
+      return
+    }
+    canvasData.updateElement(adUnitId, 'logo', { image: logoId, locked: true })
+  }
+
+  /**
+   * Get current logo (context-aware)
+   * Automatically detects if we're in bulk or focus mode
+   */
+  const getCurrentLogo = (): string | null => {
+    const currentView = canvasData.getCurrentView()
+
+    if (currentView === 'bulkMode') {
+      return getCurrentLogoBulk()
+    }
+
+    if (currentView === 'focusMode') {
+      const currentAdUnitId = canvasData.getCurrentAdUnitId()
+      if (!currentAdUnitId) return null
+      return getCurrentLogoFocusInternal(currentAdUnitId)
+    }
+
+    return null
+  }
+
+  /**
+   * Set current logo (context-aware)
+   * Automatically detects if we're in bulk or focus mode
+   */
+  const setCurrentLogo = (logoId: string): void => {
+    const currentView = canvasData.getCurrentView()
+
+    if (currentView === 'bulkMode') {
+      setCurrentLogoBulk(logoId)
+    }
+
+    if (currentView === 'focusMode') {
+      const currentAdUnitId = canvasData.getCurrentAdUnitId()
+
+      if (!currentAdUnitId) return
+      setCurrentLogoFocusInternal(currentAdUnitId, logoId)
+    }
+  }
+
+  /**
    * Cache temporary image for upload preview
    * Only creates blob URL and caches, does NOT add to Pinia store
    */
-  const cacheTemporaryImage = async (file: File): Promise<string> => {
-    // Generate UUID for the image
-    const imageId = `${crypto.randomUUID()}`
-
-    // Create object URL for the file
-    const url = URL.createObjectURL(file)
-
-    // Get file name without extension for name
-    const name = file.name.replace(/\.[^/.]+$/, '')
-
+  const cacheTemporaryImage = async (file: File, type: 'image' | 'logo'): Promise<string> => {
     try {
+      // Generate UUID for the image
+      const imageId = `${crypto.randomUUID()}`
+
+      // Create object URL for the file
+      const url = URL.createObjectURL(file)
+
+      // Get file name without extension for name
+      const name = file.name.replace(/\.[^/.]+$/, '')
+
       // Pass imageId to cache the element correctly
       const { width, height, aspectRatio } = await cacheImage(url, imageId)
 
-      // Store in uploadTemp with cached data
+      // Preserve existing altText if user was typing
+      const existingUploadTemp = imageStore.reserved.uploadTemp
+      const preservedAltText = existingUploadTemp?.altText || ''
+
+      // Store in uploadTemp with complete metadata
       imageStore.setUploadTempImage({
         id: imageId,
         url,
         name,
-        altText: '',
-        type: 'image',
+        altText: preservedAltText, // ✅ Preserve user's existing altText
+        type,
         dimensions: {
           width,
           height,
@@ -449,7 +471,6 @@ function createImageManager() {
       return imageId
     } catch (error) {
       console.error('❌ Failed to cache temporary image:', error)
-      URL.revokeObjectURL(url)
       throw error
     }
   }
@@ -458,17 +479,14 @@ function createImageManager() {
    * Add uploaded image to regular images after API success
    * Loads the image and adds to Pinia store
    */
-  const addUploadedImage = async (
-    assetId: string,
-    path: string,
-    type: 'image' | 'logo',
-    name: string,
-    altText: string,
-  ): Promise<void> => {
+
+  const addUploadedImage = async (params: AddImageParams): Promise<void> => {
+    const { assetId, path, type, name, altText } = params
+
     try {
       const { width, height, aspectRatio } = await cacheImage(path, assetId)
 
-      imageStore.addImage({
+      const imageAsset: ImageAsset = {
         id: assetId,
         url: path,
         type,
@@ -481,7 +499,9 @@ function createImageManager() {
           naturalHeight: height,
           aspectRatio,
         },
-      })
+      }
+
+      imageStore.addImage(imageAsset)
     } catch (error) {
       console.error('❌ Failed to add uploaded image:', error)
       throw error
@@ -516,15 +536,28 @@ function createImageManager() {
   }
 
   /**
+   * Update altText in uploadTemp
+   */
+  const updateUploadTempAltText = (altText: string): void => {
+    const uploadTemp = imageStore.reserved.uploadTemp
+    if (uploadTemp) {
+      imageStore.setUploadTempImage({
+        ...uploadTemp,
+        altText,
+      })
+    }
+  }
+
+  /**
    * Clear upload temporary image
    */
   const clearUploadTemp = (): void => {
-    const uploadTemp = imageStore.reserved.uploadTemp
-    if (uploadTemp) {
-      // Remove from cache
-      imageStore.removeImage(uploadTemp.id)
-    }
     imageStore.setUploadTempImage(null)
+  }
+
+  const removeImage = (imageId: string): void => {
+    // Remove from Pinia store
+    imageStore.removeImage(imageId)
   }
 
   /**
@@ -542,16 +575,32 @@ function createImageManager() {
     return isEmptyImage(currentImageId)
   }
 
+  /**
+   * Get image dimensions by ID
+   * Returns dimensions object if available, null otherwise
+   */
+  const getDimensionsById = (
+    imageId: string,
+  ): { naturalWidth: number; naturalHeight: number; aspectRatio: number } | null => {
+    if (!imageId || imageId === '' || imageId === '__fallback__') {
+      return null
+    }
+
+    const imageData = imageStore.getImage(imageId)
+    return imageData?.dimensions || null
+  }
+
   return {
     // State
     isInitialized,
     isReady,
 
     // Core methods
-    initialize,
     getImageOptimized,
     cacheTemporaryImage,
     addUploadedImage,
+    bulkCacheImages,
+    removeImage,
 
     // Upload temp management
     getUploadTempImage,
@@ -560,6 +609,7 @@ function createImageManager() {
 
     // Image metadata updates
     updateImageAltText,
+    updateUploadTempAltText,
 
     // Status checks
     isImageReady,
@@ -569,10 +619,13 @@ function createImageManager() {
     // Canvas integration
     getCurrentImage,
     setCurrentImage,
+    getCurrentLogo,
+    setCurrentLogo,
     getImagesByType,
 
     // Metadata
     getImageMetadata,
+    getDimensionsById,
 
     // Utilities
     getCacheStats,

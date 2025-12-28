@@ -64,7 +64,6 @@ const MOCK_CREATIVE_DATA = {
             },
             logo: { image: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9', locked: false },
             headline: { text: 'headline from the server', locked: false },
-            subhead: { text: 'subhead from the server', locked: false },
             cta: { text: 'cta from server', locked: false },
             disclaimer: {
               text: 'Results may vary. Individual experience depends on usage patterns and system configuration. All features described are subject to change without notice. Performance claims are based on ideal conditions and may not reflect real-world usage. Limited time offer restrictions may apply. Not responsible for typographical errors in promotional materials. Service availability may be interrupted for maintenance. Some advanced features require compatible hardware and software. User agreement and terms of service apply to all usage. Commercial use may require separate licensing licensing licensing lili.',

@@ -34,7 +34,6 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import PreviewAsset from './PreviewAsset.vue'
 import ChangeAssets from './ChangeAssets.vue'
 import UploadAsset from './UploadAsset.vue'
