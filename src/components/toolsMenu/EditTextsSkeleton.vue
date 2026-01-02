@@ -1,31 +1,31 @@
 <!-- components/toolsMenu/EditTextsSkeleton.vue -->
 <template>
   <div class="tool-menu">
-    <h3 class="skeleton-section-title skeleton-loading"></h3>
+    <h3 class="skeleton-text-light-gray-sm-400 skeleton-loading"></h3>
 
     <!-- Main headline skeleton -->
     <div class="text-section">
-      <div class="skeleton-section-title skeleton-loading"></div>
-      <div class="skeleton-text-input-area skeleton-loading"></div>
+      <div class="skeleton-text-light-gray-sm-400 skeleton-loading"></div>
+      <div class="skeleton-text-input skeleton-loading"></div>
     </div>
 
     <!-- Sub headline skeleton -->
     <div class="text-section">
-      <div class="skeleton-section-title skeleton-loading"></div>
-      <div class="skeleton-text-input-area skeleton-loading"></div>
+      <div class="skeleton-text-light-gray-sm-400 skeleton-loading"></div>
+      <div class="skeleton-text-input skeleton-loading"></div>
     </div>
 
     <!-- Button CTA skeleton -->
     <div class="text-section">
-      <div class="skeleton-section-title skeleton-loading"></div>
-      <div class="skeleton-text-input-area small skeleton-loading"></div>
+      <div class="skeleton-text-light-gray-sm-400 skeleton-loading"></div>
+      <div class="skeleton-text-input small skeleton-loading"></div>
     </div>
 
     <hr class="divider" />
 
     <!-- Disclaimer skeleton -->
     <div class="disclaimer-section">
-      <div class="skeleton-section-title skeleton-loading"></div>
+      <div class="skeleton-text-light-gray-sm-400 skeleton-loading"></div>
       <div class="skeleton-disclaimer-textarea skeleton-loading"></div>
     </div>
   </div>
@@ -34,32 +34,12 @@
 <script setup lang="ts"></script>
 
 <style scoped>
-/* Match EditTexts.vue exactly */
-.tool-menu {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  padding: 16px;
-  background: #ffffff;
-  border-radius: 8px;
-  position: relative;
-}
-
-.menu-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #212529;
-  margin: 0 0 8px 0;
-  padding-bottom: 8px;
-  border-bottom: 2px solid #f8f9fa;
-}
-
 /* Match TextFieldSection.vue exactly */
 .text-section {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-bottom: 16px;
+  margin-top: 16px;
 }
 
 /* Match DisclaimerSection.vue exactly */
@@ -71,7 +51,7 @@
 }
 
 /* Skeleton versions of real elements */
-.skeleton-section-title {
+.skeleton-text-light-gray-sm-400 {
   font-size: 14px;
   font-weight: 600;
   color: #495057;
@@ -85,7 +65,7 @@
   overflow: hidden;
 }
 
-.skeleton-text-input-area {
+.skeleton-text-input {
   width: 100%;
   height: 44px;
   border: 1px solid #ced4da;
@@ -95,7 +75,7 @@
   overflow: hidden;
 }
 
-.skeleton-text-input-area.small {
+.skeleton-text-input.small {
   height: 36px;
 }
 
@@ -121,7 +101,7 @@
   animation: skeleton-shimmer 2s infinite;
 }
 
-.skeleton-section-title.skeleton-loading::before {
+.skeleton-text-light-gray-sm-400.skeleton-loading::before {
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
 }
 
@@ -160,7 +140,6 @@
   border-radius: 12px;
   padding: 24px;
   text-align: center;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   max-width: 280px;
 }
 

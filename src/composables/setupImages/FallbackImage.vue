@@ -47,7 +47,7 @@ const imageTool = getIcon('imageTool')
   color: #6c757d;
   font-size: 14px;
   font-weight: 500;
-  height: 120px;
+  aspect-ratio: 9 / 5;
   padding: 8px;
   flex-shrink: 0;
   align-self: stretch;

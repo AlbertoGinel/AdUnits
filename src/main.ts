@@ -2,6 +2,11 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import VueKonva from 'vue-konva'
 
+// Import CSS Variables and Fonts
+import '@/assets/styles/variables.css'
+import '@/assets/styles/fonts.css'
+import '@/assets/styles/global.css'
+
 import App from './App.vue'
 import router from './router'
 import { useAppInitializer } from '@/composables/setupFrames/useAppInitializer'

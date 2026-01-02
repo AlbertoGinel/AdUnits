@@ -80,8 +80,11 @@ const imageStyle = computed(() => {
 </script>
 
 <style scoped>
-/* Inherit parent styling for img element */
+/* Global 9:5 aspect ratio for all images */
 img {
   display: block;
+  width: 100%;
+  aspect-ratio: 9 / 5;
+  object-fit: cover;
 }
 </style>

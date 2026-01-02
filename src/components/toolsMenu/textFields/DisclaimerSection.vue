@@ -1,21 +1,24 @@
 <!-- components/toolsMenu/sections/DisclaimerSection.vue -->
 <template>
   <div class="disclaimer-section">
-    <h4 class="section-title">Disclaimer</h4>
+    <h4 class="text-bentonville-sm-500">Disclaimer</h4>
 
     <!-- Disclaimer text input -->
     <textarea
       v-model="field.fieldValue.value"
-      class="text-input-area disclaimer-textarea"
+      class="text-input disclaimer-textarea"
       :placeholder="field.placeholder"
       rows="4"
     />
 
     <!-- Character count -->
-    <div class="character-count" :class="{ warning: field.isOverLimit.value }">
+    <div
+      class="text-light-gray-sm-400 character-count"
+      :class="{ warning: field.isOverLimit.value }"
+    >
       {{ field.characterCount.value }} / {{ field.config.maxLength }} characters
       <span v-if="field.isOverLimit.value" class="warning-text">
-        ⚠️ Exceeds limit - include disclaimer in image
+        Exceeds limit - include disclaimer in image
       </span>
     </div>
 
@@ -27,7 +30,7 @@
     <!-- Disclaimer visibility toggle -->
     <div class="text-section">
       <div class="section-header">
-        <h4 class="section-title">Disclaimer visibility</h4>
+        <h4 class="text-bentonville-sm-500">Disclaimer visibility</h4>
         <label class="toggle-switch" :class="{ active: field.visibility?.value }">
           <input type="checkbox" v-model="field.visibility.value" />
           <span class="toggle-slider"></span>
@@ -43,7 +46,7 @@
     <!-- Dark text background toggle -->
     <div class="text-section">
       <div class="section-header">
-        <h4 class="section-title">Dark text background</h4>
+        <h4 class="text-bentonville-sm-500">Dark text background</h4>
         <label class="toggle-switch" :class="{ active: field.bgVisibility?.value }">
           <input type="checkbox" v-model="field.bgVisibility.value" />
           <span class="toggle-slider"></span>
@@ -82,107 +85,49 @@ const field = useTextField('disclaimer', {
 .disclaimer-section {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-}
-
-.section-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #212529;
-  margin: 0 0 8px 0;
+  gap: var(--spacing-lg);
 }
 
 .disclaimer-textarea {
   min-height: 100px;
   resize: vertical;
-  font-family: inherit;
+  font-family: var(--font-family-primary);
   line-height: 1.5;
 }
 
 .character-count {
-  font-size: 12px;
-  color: #6c757d;
   text-align: right;
-  transition: color 0.2s;
-}
-
-.character-count.warning {
-  color: #dc3545;
-  font-weight: 600;
 }
 
 .warning-text {
   display: block;
-  font-size: 11px;
-  margin-top: 4px;
+  font-size: calc(var(--font-size-xs) - 1px);
+  margin-top: var(--spacing-xs);
 }
 
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
-}
-
-.toggle-switch {
-  position: relative;
-  width: 48px;
-  height: 24px;
-  background: #ced4da;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-
-.toggle-switch.active {
-  background: #28a745;
-}
-
-.toggle-switch input {
-  display: none;
-}
-
-.toggle-slider {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 20px;
-  height: 20px;
-  background: white;
-  border-radius: 50%;
-  transition: transform 0.3s;
-}
-
-.toggle-switch.active .toggle-slider {
-  transform: translateX(24px);
+  margin-bottom: var(--spacing-sm);
 }
 
 .section-description {
-  font-size: 12px;
-  color: #6c757d;
+  color: var(--color-text-muted);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
   line-height: 1.5;
-  margin: 8px 0 0 0;
+  margin: var(--spacing-sm) 0 0 0;
 }
 
 .divider {
   border: none;
-  border-top: 1px solid #dee2e6;
-  margin: 8px 0;
+  border-top: 1px solid var(--color-border-light);
+  margin: var(--spacing-sm) 0;
 }
 
-.text-input-area {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #ced4da;
-  border-radius: 6px;
-  font-size: 14px;
-  transition: border-color 0.2s;
-  box-sizing: border-box;
-}
-
-.text-input-area:focus {
-  outline: none;
-  border-color: #80bdff;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+.character-count {
+  text-align: right;
 }
 </style>

@@ -12,9 +12,9 @@ import MainContainer from '@/components/MainContainer.vue'
 
 <style scoped>
 .editor-page {
+  display: grid;
+  grid-template-rows: auto 1fr; /* navbar auto, content fills remaining */
   height: 100vh;
-  display: flex;
-  flex-direction: column;
   overflow: hidden;
 }
 </style>

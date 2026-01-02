@@ -22,6 +22,8 @@ const { selectedTool, activeSubView, handleToolSelected, handleNavigate } = useT
   display: flex;
   flex-direction: row;
   height: 100%;
+  max-height: 100%;
+  overflow: hidden;
   background: #f8f9fa;
   border-left: 1px solid #dee2e6;
 }

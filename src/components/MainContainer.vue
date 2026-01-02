@@ -14,12 +14,12 @@ import CanvasScreen from '@/components/konva/CanvasScreen.vue'
 
 <style scoped>
 .main-container {
-  flex: 1;
   display: grid;
-  grid-template-columns: 20% 70% 10%;
+  grid-template-columns: 350px 1fr 280px; /* Default fixed widths instead of auto */
   gap: 0;
   overflow: hidden;
   background: #f5f5f5;
+  height: 100%;
 
   /* Grid containment - prevent children from affecting layout */
   contain: layout;
@@ -47,31 +47,35 @@ import CanvasScreen from '@/components/konva/CanvasScreen.vue'
   contain: layout;
 }
 
-/* Responsive design */
+/* Responsive design - Based on 80:240:65 proportion (385px total) */
 
-@media (max-width: 1700px) {
+@media (max-width: 1535px) {
   .main-container {
-    grid-template-columns: 340px 1fr 170px;
+    grid-template-columns: 317px 1fr 258px;
   }
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1279px) {
   .main-container {
-    grid-template-columns: 240px 1fr 120px;
+    grid-template-columns: 264px 1fr 215px;
   }
 }
 
-@media (max-width: 1000px) {
+@media (max-width: 1023px) {
   .main-container {
-    grid-template-columns: 200px 1fr 100px;
+    grid-template-columns: 231px 1fr 172px;
   }
 }
 
-/* For very small screens, consider stacking */
-@media (max-width: 750px) {
+@media (max-width: 767px) {
   .main-container {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr auto;
+    grid-template-columns: 231px 1fr 129px;
+  }
+}
+
+@media (max-width: 639px) {
+  .main-container {
+    grid-template-columns: 231px 1fr 107px;
   }
 }
 </style>

@@ -9,7 +9,7 @@
     <!-- Normal asset editing content -->
     <template v-else>
       <div class="image-section">
-        <h4 class="section-title">{{ isLogoMode ? 'Logo' : 'Lifestyle photo' }}</h4>
+        <h4 class="text-caption">{{ isLogoMode ? 'Logo' : 'Lifestyle photo' }}</h4>
         <div class="image-preview">
           <SmartImage
             :image-id="currentAssetId"
@@ -26,6 +26,7 @@
               @click="handleButtonClick(button.action)"
             >
               {{ button.label }}
+              <span v-if="button.icon" v-html="getIcon(button.icon)"></span>
             </button>
           </div>
         </div>
@@ -33,8 +34,8 @@
 
       <!-- Alt text section (for both images AND logos) -->
       <div v-if="altText !== undefined" class="alt-text-section">
-        <h4 class="section-title">Alt text*</h4>
-        <p class="section-description">
+        <h4 class="text-caption text-caption--medium">Alt text*</h4>
+        <p class="feedback-text">
           {{
             isLogoMode
               ? 'Alt text should describe what the logo says or represents for screen readers.'
@@ -45,13 +46,15 @@
           :value="altText"
           @input="updateAltText(($event.target as HTMLInputElement)?.value || '')"
           type="text"
-          class="alt-text-input"
+          class="text-input text-caption"
           :placeholder="
             isLogoMode ? 'Logo description goes here' : 'Image\'s alternate text goes here'
           "
           maxlength="150"
         />
-        <div class="character-count">Character count: {{ altText?.length || 0 }}/150</div>
+        <div class="text-light-gray-xs-400 character-count">
+          Character count: {{ altText?.length || 0 }}/150
+        </div>
       </div>
     </template>
   </div>
@@ -59,6 +62,9 @@
 
 <script setup lang="ts">
 import SmartImage from '@/composables/setupImages/SmartImage.vue'
+import { useIcons, type IconName } from '@/composables/utils/useIcons'
+
+const { getIcon } = useIcons()
 
 interface Props {
   // 📷 Basic asset display data
@@ -76,6 +82,7 @@ interface Props {
     label: string
     action: string
     disabled?: boolean
+    icon?: IconName
   }>
 }
 
@@ -103,13 +110,7 @@ const updateAltText = (value: string) => {
   display: flex;
   flex-direction: column;
   gap: 24px;
-}
-
-.menu-title {
-  font-size: 20px;
-  font-weight: 600;
-  color: #212529;
-  margin: 0;
+  margin-top: 20px;
 }
 
 .menu-subtitle {
@@ -121,21 +122,13 @@ const updateAltText = (value: string) => {
 .image-section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-
-.section-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #212529;
-  margin: 0;
 }
 
 .image-preview {
   position: relative;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-top: 12px;
 }
 
 .preview-imageElem {
@@ -146,91 +139,15 @@ const updateAltText = (value: string) => {
 
 .image-actions {
   position: absolute;
-  bottom: 16px;
-  right: 16px;
+  bottom: var(--spacing-sm);
+  right: var(--spacing-sm);
   display: flex;
   gap: 12px;
   z-index: 10;
+  font-family: var(--font-family-primary);
 }
 
-.btn-change,
-.btn-save,
-.btn-cancel,
-.btn-remove,
-.btn-more {
-  padding: 10px 20px;
-  background: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s;
-}
-
-.btn-change:hover,
-.btn-save:hover,
-.btn-cancel:hover,
-.btn-remove:hover,
-.btn-more:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-  transform: translateY(-1px);
-}
-
-.btn-change:disabled,
-.btn-save:disabled,
-.btn-cancel:disabled,
-.btn-remove:disabled,
-.btn-more:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transform: none;
-}
-
-.btn-change:disabled:hover,
-.btn-save:disabled:hover,
-.btn-cancel:disabled:hover,
-.btn-remove:disabled:hover,
-.btn-more:disabled:hover {
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transform: none;
-}
-
-.btn-save {
-  background: #28a745;
-  color: white;
-}
-
-.btn-save:hover {
-  background: #218838;
-}
-
-.btn-cancel {
-  background: #dc3545;
-  color: white;
-}
-
-.btn-cancel:hover {
-  background: #c82333;
-}
-
-.btn-remove {
-  background: #dc3545;
-  color: white;
-}
-
-.btn-remove:hover {
-  background: #c82333;
-}
-
-.btn-more {
-  width: 40px;
-  padding: 10px;
-  font-size: 18px;
-  line-height: 1;
-}
+/* Preview buttons now use global .btn-preview class from global.css */
 
 .alt-text-section {
   display: flex;
@@ -245,25 +162,7 @@ const updateAltText = (value: string) => {
   margin: 0;
 }
 
-.alt-text-input {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #ced4da;
-  border-radius: 6px;
-  font-size: 14px;
-  background: #f0f8ff;
-  box-sizing: border-box;
-}
-
-.alt-text-input:focus {
-  outline: none;
-  border-color: #80bdff;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-}
-
 .character-count {
-  font-size: 12px;
-  color: #6c757d;
   text-align: right;
 }
 

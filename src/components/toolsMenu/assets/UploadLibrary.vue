@@ -1,7 +1,7 @@
 <!-- components/toolsMenu/images/UploadLibrary.vue -->
 <template>
   <div v-if="show" class="uploads-section">
-    <h4 class="section-title">{{ type === 'logo' ? 'Logos' : 'Images' }}</h4>
+    <h4 class="text-caption.text-caption--medium">Uploads</h4>
 
     <!-- Uploaded Images Grid -->
     <div class="uploads-grid">
@@ -9,30 +9,38 @@
         v-for="upload in images"
         :key="upload.id"
         class="upload-item"
-        :class="{ selected: props.selectedImageId === upload.id }"
         @click="selectImage(upload.id)"
       >
-        <img
-          v-if="upload.image"
-          :src="upload.image.src"
-          :alt="upload.name"
-          class="upload-thumbnail"
-        />
-        <div v-else class="upload-placeholder">Loading...</div>
+        <div class="thumbnail-container" :class="{ selected: props.selectedImageId === upload.id }">
+          <img
+            v-if="upload.image"
+            :src="upload.image.src"
+            :alt="upload.name"
+            class="upload-thumbnail"
+          />
+          <div v-else class="upload-placeholder">Loading...</div>
+
+          <!-- Custom check mark for selected items -->
+          <div
+            v-if="props.selectedImageId === upload.id"
+            class="check-mark"
+            v-html="getIcon('check')"
+          ></div>
+        </div>
         <span class="upload-name">{{ upload.name || upload.id }}</span>
       </div>
     </div>
 
     <!-- Action Buttons -->
     <div class="action-buttons">
-      <button @click="$emit('upload-requested')" class="btn-upload">
-        Upload {{ type === 'logo' ? 'Logo' : 'Image' }}
+      <button @click="$emit('upload-requested')" class="button-action upload">
+        Upload <span v-html="getIcon('addCircle')"></span>
       </button>
       <button
         v-if="showInsertButton"
         @click="props.selectedImageId && $emit('insert-requested', props.selectedImageId)"
         :disabled="!props.selectedImageId"
-        class="btn-insert"
+        class="button-action insert"
       >
         Insert
       </button>
@@ -41,6 +49,10 @@
 </template>
 
 <script setup lang="ts">
+import { useIcons } from '@/composables/utils/useIcons'
+
+const { getIcon } = useIcons()
+
 interface ImageItem {
   id: string
   name: string
@@ -80,13 +92,6 @@ const selectImage = (id: string) => {
   gap: 16px;
 }
 
-.section-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #212529;
-  margin: 0;
-}
-
 .uploads-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
@@ -100,46 +105,47 @@ const selectImage = (id: string) => {
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  padding: 4px;
-  border: 2px solid transparent;
-  border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s;
-  background: #f8f9fa;
 }
 
-.upload-item:hover {
-  border-color: #dee2e6;
-}
-
-.upload-item.selected {
-  border-color: #007bff;
-  background: #e7f3ff;
+.thumbnail-container {
   position: relative;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+  overflow: hidden;
 }
 
-.upload-item.selected::after {
-  content: '✓';
+.thumbnail-container.selected {
+  border-radius: 10px;
+  border: 1px solid var(--color-turquoise);
+}
+
+.thumbnail-container:hover {
+  border: 0.5px solid var(--color-border-dark);
+}
+
+.check-mark {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 24px;
-  height: 24px;
-  background: #007bff;
-  color: white;
-  border-radius: 50%;
+  bottom: 10px;
+  right: 10px;
+  width: 16px;
+  height: 16px;
+  background: var(--color-primary-blue);
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
-  font-weight: bold;
+  color: white;
+  font-size: 9px;
 }
 
 .upload-thumbnail {
   width: 100%;
   aspect-ratio: 4/3;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: 10px;
+  display: block;
 }
 
 .upload-placeholder {
@@ -149,7 +155,7 @@ const selectImage = (id: string) => {
   align-items: center;
   justify-content: center;
   background: #e9ecef;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 12px;
   color: #6c757d;
 }
@@ -165,60 +171,5 @@ const selectImage = (id: string) => {
   overflow: hidden;
   text-overflow: ellipsis;
   width: 100%;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-  padding-top: 8px;
-  border-top: 1px solid #e9ecef;
-}
-
-.btn-upload {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
-  background: white;
-  border: 2px solid #212529;
-  border-radius: 24px;
-  color: #212529;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-upload:hover {
-  background: #212529;
-  color: white;
-}
-
-.btn-upload .icon {
-  font-size: 20px;
-  line-height: 1;
-}
-
-.btn-insert {
-  padding: 12px 32px;
-  background: #007bff;
-  border: none;
-  border-radius: 24px;
-  color: white;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-insert:hover:not(:disabled) {
-  background: #0056b3;
-}
-
-.btn-insert:disabled {
-  background: #6c757d;
-  cursor: not-allowed;
-  opacity: 0.5;
 }
 </style>

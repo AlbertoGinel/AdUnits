@@ -1,47 +1,59 @@
 <template>
   <nav class="top-navbar">
-    <div class="navbar-content">
-      <div class="navbar-left">
-        <h1 class="app-title">Banner Editor</h1>
-      </div>
+    <div class="navbar-left">
+      <div class="aderize-icon" v-html="aderizeLogo"></div>
+      <h1 class="app-title">Creative builder</h1>
+      <h1 class="connect-account">Walmart account connected</h1>
+    </div>
 
-      <div class="navbar-center">
-        <span class="project-name">Untitled Project</span>
-      </div>
+    <div class="navbar-center">
+      <span class="project-name">Example Creative for demo</span>
+    </div>
 
-      <div class="navbar-right">
-        <button class="nav-btn">Save</button>
-        <button class="nav-btn">Export</button>
-        <button class="nav-btn">Share</button>
-        <button class="nav-btn profile-btn">
-          <span class="profile-icon">👤</span>
-        </button>
-      </div>
+    <div class="navbar-right">
+      <div class="icon" v-html="notificationBellLogo"></div>
+      <div class="icon" v-html="chatBubbleLogo"></div>
+
+      <button class="nav-btn profile-btn">
+        <span></span>
+      </button>
+      <button class="nav-btn share-btn">
+        <span class="profile-icon">Share</span>
+      </button>
+      <button class="nav-btn preview-btn">
+        <span class="profile-icon">Preview & submit</span>
+      </button>
     </div>
   </nav>
 </template>
 
 <script setup lang="ts">
-// Component logic will be added here
+import { useIcons } from '@/composables/utils/useIcons'
+
+const { getIcon } = useIcons()
+const aderizeLogo = getIcon('aderizeLogo')
+const notificationBellLogo = getIcon('notificationBell')
+const chatBubbleLogo = getIcon('chatBubble')
 </script>
 
 <style scoped>
 .top-navbar {
-  background: white;
-  color: #333;
-  height: 60px;
+  background: var(--True-blue, #0053e2);
+  height: 48px;
   flex-shrink: 0;
-  border-bottom: 1px solid #e0e0e0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.navbar-content {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 100%;
-  padding: 0 24px;
+  padding: var(--spacing-lg);
   max-width: 100%;
+}
+
+.connect-account {
+  color: var(--Sky-Blue, #a9ddf7);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  margin: 0;
 }
 
 .navbar-left {
@@ -50,10 +62,11 @@
 }
 
 .app-title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin: 0;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  color: var(--White, #fff);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  margin: var(--spacing-md);
 }
 
 .navbar-center {
@@ -64,11 +77,12 @@
 }
 
 .project-name {
-  background: #f5f5f5;
   padding: 6px 16px;
   border-radius: 20px;
-  font-size: 0.9rem;
-  color: #666;
+  color: var(--White, #fff);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
 }
 
 .navbar-right {
@@ -78,14 +92,17 @@
 }
 
 .nav-btn {
-  background: white;
-  color: #333;
-  border: 1px solid #e0e0e0;
-  padding: 8px 16px;
-  border-radius: 6px;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
   transition: all 0.2s ease;
+  display: flex;
+  height: 32px;
+  padding: 0 16px;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
 }
 
 .nav-btn:hover {
@@ -94,9 +111,10 @@
 }
 
 .profile-btn {
+  background-color: var(--White, #fff);
   border-radius: 50%;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   display: flex;
   align-items: center;
@@ -104,6 +122,17 @@
 }
 
 .profile-icon {
-  font-size: 1.2rem;
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+}
+.share-btn {
+  border-radius: 18px;
+  background: var(--Everyday-Blule, #4dbdf5);
+}
+
+.preview-btn {
+  border-radius: 18px;
+  background: var(--Spark-Yellow, #ffc220);
 }
 </style>

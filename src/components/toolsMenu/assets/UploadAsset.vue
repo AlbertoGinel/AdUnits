@@ -1,12 +1,13 @@
 <!-- tools/assets/UploadAssets.vue -->
 <template>
   <div class="tool-menu">
-    <button @click="control.currentAssetScreen.value = 'edit'" class="btn-secondary">Cancel</button>
+    <button @click="control.currentAssetScreen.value = 'edit'" class="btn-add-image">
+      <span v-html="getIcon('backCircle')"></span>Back to image editor
+    </button>
 
-    <h3 class="menu-title">Upload {{ control.assetDisplayText.value.plural }}</h3>
-    <p class="menu-subtitle">
-      Upload your {{ control.assetDisplayText.value.plural.toLowerCase() }}
-      {{ control.isLogoMode.value ? '' : 'and assign alt text' }}
+    <h3 class="text-bentonville-xl-700">Upload {{ control.assetDisplayText.value.plural }}</h3>
+    <p class="feedback-text">
+      Upload your {{ control.assetDisplayText.value.plural.toLowerCase() }} and assign alt text
     </p>
 
     <!-- Drop Zone / Preview -->
@@ -21,11 +22,19 @@
       :style="{ cursor: hasFile ? 'default' : 'pointer' }"
     >
       <!-- Show upload prompt when no asset -->
-      <div v-if="!hasFile" class="drop-zone-content">
-        <span class="upload-icon">📁</span>
-        <p class="drop-text">Drag {{ control.assetDisplayText.value.plural.toLowerCase() }} here</p>
-        <p class="browse-text">or browse</p>
-      </div>
+      <template v-if="!hasFile">
+        <div class="upload-prompt">
+          <span class="upload-icon" v-html="getIcon('addImage')"></span>
+          <p class="text-caption text-caption--medium drag-images">
+            Drag {{ control.assetDisplayText.value.plural.toLowerCase() }} here
+          </p>
+          <p class="browse-text">or browse</p>
+          <div class="upload-limits">
+            <span class="text-feedback-xs-400">• 10MB maximum file size</span>
+            <span class="text-feedback-xs-400">• Maximum dimensions 5000x5000px</span>
+          </div>
+        </div>
+      </template>
 
       <!-- Show preview when asset uploaded -->
       <div v-else class="preview-content">
@@ -35,11 +44,12 @@
           :alt="`${control.assetDisplayText.value.singular} preview`"
           class="preview-image"
         />
+
         <div v-else-if="error" class="error-content">
           <span class="error-icon">⚠️</span>
           <p class="error-text">{{ error }}</p>
         </div>
-        <button @click.stop="handleRemoveImage" class="btn-remove">
+        <button @click.stop="handleRemoveImage" class="btn-preview btn-remove">
           <span>Remove {{ control.assetDisplayText.value.singular.toLowerCase() }}</span>
           <span class="remove-icon">⊗</span>
         </button>
@@ -54,32 +64,32 @@
       />
     </div>
 
-    <!-- File size and dimension limits -->
-    <div class="upload-limits">
-      <p>• 10MB maximum file size</p>
-      <p>• Maximum dimensions 5000x5000px</p>
-    </div>
-
-    <!-- Alt Text Section (only for images, not logos) -->
-    <div v-if="!control.isLogoMode.value" class="alt-text-section">
-      <h4 class="section-title">Alt text*</h4>
+    <!-- Alt Text Section -->
+    <div class="alt-text-section">
+      <h4 class="text-light-gray-sm-400">Alt text*</h4>
       <p class="section-description">
         Alt text should be a long-form description of what's visually represented in your ad.
       </p>
       <input
         v-model="altText"
         type="text"
-        class="alt-text-input"
+        class="text-input"
         placeholder="Image's alternate text goes here"
         maxlength="150"
         :disabled="!hasFile"
       />
-      <div class="character-count">Character count: {{ altText.length }}/150</div>
+      <div class="text-light-gray-xs-400 character-count">
+        Character count: {{ altText.length }}/150
+      </div>
     </div>
 
     <!-- Actions -->
     <div class="action-buttons">
-      <button @click="handleInsert" :disabled="!hasFile || isUploading" class="btn-primary">
+      <button
+        @click="handleInsert"
+        :disabled="!hasFile || isUploading"
+        class="button-action insert"
+      >
         {{ isUploading ? 'Uploading...' : `Insert ${control.assetDisplayText.value.singular}` }}
       </button>
     </div>
@@ -93,6 +103,9 @@ import { useSuspenseManager } from '@/composables/feedbackAsync/useSuspenseManag
 import { useCreativeAPI } from '@/composables/api/useCreativeAPI'
 import { useCanvasData } from '@/composables/data/useCanvasData'
 import { useEditAssetsControl } from './useEditAssetsControl'
+import { useIcons } from '@/composables/utils/useIcons'
+
+const { getIcon } = useIcons()
 
 // 🎮 Connect to shared composable
 const control = useEditAssetsControl()
@@ -189,7 +202,7 @@ const handleInsert = async () => {
     const result = await creativeAPI.insertAsset(creativeId, file, {
       type: control.assetType.value, // Use the asset type from control
       name: file.name.replace(/\.[^/.]+$/, ''),
-      altText: control.isLogoMode.value ? '' : altText.value || '', // Only include alt text for images
+      altText: altText.value || '', // Include alt text for both images and logos
     })
 
     if (result.success && result.assetId) {
@@ -231,20 +244,6 @@ const handleRemoveImage = () => {
 </script>
 
 <style scoped>
-.tool-menu {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  padding: 0;
-}
-
-.menu-title {
-  font-size: 20px;
-  font-weight: 600;
-  color: #212529;
-  margin: 0;
-}
-
 .menu-subtitle {
   font-size: 13px;
   color: #6c757d;
@@ -258,22 +257,35 @@ const handleRemoveImage = () => {
 }
 
 .drop-zone {
-  border: 2px dashed #007bff;
-  border-radius: 12px;
-  background: #f8f9fa;
+  border: 2px dashed var(--color-gray-200);
+  border-radius: 10px;
+  background: var(--color-primary-light-blue-ui);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  padding: var(--spacing-lg);
+  margin: 15px 0px;
+}
+
+.upload-prompt {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s;
-  position: relative;
-  overflow: hidden;
+  gap: var(--spacing-sm);
+  flex-grow: 1;
+}
 
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  padding: 0px;
-
-  object-fit: cover;
+.upload-limits {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  line-height: 1;
 }
 
 .drop-zone:not(.has-image) {
@@ -282,6 +294,7 @@ const handleRemoveImage = () => {
 
 .drop-zone.has-image {
   cursor: default;
+  padding: 0; /* Remove padding when image is present */
 }
 
 .drop-zone.drag-over {
@@ -295,20 +308,11 @@ const handleRemoveImage = () => {
   border-color: #dee2e6;
 }
 
-.drop-zone-content {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+.drag-images {
+  font-weight: var(--font-weight-medium);
 }
 
 .upload-icon {
-  font-size: 10px;
-  display: block;
-  margin-bottom: 16px;
-  opacity: 0.6;
 }
 
 .drop-text {
@@ -319,10 +323,9 @@ const handleRemoveImage = () => {
 }
 
 .browse-text {
-  font-size: 16px;
+  font-size: 11px;
   color: #007bff;
   margin: 0;
-  text-decoration: underline;
 }
 
 .preview-content {
@@ -341,34 +344,23 @@ const handleRemoveImage = () => {
   display: block;
 }
 
-.btn-remove {
+.btn-preview.btn-remove {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   padding: 12px 24px;
-  background: white;
-  border: none;
-  border-radius: 24px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #212529;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: all 0.2s;
   opacity: 0;
   pointer-events: none;
+  white-space: nowrap;
 }
 
-.preview-content:hover .btn-remove {
+.preview-content:hover .btn-preview {
   opacity: 1;
   pointer-events: auto;
 }
 
-.btn-remove:hover {
+.btn-preview:hover {
   background: #f8f9fa;
   transform: translate(-50%, -50%) scale(1.05);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
@@ -408,9 +400,7 @@ const handleRemoveImage = () => {
   gap: 4px;
 }
 
-.upload-limits p {
-  font-size: 12px;
-  color: #6c757d;
+.upload-limits .text-feedback-sm-400 {
   margin: 0;
 }
 
@@ -418,13 +408,6 @@ const handleRemoveImage = () => {
   display: flex;
   flex-direction: column;
   gap: 8px;
-}
-
-.section-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #212529;
-  margin: 0;
 }
 
 .section-description {
@@ -451,53 +434,11 @@ const handleRemoveImage = () => {
 }
 
 .character-count {
-  font-size: 12px;
-  color: #6c757d;
   text-align: right;
 }
 
-.action-buttons {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-  padding-top: 8px;
-  border-top: 1px solid #e9ecef;
-}
-
-.btn-primary,
-.btn-secondary {
-  padding: 12px 24px;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-primary {
-  background: #007bff;
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #0056b3;
-}
-
-.btn-primary:disabled {
-  background: #6c757d;
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
-.btn-secondary {
-  background: white;
-  color: #212529;
-  border: 2px solid #212529;
-}
-
-.btn-secondary:hover {
-  background: #212529;
-  color: white;
+.btn-add-image {
+  width: 75%;
+  margin-bottom: var(--spacing-xl);
 }
 </style>

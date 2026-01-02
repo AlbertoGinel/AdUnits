@@ -1,7 +1,8 @@
 <!-- tools/EditTexts.vue -->
 <template>
   <div class="tool-menu">
-    <h3 class="menu-title">Edit texts</h3>
+    <h3 class="text-bentonville-xl-700">Edit texts</h3>
+    <p class="text-light-gray-sm-400">Across ad sizes</p>
 
     <!-- Main headline - only show if ad unit has it -->
     <TextFieldSection
@@ -54,24 +55,6 @@
 </template>
 
 <style scoped>
-.tool-menu {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  padding: 16px;
-  background: #ffffff;
-  border-radius: 8px;
-}
-
-.menu-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #212529;
-  margin: 0 0 8px 0;
-  padding-bottom: 8px;
-  border-bottom: 2px solid #f8f9fa;
-}
-
 .divider {
   border: none;
   border-top: 1px solid #dee2e6;
@@ -108,40 +91,18 @@ const hasAnyTextElements = computed(
 </script>
 
 <style scoped>
-.tool-menu {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  padding: 16px;
-  background: #ffffff;
-  border-radius: 8px;
-}
-
-.menu-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #212529;
-  margin: 0 0 8px 0;
-  padding-bottom: 8px;
-  border-bottom: 2px solid #f8f9fa;
-}
-
-.divider {
-  border: none;
-  border-top: 1px solid #dee2e6;
-  margin: 16px 0;
-}
-
 .no-elements-message {
-  padding: 24px;
+  padding: var(--spacing-2xl);
   text-align: center;
-  color: #6c757d;
-  background: #f8f9fa;
-  border-radius: 8px;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
 }
 
 .no-elements-message p {
   margin: 0;
-  font-size: 14px;
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
 }
 </style>

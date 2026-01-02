@@ -1,21 +1,38 @@
 <template>
   <div class="toolbar">
-    <button
-      v-for="tool in tools"
-      :key="tool.id"
-      @click="$emit('toolSelected', tool.id)"
-      :class="{ active: activeTool === tool.id }"
-      class="tool-button"
-    >
-      <SingleIcon :name="tool.iconName" size="xl" class="tool-icon" />
-      {{ tool.name }}
-    </button>
+    <div class="upper-tools">
+      <button
+        v-for="tool in upperTools"
+        :key="tool.id"
+        @click="$emit('toolSelected', tool.id)"
+        :class="{ active: activeTool === tool.id }"
+        class="tool-button"
+      >
+        <div class="icon tool-icon" v-html="getIcon(tool.iconName)"></div>
+        <span class="tool-label">{{ tool.name }}</span>
+      </button>
+    </div>
+
+    <div class="lower-tools">
+      <button
+        v-for="tool in lowerTools"
+        :key="tool.id"
+        @click="$emit('toolSelected', tool.id)"
+        :class="{ active: activeTool === tool.id }"
+        class="tool-button"
+      >
+        <div class="icon tool-icon" v-html="getIcon(tool.iconName)"></div>
+        <span class="tool-label">{{ tool.name }}</span>
+      </button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import SingleIcon from '@/components/SingleIcon.vue'
+import { useIcons } from '@/composables/utils/useIcons'
 import type { IconName } from '@/composables/utils/useIcons'
+
+const { getIcon } = useIcons()
 
 interface Props {
   activeTool?: string
@@ -33,10 +50,16 @@ interface Tool {
   iconName: IconName
 }
 
-const tools: Tool[] = [
+const upperTools: Tool[] = [
   { id: 'images', name: 'Images', iconName: 'imageTool' },
   { id: 'logos', name: 'Logos', iconName: 'logoTool' },
   { id: 'text', name: 'Text', iconName: 'textTool' },
+  { id: 'extras', name: 'Extras', iconName: 'extras' },
+]
+
+const lowerTools: Tool[] = [
+  { id: 'back', name: 'Back', iconName: 'back' },
+  { id: 'help', name: 'Help', iconName: 'help' },
 ]
 </script>
 
@@ -44,40 +67,77 @@ const tools: Tool[] = [
 .toolbar {
   display: flex;
   flex-direction: column;
-  padding: 16px;
-  gap: 12px;
-  border-right: 1px solid #dee2e6;
-  background: #ffffff;
-  min-width: 80px;
-  max-width: 100px;
+  justify-content: space-between;
+  border-right: 1px solid var(--color-border-light);
+  background: var(--color-bg-primary);
+  width: 44px;
+  padding: var(--spacing-xs);
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.upper-tools {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.lower-tools {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
 }
 
 .tool-button {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 12px 8px;
-  border: 0px;
-  background: #ffffff;
-  border-radius: 8px;
+  gap: 2px;
+  background: transparent;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 11px;
-  transition: all 0.2s;
+  transition: var(--transition-fast);
+  color: var(--color-text-secondary);
+
+  width: 36px;
+  height: 36px;
+  padding: 2px;
+  box-sizing: border-box;
 }
 
 .tool-button:hover {
-  background: #f8f9fa;
-  border-color: #007bff;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
 }
 
 .tool-button.active {
-  background: #007bff;
+  background: var(--color-primary-blue);
+  color: var(--color-text-white);
+}
+
+.tool-button.active .tool-icon {
   color: white;
-  border-color: #007bff;
 }
 
 .tool-icon {
-  /* AppIcon already has size styling */
+  color: var(--color-primary-blue-dark);
+  transition: var(--transition-fast);
+}
+
+.tool-button:hover .tool-icon {
+  color: var(--color-primary-blue-light);
+}
+
+.tool-label {
+  font-size: 8px;
+  font-weight: var(--font-weight-regular);
+  text-align: center;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 32px;
 }
 </style>

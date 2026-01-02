@@ -102,13 +102,13 @@ export function useEditAssetsControl() {
         id: 'saveCrop',
         label: 'Save Crop',
         action: 'saveCrop',
-        class: 'btn-save',
+        class: 'btn-preview',
       },
       {
         id: 'cancelCrop',
         label: 'Cancel',
         action: 'cancelCrop',
-        class: 'btn-cancel',
+        class: 'btn-preview',
       },
     ],
 
@@ -130,7 +130,7 @@ export function useEditAssetsControl() {
         id: 'change',
         label: 'Change',
         action: 'changeAsset',
-        class: 'btn-change',
+        class: 'btn-preview',
       },
     ],
 
@@ -140,7 +140,8 @@ export function useEditAssetsControl() {
         id: 'remove',
         label: isLogo ? 'Remove Logo' : 'Remove Image',
         action: 'removeAsset',
-        class: 'btn-remove',
+        class: 'btn-preview',
+        icon: 'cross',
       },
     ],
 
