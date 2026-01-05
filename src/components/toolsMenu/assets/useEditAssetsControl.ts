@@ -121,7 +121,7 @@ export function useEditAssetsControl() {
               id: 'startCrop',
               label: 'Crop',
               action: 'startCrop',
-              class: 'btn-crop',
+              class: 'btn-preview',
             },
           ]
         : []),

@@ -52,7 +52,7 @@ const editButtonConfig = computed(() => {
   const isInFocusMode = viewState.isFocusMode.value
 
   return {
-    x: 200,
+    x: 135,
     y: 10,
     text: isInFocusMode ? 'Back' : 'Edit',
     fontSize: 12,

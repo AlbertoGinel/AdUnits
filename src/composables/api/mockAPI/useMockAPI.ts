@@ -55,16 +55,16 @@ const MOCK_CREATIVE_DATA = {
     data: {
       creative_id: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
       adUnits: {
-        'marquee-app': {
+        'Skyline-Desktop': {
           elements: {
             image: {
               image: '6f5c3c22-9d3e-4c2c-9c7c-7bb8f6e3e3c1',
-              crop: { x: 100, y: 355, width: 2811, height: 1187 },
+              crop: { x: 90.506, y: 516.443, width: 2811, height: 237.416 },
               locked: false,
             },
             logo: { image: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9', locked: false },
-            headline: { text: 'headline from the server', locked: false },
-            cta: { text: 'cta from server', locked: false },
+            headline: { text: 'Sample Headline1', locked: false },
+            subhead: { text: 'Sample subHeadline', locked: false },
             disclaimer: {
               text: 'Results may vary. Individual experience depends on usage patterns and system configuration. All features described are subject to change without notice. Performance claims are based on ideal conditions and may not reflect real-world usage. Limited time offer restrictions may apply. Not responsible for typographical errors in promotional materials. Service availability may be interrupted for maintenance. Some advanced features require compatible hardware and software. User agreement and terms of service apply to all usage. Commercial use may require separate licensing licensing licensing lili.',
               visibility: true,
@@ -74,17 +74,21 @@ const MOCK_CREATIVE_DATA = {
             disclaimerBG: { visibility: true, visibilityLock: false },
           },
         },
-        'brandbox-desktop': {
+        'Skyline-Logo': {
+          elements: {
+            logo: { image: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9', locked: false },
+          },
+        },
+        'Skyline-V2-Desktop': {
           elements: {
             image: {
               image: '6f5c3c22-9d3e-4c2c-9c7c-7bb8f6e3e3c1',
-              crop: { x: 15, y: 459, width: 2440, height: 470 },
+              crop: { x: 55.803, y: 502.517, width: 2440, height: 279.176 },
               locked: false,
             },
             logo: { image: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9', locked: false },
-            headline: { text: 'Tittle text', locked: false },
-            subhead: { text: 'subhead from the server', locked: false },
-            cta: { text: 'server cta', locked: false },
+            headline: { text: 'Sample Headline3', locked: false },
+            subhead: { text: 'Sample subHeadline', locked: false },
             disclaimer: {
               text: 'Results may vary. Individual experience depends on usage patterns and system configuration. All features described are subject to change without notice. Performance claims are based on ideal conditions and may not reflect real-world usage. Limited time offer restrictions may apply. Not responsible for typographical errors in promotional materials. Service availability may be interrupted for maintenance. Some advanced features require compatible hardware and software. User agreement and terms of service apply to all usage. Commercial use may require separate licensing licensing licensing lili.',
               visibility: true,
@@ -94,17 +98,17 @@ const MOCK_CREATIVE_DATA = {
             disclaimerBG: { visibility: true, visibilityLock: false },
           },
         },
-        longmarquee: {
+        'Marquee-Desktop': {
           elements: {
             image: {
               image: '6f5c3c22-9d3e-4c2c-9c7c-7bb8f6e3e3c1',
-              crop: { x: 15, y: 459, width: 2440, height: 470 },
+              crop: { x: 219.7, y: 512.824, width: 2440, height: 575.186 },
               locked: false,
             },
             logo: { image: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9', locked: false },
-            headline: { text: 'headline from the server', locked: false },
-            subhead: { text: 'subhead from the server', locked: false },
-            cta: { text: 'cta from server', locked: false },
+            headline: { text: 'Sample Headline4', locked: false },
+            subhead: { text: 'Sample subHeadline4', locked: false },
+            cta: { text: 'Sample CTA', locked: false },
             disclaimer: {
               text: 'Results may vary. Individual experience depends on usage patterns and system configuration. All features described are subject to change without notice. Performance claims are based on ideal conditions and may not reflect real-world usage. Limited time offer restrictions may apply. Not responsible for typographical errors in promotional materials. Service availability may be interrupted for maintenance. Some advanced features require compatible hardware and software. User agreement and terms of service apply to all usage. Commercial use may require separate licensing licensing licensing lili.',
               visibility: true,
@@ -112,14 +116,99 @@ const MOCK_CREATIVE_DATA = {
               locked: false,
             },
             disclaimerBG: { visibility: true, visibilityLock: false },
+          },
+        },
+        'Marquee-Tablet': {
+          elements: {
+            image: {
+              image: '6f5c3c22-9d3e-4c2c-9c7c-7bb8f6e3e3c1',
+              crop: { x: 125.829, y: 532.912, width: 2440, height: 799.31 },
+              locked: false,
+            },
+            logo: { image: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9', locked: false },
+            headline: { text: 'Sample Headline5', locked: false },
+            cta: { text: 'Sample CTA', locked: false },
+            disclaimer: {
+              text: 'Results may vary. Individual experience depends on usage patterns and system configuration. All features described are subject to change without notice. Performance claims are based on ideal conditions and may not reflect real-world usage. Limited time offer restrictions may apply. Not responsible for typographical errors in promotional materials. Service availability may be interrupted for maintenance. Some advanced features require compatible hardware and software. User agreement and terms of service apply to all usage. Commercial use may require separate licensing licensing licensing lili.',
+              visibility: true,
+              visibilityLock: false,
+              locked: false,
+            },
+            disclaimerBG: { visibility: true, visibilityLock: false },
+          },
+        },
+        'Marquee-Mobile': {
+          elements: {
+            image: {
+              image: '6f5c3c22-9d3e-4c2c-9c7c-7bb8f6e3e3c1',
+              crop: { x: 140.106, y: 405.165, width: 925.115, height: 472.837 },
+              locked: false,
+            },
+            logo: { image: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9', locked: false },
+            headline: { text: 'Sample Headline6', locked: false },
+            disclaimer: {
+              text: 'Results may vary. Individual experience depends on usage patterns and system configuration. All features described are subject to change without notice. Performance claims are based on ideal conditions and may not reflect real-world usage. Limited time offer restrictions may apply. Not responsible for typographical errors in promotional materials. Service availability may be interrupted for maintenance. Some advanced features require compatible hardware and software. User agreement and terms of service apply to all usage. Commercial use may require separate licensing licensing licensing lili.',
+              visibility: true,
+              visibilityLock: false,
+              locked: false,
+            },
+            disclaimerBG: { visibility: true, visibilityLock: false },
+          },
+        },
+        'Marquee-Logo': {
+          elements: {
+            logo: { image: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9', locked: false },
+          },
+        },
+        'Brandbox-Desktop': {
+          elements: {
+            image: {
+              image: '6f5c3c22-9d3e-4c2c-9c7c-7bb8f6e3e3c1',
+              crop: { x: 189.908, y: 575.65, width: 2440, height: 597.551 },
+              locked: false,
+            },
+            logo: { image: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9', locked: false },
+            headline: { text: 'Sample Headline8', locked: false },
+            cta: { text: 'Sample CTA', locked: false },
+            disclaimer: {
+              text: 'Results may vary. Individual experience depends on usage patterns and system configuration. All features described are subject to change without notice. Performance claims are based on ideal conditions and may not reflect real-world usage. Limited time offer restrictions may apply. Not responsible for typographical errors in promotional materials. Service availability may be interrupted for maintenance. Some advanced features require compatible hardware and software. User agreement and terms of service apply to all usage. Commercial use may require separate licensing licensing licensing lili.',
+              visibility: true,
+              visibilityLock: false,
+              locked: false,
+            },
+            disclaimerBG: { visibility: true, visibilityLock: false },
+          },
+        },
+        'Brandbox-Tablet': {
+          elements: {
+            image: {
+              image: '6f5c3c22-9d3e-4c2c-9c7c-7bb8f6e3e3c1',
+              crop: { x: 148.033, y: 391.642, width: 1533.55, height: 502.238 },
+              locked: false,
+            },
+            logo: { image: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9', locked: false },
+            headline: { text: 'Sample Headline', locked: false },
+            cta: { text: 'Sample CTA', locked: false },
+            disclaimer: {
+              text: 'Results may vary. Individual experience depends on usage patterns and system configuration. All features described are subject to change without notice. Performance claims are based on ideal conditions and may not reflect real-world usage. Limited time offer restrictions may apply. Not responsible for typographical errors in promotional materials. Service availability may be interrupted for maintenance. Some advanced features require compatible hardware and software. User agreement and terms of service apply to all usage. Commercial use may require separate licensing licensing licensing lili.',
+              visibility: true,
+              visibilityLock: false,
+              locked: false,
+            },
+            disclaimerBG: { visibility: true, visibilityLock: false },
+          },
+        },
+        'Brandbox-Logo': {
+          elements: {
+            logo: { image: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9', locked: false },
           },
         },
       },
       layers: {
-        headline: { type: 'text', defaultValue: 'Headline goes here' },
+        headline: { type: 'text', defaultValue: 'Sample Headline' },
         logo: { type: 'image', defaultValue: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9' },
         subhead: { type: 'text', defaultValue: 'Your subhead goes here' },
-        cta: { type: 'text', defaultValue: 'CTA button' },
+        cta: { type: 'text', defaultValue: 'Sample CTA' },
         image: { type: 'image', defaultValue: '6f5c3c22-9d3e-4c2c-9c7c-7bb8f6e3e3c1' },
         disclaimer: {
           type: 'text',
@@ -549,8 +638,8 @@ function createMockDatabase() {
  */
 const MOCK_CONFIG = {
   errorRate: 0.0, //errorRate 100% is 1.0
-  minDelay: 1000,
-  maxDelay: 3000,
+  minDelay: 100,
+  maxDelay: 300,
   enableErrors: true,
 }
 
