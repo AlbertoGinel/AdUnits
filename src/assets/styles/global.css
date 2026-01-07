@@ -416,3 +416,10 @@ span {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
 }
+
+.text-bentonville-sm-400 {
+  color: var(--color-primary-blue-dark);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
+}

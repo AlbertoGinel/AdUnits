@@ -81,15 +81,6 @@ export function useElementRenderer() {
             if (dimensions) {
               const { naturalWidth, naturalHeight } = dimensions
 
-              console.log('🔍 Logo calculation:', {
-                naturalWidth,
-                naturalHeight,
-                maxWidth,
-                maxHeight,
-                aspectRatio: naturalWidth / naturalHeight,
-                maxAspectRatio: maxWidth / maxHeight,
-              })
-
               // Calculate aspect ratio fit within max bounds
               const aspectRatio = naturalWidth / naturalHeight
               const maxAspectRatio = maxWidth / maxHeight
@@ -107,8 +98,6 @@ export function useElementRenderer() {
               // Center the logo within the max bounds
               finalX = centerX - actualWidth / 2
               finalY = centerY - actualHeight / 2
-
-              console.log('🔍 Final result:', { actualWidth, actualHeight })
             }
           }
 

@@ -19,7 +19,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { useViewState } from '@/composables/view/useViewState'
 import { useKonvaStage } from '@/composables/view/useKonvaStage'
 import { useSuspenseManager } from '@/composables/feedbackAsync/useSuspenseManager'
@@ -31,10 +31,30 @@ import CanvasScreenSkeleton from './CanvasScreenSkeleton.vue'
 const suspenseManager = useSuspenseManager()
 const bundleReady = computed(() => suspenseManager.bundleReady.value)
 const containerRef = ref<HTMLElement | null>(null)
+
+// Stage controller (DOM-dependent)
+const stage = useKonvaStage(containerRef, bundleReady)
+
+// View state management (singleton)
 const viewState = useViewState()
 
-// Stage controller (pure computed, no observers)
-const stage = useKonvaStage(containerRef, bundleReady)
+// Smart coordination: Single watch for all view changes
+watch(
+  [() => viewState.viewMode.value, () => viewState.currentAdUnitId.value],
+  ([newMode, newAdUnitId], [oldMode, oldAdUnitId]) => {
+    nextTick(() => {
+      // Trigger zoom on view mode change or ad unit change in focus mode
+      if (newMode === 'bulkMode' && newMode !== oldMode) {
+        console.log('🔄 View changed to bulk - triggering zoomToFit')
+        stage.zoomToFit()
+      } else if (newMode === 'focusMode' && newAdUnitId && newAdUnitId !== oldAdUnitId) {
+        console.log(`🎯 View changed to focus (${newAdUnitId}) - triggering zoomToFit`)
+        stage.zoomToFit()
+      }
+    })
+  },
+  { immediate: true },
+)
 
 // Clean version - no debug logs
 </script>

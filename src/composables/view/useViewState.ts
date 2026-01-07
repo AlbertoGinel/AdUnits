@@ -5,8 +5,8 @@ import { useCanvasManager } from './useCanvasManager'
 import type { AdUnit } from '@/stores/canvas'
 
 /**
- * View state management layer
- * Handles view modes, visible ad units, and view transitions
+ * View state management layer (Singleton)
+ * Pure state management - no DOM dependencies
  */
 export function useViewState() {
   const canvasStore = useCanvasStore()

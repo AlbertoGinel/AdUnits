@@ -1,6 +1,7 @@
 // composables/view/useKonvaStage.ts
 import { ref, reactive, computed, type Ref } from 'vue'
 import { useCanvasManager } from './useCanvasManager'
+import { useCanvasData } from '../data/useCanvasData'
 import type Konva from 'konva'
 
 interface Position {
@@ -22,6 +23,7 @@ export function useKonvaStage(
   isReady: Ref<boolean> = ref(true),
 ) {
   const canvasManager = useCanvasManager()
+  const canvasData = useCanvasData()
 
   // Zoom/Pan state
   const scale = ref(1)
@@ -42,17 +44,12 @@ export function useKonvaStage(
     const rect = containerRef.value.getBoundingClientRect()
 
     // CRITICAL: Ensure minimum dimensions to prevent 0x0 canvas
-    const width = Math.max(rect.width, 800) // Minimum 800px width
-    const height = Math.max(rect.height, 600) // Minimum 600px height
+    //const width = Math.max(rect.width, 800) // Minimum 800px width
+    //const height = Math.max(rect.height, 600) // Minimum 600px height
 
-    console.log('🎯 KonvaStage: Container size:', {
-      rectWidth: rect.width,
-      rectHeight: rect.height,
-      usedWidth: width,
-      usedHeight: height,
-    })
+    console.log('%c ' + JSON.stringify(rect, null, 2), 'color: red; font-weight: bold;')
 
-    return { width, height }
+    return { width: rect.width, height: rect.height }
   }
 
   /**
@@ -87,9 +84,26 @@ export function useKonvaStage(
   })
 
   /**
-   * Content bounds from store (stage dimensions)
+   * Content bounds - Dynamic based on view mode
    */
   const contentBounds = computed(() => {
+    const currentView = canvasData.getCurrentView()
+
+    if (currentView === 'focusMode') {
+      // Focus mode: Use current ad unit dimensions
+      const currentAdUnitId = canvasData.getCurrentAdUnitId()
+      if (currentAdUnitId) {
+        const adUnit = canvasData.getAdUnit(currentAdUnitId)
+        if (adUnit?.frameConfig?.dimensions) {
+          return {
+            width: adUnit.frameConfig.dimensions.width,
+            height: adUnit.frameConfig.dimensions.height,
+          }
+        }
+      }
+    }
+
+    // Bulk mode: Use stage dimensions (fallback for focus mode too)
     const stage = canvasManager.getStage()
     return {
       width: stage.width,
@@ -101,9 +115,14 @@ export function useKonvaStage(
    * Calculate optimal zoom to fit content with padding
    */
   function zoomToFit() {
+    console.log('zoomToFit Start')
+
     const { width: containerWidth, height: containerHeight } = getContainerSize()
+
     const contentWidth = contentBounds.value.width
     const contentHeight = contentBounds.value.height
+
+    console.log('%c ' + contentWidth + ' x ' + contentHeight, 'color: red; font-weight: bold;')
 
     if (containerWidth === 0 || containerHeight === 0) return
 
@@ -120,45 +139,13 @@ export function useKonvaStage(
     scale.value = newScale
     position.x = centerX
     position.y = topY
+
+    console.log(
+      `Container: ${Math.round(containerWidth)}x${Math.round(containerHeight)}, Content: ${contentWidth}x${contentHeight}`,
+    )
+    console.log(`New scale: ${newScale}, Position: ${position.x}, ${position.y}`)
+    console.log('zoomToFit End')
   }
-
-  /**
-   * Zoom to specific ad unit (focus mode)
-   */
-  function zoomToAdUnit(adUnitId: string) {
-    const adUnit = canvasManager.getAdUnit(adUnitId)
-    if (!adUnit) return
-
-    const { width: containerWidth, height: containerHeight } = getContainerSize()
-    if (containerWidth === 0 || containerHeight === 0) return
-
-    // Frame dimensions (ignore position - in focus mode, frame is at 0,0)
-    const frameWidth = adUnit.frameConfig.dimensions.width
-    const frameHeight = adUnit.frameConfig.dimensions.height
-
-    // Add 20% margin for breathing room
-    const marginMultiplier = 1.2
-    const effectiveWidth = frameWidth * marginMultiplier
-    const effectiveHeight = frameHeight * marginMultiplier
-
-    // Calculate scale to fit frame with margin
-    const scaleX = (containerWidth - PADDING * 2) / effectiveWidth
-    const scaleY = (containerHeight - PADDING * 2) / effectiveHeight
-    const newScale = Math.min(scaleX, scaleY, MAX_SCALE)
-
-    // Apply scale
-    scale.value = newScale
-
-    // In focus mode, the frame renders at (0, 0) in the stage
-    // Center horizontally
-    const scaledFrameWidth = frameWidth * newScale
-    const containerCenterX = containerWidth / 2
-    position.x = containerCenterX - scaledFrameWidth / 2
-
-    // Align to top vertically
-    position.y = PADDING
-  }
-
   /**
    * Zoom toward a specific point (for wheel zoom)
    */
@@ -270,7 +257,6 @@ export function useKonvaStage(
 
     // Actions
     zoomToFit,
-    zoomToAdUnit,
     zoomToPoint,
     resetZoom,
 

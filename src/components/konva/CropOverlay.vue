@@ -1,6 +1,15 @@
 <!-- components/konva/CropOverlay.vue -->
 <template>
-  <v-layer v-if="isCropping && originalImage && visibleArea && cropData && originalImageDimensions">
+  <v-layer
+    v-if="
+      isCropping &&
+      originalImage &&
+      visibleArea &&
+      cropData &&
+      originalImageDimensions &&
+      isValidCropData
+    "
+  >
     <!-- 1. Full original image positioned at visible area -->
     <v-image
       :config="{
@@ -58,8 +67,9 @@
 
     <!-- 5. Interactive crop handles and border -->
     <CropHandles
+      v-if="validCropData"
       :visible-area="visibleArea"
-      :crop-data="cropData"
+      :crop-data="validCropData"
       :original-dimensions="originalImageDimensions"
       :aspect-ratio="aspectRatio"
       @update-crop="handleCropUpdate"
@@ -78,11 +88,10 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { useCropping } from '@/composables/Tools/useCropping'
+import { useCropping, type CropData } from '@/composables/Tools/useCropping'
 import { useImageManager } from '@/composables/setupImages/useImageManager'
 import CropHandles from './CropHandles.vue'
 import CropControls from './CropControls.vue'
-import type { CropData } from '@/stores/useCroppingStore'
 
 const {
   isCropping,
@@ -131,16 +140,53 @@ const scaledImageHeight = computed(() => {
   return originalImageDimensions.value.naturalHeight * scaleY.value
 })
 
+// Type guard to ensure cropData has all required properties
+const isValidCropData = computed(() => {
+  return (
+    cropData.value &&
+    typeof cropData.value.x === 'number' &&
+    typeof cropData.value.y === 'number' &&
+    typeof cropData.value.width === 'number' &&
+    typeof cropData.value.height === 'number'
+  )
+})
+
+// Properly typed crop data for components that require complete CropData
+const validCropData = computed((): CropData | null => {
+  if (!isValidCropData.value || !cropData.value) return null
+
+  return {
+    x: cropData.value.x!,
+    y: cropData.value.y!,
+    width: cropData.value.width!,
+    height: cropData.value.height!,
+  }
+})
+
 const handleCropUpdate = (newCrop: Partial<CropData>) => {
-  updateCropArea(newCrop)
+  if (!cropData.value || !isValidCropData.value) return
+
+  // Merge with existing cropData to ensure all required properties
+  const updatedCrop: CropData = {
+    x: newCrop.x ?? cropData.value.x!,
+    y: newCrop.y ?? cropData.value.y!,
+    width: newCrop.width ?? cropData.value.width!,
+    height: newCrop.height ?? cropData.value.height!,
+  }
+
+  updateCropArea(updatedCrop)
 }
 
 const handleCropDrag = (delta: { x: number; y: number }) => {
-  if (!cropData.value) return
+  if (!cropData.value || !isValidCropData.value) return
 
-  updateCropArea({
-    x: cropData.value.x + delta.x,
-    y: cropData.value.y + delta.y,
-  })
+  const updatedCrop: CropData = {
+    x: cropData.value.x! + delta.x,
+    y: cropData.value.y! + delta.y,
+    width: cropData.value.width!,
+    height: cropData.value.height!,
+  }
+
+  updateCropArea(updatedCrop)
 }
 </script>

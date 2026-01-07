@@ -91,6 +91,13 @@ const iconLibrary = {
   <path d="M6 8V7C6 5.34315 7.34315 4 9 4H15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>`,
 
+  vectorialCursor: `<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path fill-rule="evenodd" clip-rule="evenodd" d="M3.50122 11.088H2.33406C2.01181 11.0878 1.7506 10.8266 1.75049 10.5044V9.33722C1.7506 9.01497 2.01181 8.75376 2.33406 8.75365H3.50122C3.82347 8.75376 4.08468 9.01497 4.08479 9.33722V10.5044C4.08468 10.8266 3.82347 11.0878 3.50122 11.088Z" stroke="currentColor" stroke-width="0.875" stroke-linecap="round" stroke-linejoin="round"/>
+  <path fill-rule="evenodd" clip-rule="evenodd" d="M10.5041 4.08502H9.33699C9.01474 4.08491 8.75353 3.8237 8.75342 3.50145V2.33429C8.75353 2.01204 9.01474 1.75083 9.33699 1.75072H10.5041C10.8264 1.75083 11.0876 2.01204 11.0877 2.33429V3.50145C11.0876 3.8237 10.8264 4.08491 10.5041 4.08502V4.08502Z" stroke="currentColor" stroke-width="0.875" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M8.75373 2.91789H7.29479C4.87754 2.91789 2.91797 4.87746 2.91797 7.29472V8.75366" stroke="currentColor" stroke-width="0.875" stroke-linecap="round" stroke-linejoin="round"/>
+  <path fill-rule="evenodd" clip-rule="evenodd" d="M11.8536 9.42387L10.391 10.0387C10.2329 10.1051 10.1071 10.2309 10.0406 10.3889L9.42456 11.8535C9.31684 12.1093 9.05989 12.2696 8.78282 12.254C8.50575 12.2384 8.26846 12.0502 8.19017 11.7839L7.03063 7.84487C6.96281 7.61454 7.02626 7.36555 7.19606 7.19578C7.36586 7.02602 7.61485 6.9626 7.84517 7.03047L11.7841 8.1896C12.0503 8.26783 12.2386 8.50513 12.2542 8.78222C12.2698 9.05931 12.1094 9.31624 11.8536 9.42387Z" stroke="currentColor" stroke-width="0.875" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>`,
+
   // Add your 30 icons here...
 } as const
 

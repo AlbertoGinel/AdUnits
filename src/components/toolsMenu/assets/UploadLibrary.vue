@@ -6,7 +6,7 @@
     <!-- Uploaded Images Grid -->
     <div class="uploads-grid">
       <div
-        v-for="upload in images"
+        v-for="upload in images.slice().reverse()"
         :key="upload.id"
         class="upload-item"
         @click="selectImage(upload.id)"

@@ -31,7 +31,6 @@ const svgContent = computed(() => {
     return ''
   }
 
-  console.log(`✅ SingleIcon: Loaded icon '${props.name}'`)
   return content
 })
 
