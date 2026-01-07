@@ -50,17 +50,9 @@ export interface DeleteAssetResult {
 }
 
 // Environment detection
-const isDevelopment = import.meta.env.DEV
+const isDevelopment = import.meta.env.MODE === 'development'
 
 export function useCreativeAPI() {
-  console.log('🔍 Environment Debug:')
-  console.log('MODE:', import.meta.env.MODE)
-  console.log('DEV:', import.meta.env.DEV)
-  console.log('PROD:', import.meta.env.PROD)
-  console.log('NODE_ENV:', import.meta.env.NODE_ENV)
-
-  console.log('🎯 Using development mode:', isDevelopment)
-
   const canvasData = useCanvasData()
   const suspenseManager = useSuspenseManager()
   const notifications = useNotifications()
