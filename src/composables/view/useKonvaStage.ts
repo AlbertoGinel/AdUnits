@@ -43,12 +43,6 @@ export function useKonvaStage(
     if (!containerRef.value) return { width: 0, height: 0 }
     const rect = containerRef.value.getBoundingClientRect()
 
-    // CRITICAL: Ensure minimum dimensions to prevent 0x0 canvas
-    //const width = Math.max(rect.width, 800) // Minimum 800px width
-    //const height = Math.max(rect.height, 600) // Minimum 600px height
-
-    console.log('%c ' + JSON.stringify(rect, null, 2), 'color: red; font-weight: bold;')
-
     return { width: rect.width, height: rect.height }
   }
 
@@ -115,14 +109,10 @@ export function useKonvaStage(
    * Calculate optimal zoom to fit content with padding
    */
   function zoomToFit() {
-    console.log('zoomToFit Start')
-
     const { width: containerWidth, height: containerHeight } = getContainerSize()
 
     const contentWidth = contentBounds.value.width
     const contentHeight = contentBounds.value.height
-
-    console.log('%c ' + contentWidth + ' x ' + contentHeight, 'color: red; font-weight: bold;')
 
     if (containerWidth === 0 || containerHeight === 0) return
 
@@ -139,12 +129,6 @@ export function useKonvaStage(
     scale.value = newScale
     position.x = centerX
     position.y = topY
-
-    console.log(
-      `Container: ${Math.round(containerWidth)}x${Math.round(containerHeight)}, Content: ${contentWidth}x${contentHeight}`,
-    )
-    console.log(`New scale: ${newScale}, Position: ${position.x}, ${position.y}`)
-    console.log('zoomToFit End')
   }
   /**
    * Zoom toward a specific point (for wheel zoom)

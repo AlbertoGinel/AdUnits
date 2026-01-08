@@ -5,6 +5,7 @@ import { useCanvasData } from '@/composables/data/useCanvasData'
 import { useLayers } from '@/composables/data/useLayers'
 import { useElements } from '@/composables/data/useElements'
 import { useTools } from '@/composables/Tools/useTools'
+import { useOverrideLogic } from '@/components/toolsMenu/shared/useOverrideLogic'
 
 const ASSET_DISPLAY = {
   image: { singular: 'image', plural: 'Images' },
@@ -19,10 +20,17 @@ export function useEditAssetsControl() {
   // 🎯 Core dependencies
   const { startCrop, applyCrop, cancelCrop, isCropping } = useCropping()
   const imageManager = useImageManager()
-  const { getCurrentView, getCurrentAdUnitId, getElementsByTag } = useCanvasData()
+  const {
+    getCurrentView,
+    getCurrentAdUnitId,
+    getElementsByTag,
+    getAdUnitNamesWithLockedTag,
+    freeLayer,
+  } = useCanvasData()
   const { getAllLayers, updateLayer } = useLayers()
   const { updateElement } = useElements()
   const tools = useTools()
+  const { executeOverride } = useOverrideLogic()
 
   const assetType = computed(() => {
     return tools.selectedTool.value === 'logos' ? 'logo' : 'image'
@@ -244,6 +252,22 @@ export function useEditAssetsControl() {
     selectedLibraryAssetId.value = null // Clear selection after use
   }
 
+  // 🔓 Override functionality - uses shared logic
+  const lockedElements = computed(() => getAdUnitNamesWithLockedTag(assetType.value))
+
+  const overrideAllLocked = () => {
+    const currentValue = currentAssetUrl.value
+    if (!currentValue) return
+
+    // Use shared override logic
+    executeOverride(assetType.value, currentValue, 'image')
+  }
+
+  const getCustomMessage = () => {
+    // Assets only have asset override (not text/visibility/bgVisibility)
+    return `${assetDisplayText.value.singular} does not apply on:`
+  }
+
   return {
     // State
     selectedLibraryAssetId,
@@ -271,5 +295,12 @@ export function useEditAssetsControl() {
     startCrop,
     applyCrop,
     cancelCrop,
+
+    // 🔓 LockedInfo compatibility
+    fieldName: assetType,
+    isBulkMode: computed(() => !isFocusMode.value),
+    lockedElements,
+    overrideAllLocked,
+    getCustomMessage,
   }
 }

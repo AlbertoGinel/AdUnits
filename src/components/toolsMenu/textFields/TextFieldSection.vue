@@ -23,7 +23,7 @@
 </style>
 
 <script setup lang="ts">
-import LockedInfo from '@/components/toolsMenu/textFields/LockedInfo.vue'
+import LockedInfo from '../shared/LockedInfo.vue'
 import { useTextField } from './useTextFields'
 
 interface Props {

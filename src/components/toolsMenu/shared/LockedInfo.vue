@@ -11,22 +11,22 @@
 </template>
 
 <script setup lang="ts">
-import { computed, type ComputedRef, type Ref } from 'vue'
+import { computed, type ComputedRef } from 'vue'
 
 interface TextFieldState {
-  fieldName: string
+  fieldName: string | ComputedRef<string>
   isBulkMode: ComputedRef<boolean>
-  getCustomMessage: (type: 'text' | 'visibility' | 'bgVisibility') => string
+  getCustomMessage: (type: 'text' | 'visibility' | 'bgVisibility' | 'asset') => string
   overrideAllLocked?: () => void
   // Properties that LockedInfo actually accesses based on lockType
   lockedElements?: ComputedRef<string[]>
-  lockedVisibilityElements?: ComputedRef<string[]>
-  lockedBgElements?: ComputedRef<string[]>
+  lockedVisibilityElements?: ComputedRef<string[]> | undefined
+  lockedBgElements?: ComputedRef<string[]> | undefined
 }
 
 interface Props {
   field: TextFieldState
-  lockType: 'text' | 'visibility' | 'bgVisibility'
+  lockType: 'text' | 'visibility' | 'bgVisibility' | 'asset'
 }
 
 const props = defineProps<Props>()
@@ -40,14 +40,16 @@ const getLockedElements = (): ComputedRef<string[]> | undefined => {
       return props.field.lockedVisibilityElements
     case 'bgVisibility':
       return props.field.lockedBgElements
+    case 'asset':
+      return props.field.lockedElements // Assets use same locked elements as text
     default:
       return undefined
   }
 }
 
 const getOverrideState = () => {
-  // For now, only text override is supported with the new button approach
-  if (props.lockType === 'text' && props.field.overrideAllLocked) {
+  // Support both text and asset overrides with the new button approach
+  if ((props.lockType === 'text' || props.lockType === 'asset') && props.field.overrideAllLocked) {
     return props.field.overrideAllLocked
   }
   return null
@@ -64,8 +66,12 @@ const handleOverride = () => {
 const shouldShow = computed(() => {
   const lockedElements = getLockedElements()
   const elementsArray = lockedElements?.value || []
-  // Only show for text overrides for now
-  return props.field.isBulkMode.value && elementsArray.length > 0 && props.lockType === 'text'
+  // Show for text and asset overrides
+  return (
+    props.field.isBulkMode.value &&
+    elementsArray.length > 0 &&
+    (props.lockType === 'text' || props.lockType === 'asset')
+  )
 })
 
 const messageText = computed(() => {
@@ -76,14 +82,27 @@ const messageText = computed(() => {
 })
 
 const labelText = computed(() => {
-  const fieldName = props.field.fieldName
-  return `Override all ${fieldName} text`
-})
+  const fieldName =
+    typeof props.field.fieldName === 'string' ? props.field.fieldName : props.field.fieldName.value
 
-// Utility function to capitalize first letter
-const capitalize = (str: string): string => {
-  return str.charAt(0).toUpperCase() + str.slice(1)
-}
+  let actionType: string
+  switch (props.lockType) {
+    case 'text':
+      actionType = 'text'
+      break
+    case 'asset':
+      actionType = 'assets'
+      break
+    case 'visibility':
+    case 'bgVisibility':
+      actionType = 'visibility'
+      break
+    default:
+      actionType = 'content'
+  }
+
+  return `Override all ${fieldName} ${actionType}`
+})
 </script>
 
 <style scoped>

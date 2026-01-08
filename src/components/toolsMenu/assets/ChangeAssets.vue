@@ -19,6 +19,9 @@
     @update:alt-text="handleAltTextUpdate"
   />
 
+  <!-- Locked asset info and override control -->
+  <LockedInfo :field="control" lock-type="asset" />
+
   <UploadLibrary
     :show="true"
     :type="control.assetType.value"
@@ -35,7 +38,7 @@
 import PreviewAsset from './PreviewAsset.vue'
 import UploadLibrary from './UploadLibrary.vue'
 import { useEditAssetsControl } from './useEditAssetsControl'
-
+import LockedInfo from '@/components/toolsMenu/shared/LockedInfo.vue'
 import { useIcons } from '@/composables/utils/useIcons'
 
 const { getIcon } = useIcons()

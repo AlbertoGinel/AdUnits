@@ -62,6 +62,7 @@
 
 <script setup lang="ts">
 import SmartImage from '@/composables/setupImages/SmartImage.vue'
+
 import { useIcons, type IconName } from '@/composables/utils/useIcons'
 
 const { getIcon } = useIcons()

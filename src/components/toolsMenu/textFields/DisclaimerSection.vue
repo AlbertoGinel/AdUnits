@@ -64,7 +64,7 @@
 </template>
 
 <script setup lang="ts">
-import LockedInfo from '@/components/toolsMenu/textFields/LockedInfo.vue'
+import LockedInfo from '@/components/toolsMenu/shared/LockedInfo.vue'
 import { useTextField } from './useTextFields'
 
 const field = useTextField('disclaimer', {
