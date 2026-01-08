@@ -38,7 +38,7 @@ function createSuspenseManager() {
   }
 
   const setImagesCached = (cached: boolean) => {
-    console.log('📱 (HERE cache!)  SuspenseManager: Images cached =', cached)
+    console.log('📱 SuspenseManager: Images cached =', cached)
     imagesCached.value = cached
   }
 

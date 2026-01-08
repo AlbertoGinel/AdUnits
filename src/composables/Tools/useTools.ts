@@ -17,7 +17,6 @@ export const useTools = () => {
     getElementsByTag,
     getAdUnitNamesWithLockedTag,
     getAdUnitNamesWithVisibilityLockedTag,
-    getAdUnits,
     getElement,
     freeLayer,
   } = useCanvasData()
@@ -50,12 +49,12 @@ export const useTools = () => {
     setCurrentView('focusMode')
   }
 
-  // Override states for each field (must be defined first)
+  // Temporary: Keep override states for components that haven't migrated yet
   const overrideStates = {
     headlineOverride: ref(false),
     subheadOverride: ref(false),
     ctaOverride: ref(false),
-    disclaimerOverride: ref(false),
+    disclaimerOverride: ref(false), // Not used anymore but kept for compatibility
     disclaimerVisibilityOverride: ref(false),
     disclaimerBGVisibilityOverride: ref(false),
     imageOverride: ref(false),
@@ -150,70 +149,11 @@ export const useTools = () => {
             })
           }
         } else {
-          // Bulk mode: update layer
+          // Bulk mode: update layer (simplified - no override logic)
           if (property === 'text') {
-            // Check if override is enabled for text fields
-            const overrideKey = `${fieldName}Override` as keyof typeof overrideStates
-            const isOverrideEnabled = overrideStates[overrideKey]?.value
-
-            if (isOverrideEnabled) {
-              // Override mode: free all locked elements first, then update
-              if (fieldName === 'image' && typeof value === 'string') {
-                // Image override: auto-crop for each ad unit's dimensions
-                const allAdUnits = getAdUnits()
-                Object.keys(allAdUnits).forEach((adUnitId) => {
-                  const element = getElement(adUnitId, fieldName)
-                  if (element?.type === 'image') {
-                    const crop = calculateCoverCrop(value, element.width || 0, element.height || 0)
-
-                    if (crop) {
-                      updateElement(adUnitId, fieldName, {
-                        text: value,
-                        crop: crop,
-                        locked: false,
-                      })
-                    }
-                  }
-                })
-                console.log('🔓 Override: Updated all images with auto-crop (freed locks)')
-              } else {
-                // Regular text override
-                freeLayer(fieldName)
-                updateLayer(fieldName, { defaultValue: value as string })
-              }
-              // Reset override after use
-              overrideStates[overrideKey].value = false
-            } else {
-              // Normal bulk mode: update layer (respects existing locks)
-              updateLayer(fieldName, { defaultValue: value as string })
-            }
+            updateLayer(fieldName, { defaultValue: value as string })
           } else {
-            // Visibility property
-            const overrideKey = `${fieldName}VisibilityOverride` as keyof typeof overrideStates
-            const isOverrideEnabled = overrideStates[overrideKey]?.value
-
-            if (isOverrideEnabled) {
-              // Override mode: Unlock all visibility locks and update all elements
-              const allAdUnits = getAdUnits()
-              Object.keys(allAdUnits).forEach((adUnitId) => {
-                const elements = getElementsByTag(adUnitId, fieldName)
-                elements.forEach(() => {
-                  updateElement(adUnitId, fieldName, {
-                    visibility: value as boolean,
-                    visibilityLock: false,
-                  })
-                })
-              })
-
-              // Update the layer too
-              updateLayer(fieldName, { visibility: value as boolean })
-
-              // Reset override state
-              overrideStates[overrideKey].value = false
-            } else {
-              // Normal bulk mode: update layer (respects existing visibility locks)
-              updateLayer(fieldName, { visibility: value as boolean })
-            }
+            updateLayer(fieldName, { visibility: value as boolean })
           }
         }
       },
@@ -297,7 +237,7 @@ export const useTools = () => {
     disclaimerVisibility,
     disclaimerBGVisibility,
     imageValue,
-    // Override states
+    // Temporary: Override states for old components
     overrideStates,
     // Computed locked lists
     lockedElementsByTag,

@@ -66,8 +66,8 @@
 import { computed } from 'vue'
 import { useTools } from '@/composables/Tools/useTools'
 import { useCanvasData } from '@/composables/data/useCanvasData'
-import TextFieldSection from './textFields/TextFieldSection.vue'
-import DisclaimerSection from './textFields/DisclaimerSection.vue'
+import TextFieldSection from './TextFieldSection.vue'
+import DisclaimerSection from './DisclaimerSection.vue'
 
 const { getCurrentView } = useCanvasData()
 

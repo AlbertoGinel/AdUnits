@@ -19,7 +19,7 @@
 
 <script setup lang="ts">
 import { useSuspenseManager } from '@/composables/feedbackAsync/useSuspenseManager'
-import EditTexts from './toolsMenu/EditTexts.vue'
+import EditTexts from './toolsMenu/textFields/EditTexts.vue'
 import EditAssets from './toolsMenu/assets/EditAssets.vue'
 import EmptyState from './toolsMenu/EmptyState.vue'
 import EditTextsSkeleton from './toolsMenu/EditTextsSkeleton.vue'

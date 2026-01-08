@@ -4,17 +4,9 @@
       <span class="locked-icon">🔒</span>
       {{ messageText }}
     </p>
-    <div class="flex items-center space-x-2 text-[#2c2c54]">
-      <input
-        :id="checkboxId"
-        v-model="overrideState"
-        type="checkbox"
-        class="w-4 h-4 rounded border-gray-400 focus:ring-2 focus:ring-blue-500"
-      />
-      <label :for="checkboxId" class="text-[15px] font-medium select-none">
-        {{ labelText }}
-      </label>
-    </div>
+    <button @click="handleOverride" class="override-button" type="button">
+      {{ labelText }}
+    </button>
   </div>
 </template>
 
@@ -25,13 +17,11 @@ interface TextFieldState {
   fieldName: string
   isBulkMode: ComputedRef<boolean>
   getCustomMessage: (type: 'text' | 'visibility' | 'bgVisibility') => string
+  overrideAllLocked?: () => void
   // Properties that LockedInfo actually accesses based on lockType
   lockedElements?: ComputedRef<string[]>
   lockedVisibilityElements?: ComputedRef<string[]>
   lockedBgElements?: ComputedRef<string[]>
-  overrideState?: Ref<boolean>
-  visibilityOverrideState?: Ref<boolean>
-  bgVisibilityOverrideState?: Ref<boolean>
 }
 
 interface Props {
@@ -56,15 +46,17 @@ const getLockedElements = (): ComputedRef<string[]> | undefined => {
 }
 
 const getOverrideState = () => {
-  switch (props.lockType) {
-    case 'text':
-      return props.field.overrideState
-    case 'visibility':
-      return props.field.visibilityOverrideState
-    case 'bgVisibility':
-      return props.field.bgVisibilityOverrideState
-    default:
-      return { value: false }
+  // For now, only text override is supported with the new button approach
+  if (props.lockType === 'text' && props.field.overrideAllLocked) {
+    return props.field.overrideAllLocked
+  }
+  return null
+}
+
+const handleOverride = () => {
+  const overrideFunction = getOverrideState()
+  if (overrideFunction) {
+    overrideFunction()
   }
 }
 
@@ -72,7 +64,8 @@ const getOverrideState = () => {
 const shouldShow = computed(() => {
   const lockedElements = getLockedElements()
   const elementsArray = lockedElements?.value || []
-  return props.field.isBulkMode.value && elementsArray.length > 0
+  // Only show for text overrides for now
+  return props.field.isBulkMode.value && elementsArray.length > 0 && props.lockType === 'text'
 })
 
 const messageText = computed(() => {
@@ -84,24 +77,7 @@ const messageText = computed(() => {
 
 const labelText = computed(() => {
   const fieldName = props.field.fieldName
-  const lockTypeText = props.lockType === 'text' ? 'text' : 'visibility'
-  return `Override all ${fieldName} ${lockTypeText}`
-})
-
-const checkboxId = computed(() => {
-  const fieldName = props.field.fieldName
-  const lockTypeText = props.lockType === 'text' ? '' : props.lockType
-  return `override${capitalize(fieldName)}${lockTypeText}`
-})
-
-const overrideState = computed({
-  get: () => getOverrideState()?.value || false,
-  set: (value: boolean) => {
-    const overrideStateRef = getOverrideState()
-    if (overrideStateRef) {
-      overrideStateRef.value = value
-    }
-  },
+  return `Override all ${fieldName} text`
 })
 
 // Utility function to capitalize first letter
@@ -121,7 +97,7 @@ const capitalize = (str: string): string => {
 }
 
 .locked-message {
-  margin: 0 0 2px 0;
+  margin: 0 0 8px 0;
   font-size: 10px;
   color: #856404;
   display: flex;
@@ -133,55 +109,24 @@ const capitalize = (str: string): string => {
   font-size: 14px;
 }
 
-.flex {
-  display: flex;
-}
-
-.items-center {
-  align-items: center;
-}
-
-.space-x-2 > * + * {
-  margin-left: 0.5rem;
-}
-
-.text-\[15px\] {
+.override-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
   font-size: 12px;
-}
-
-.font-medium {
   font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
-.select-none {
-  user-select: none;
+.override-button:hover {
+  background-color: #0056b3;
 }
 
-.w-4 {
-  width: 1rem;
-}
-
-.h-4 {
-  height: 1rem;
-}
-
-.rounded {
-  border-radius: 0.25rem;
-}
-
-.border-gray-400 {
-  border-color: #9ca3af;
-}
-
-.focus\:ring-2:focus {
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
-}
-
-.focus\:ring-blue-500:focus {
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
-}
-
-.text-\[#2c2c54\] {
-  color: #2c2c54;
+.override-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.5);
 }
 </style>
