@@ -6,8 +6,8 @@
 </template>
 
 <script setup lang="ts">
-import TopNavbar from '@/components/TopNavbar.vue'
-import MainContainer from '@/components/MainContainer.vue'
+import TopNavbar from '@/features/uiApp/TopNavbar.vue'
+import MainContainer from '@/features/uiApp/MainContainer.vue'
 </script>
 
 <style scoped>
