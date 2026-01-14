@@ -1,9 +1,9 @@
 import { useAdUnitStore } from '../stores/useAdUnitStore'
 import { useAppStore } from '../stores/useAppStore'
 import { useLayerStore } from '../stores/useLayerStore'
-import type { EditableElementType } from '../../types/mainTypes'
-import { hasVisibility, isTextElement, isImageElement } from '../../types/adUnitElementTypes'
-import type { PropertyValueType, PropertiesOf } from '../../types/adUnitElementTypes'
+import type { EditableElementType, EditablePropertiesOf } from '../../types/mainTypes'
+import type { ElementPropertyValueType, AdUnitElementMap } from '../../types/adUnitElementTypes'
+import type { LayerObjectMap } from '../../types/LayerTypes'
 
 /**
  * Service for cross-store data operations
@@ -16,10 +16,10 @@ export function useServicesField() {
   /**
    * Get property value based on element type, property, and current mode
    */
-  function getFieldValue<T extends EditableElementType, P extends PropertiesOf<T>>(
+  function getFieldValue<T extends EditableElementType, P extends EditablePropertiesOf<T>>(
     elementKey: T,
     property: P,
-  ): PropertyValueType<P> | null {
+  ): ElementPropertyValueType<T, P> | null {
     const currentView = appStore.getCurrentView()
 
     if (currentView === 'focusMode') {
@@ -30,42 +30,31 @@ export function useServicesField() {
       const element = adUnitsStore.getElement(adUnitId, elementKey)
       if (!element) return null
 
-      // Handle different properties
-      if (property === 'text' && isTextElement(element)) {
-        return (element.text || '') as PropertyValueType<P>
-      } else if (property === 'image' && isImageElement(element)) {
-        return (element.image || '') as PropertyValueType<P>
-      } else if (property === 'visibility' && hasVisibility(element)) {
-        return (element.visibility ?? true) as PropertyValueType<P>
-      } else if (property === 'locked') {
-        return (element.locked ?? false) as PropertyValueType<P>
-      } else if (property === 'visibilityLocked' && hasVisibility(element)) {
-        return (element.visibilityLock ?? false) as PropertyValueType<P>
-      }
-
-      return null
+      // Cast to specific element type for property access
+      const typedElement = element as AdUnitElementMap[T]
+      return (typedElement[property as keyof AdUnitElementMap[T]] ??
+        null) as ElementPropertyValueType<T, P> | null
     } else {
       // In bulk mode: get from layer store
       const layer = layerStore.getLayer(elementKey)
       if (!layer) return null
 
-      // For visibility properties in bulk mode
-      if (property === 'visibility') {
-        return (layer.visibility ?? true) as PropertyValueType<P>
-      }
-
-      // For other properties, return the default value
-      return (layer.defaultValue || '') as PropertyValueType<P>
+      // Cast to specific layer type for property access
+      const typedLayer = layer as LayerObjectMap[T]
+      return (typedLayer[property as keyof LayerObjectMap[T]] ?? null) as ElementPropertyValueType<
+        T,
+        P
+      > | null
     }
   }
 
   /**
    * Set field value based on element type, property, and current mode (counterpart to getFieldValue)
    */
-  function updateFieldValue<T extends EditableElementType, P extends PropertiesOf<T>>(
+  function updateFieldValue<T extends EditableElementType, P extends EditablePropertiesOf<T>>(
     elementKey: T,
     property: P,
-    value: PropertyValueType<P>,
+    value: ElementPropertyValueType<T, P>,
   ): void {
     const currentView = appStore.getCurrentView()
 
@@ -77,23 +66,18 @@ export function useServicesField() {
       const element = adUnitsStore.getElement(adUnitId, elementKey)
       if (!element) throw new Error(`Element ${elementKey} not found`)
 
-      // Handle different properties
-      if (property === 'text' && isTextElement(element)) {
-        adUnitsStore.updateElement(adUnitId, elementKey, { text: value as string })
-      } else if (property === 'image' && isImageElement(element)) {
-        adUnitsStore.updateElement(adUnitId, elementKey, { image: value as string })
-      } else if (property === 'visibility' && hasVisibility(element)) {
-        adUnitsStore.updateElement(adUnitId, elementKey, { visibility: value as boolean })
-      } else if (property === 'locked') {
-        adUnitsStore.updateElement(adUnitId, elementKey, { locked: value as boolean })
-      } else if (property === 'visibilityLocked' && hasVisibility(element)) {
-        adUnitsStore.updateElement(adUnitId, elementKey, { visibilityLock: value as boolean })
-      } else {
-        throw new Error(`Unsupported property ${property} for element ${elementKey}`)
-      }
+      // Update with type-safe partial object
+      adUnitsStore.updateElement(adUnitId, elementKey, {
+        [property]: value,
+      } as Partial<typeof element>)
     } else {
       // In bulk mode: update layer store and cascade to unlocked units
-      console.log('Bulk mode update not implemented yet')
+      layerStore.updateLayer(elementKey, {
+        [property]: value,
+      } as unknown as Partial<LayerObjectMap[T]>)
+
+      // TODO: Cascade to all unlocked ad units
+      console.log('Bulk mode cascade not implemented yet')
     }
   }
 

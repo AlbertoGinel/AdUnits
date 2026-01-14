@@ -1,4 +1,4 @@
-import type { ElementType } from './mainTypes'
+import type { ElementType, EditableElementType, EditablePropertiesOf } from './mainTypes'
 
 // Common base properties for ALL elements
 type BaseProperties = {
@@ -141,4 +141,59 @@ export interface AdUnit {
     }
   }
   elements: Record<string, AdUnitElement>
+}
+
+// Service-relevant property keys (only the editable/observable ones)
+export type EditablePropertyKeys =
+  | 'text'
+  | 'imageID'
+  | 'visibility'
+  | 'locked'
+  | 'visibilityLocked'
+  | 'cropData'
+
+// Get the value type for a specific property on a specific element
+// This looks up the actual type from the element's structure
+// What type is 'text' on headline?
+// What type is 'visibilityLocked' on disclaimer?
+export type ElementPropertyValueType<
+  T extends EditableElementType,
+  P extends EditablePropertiesOf<T>,
+> = AdUnitElementMap[T][P & keyof AdUnitElementMap[T]]
+
+//guards
+
+// Type guards for runtime type checking
+export function isTextElement(
+  element: AdUnitElement,
+): element is AdUnitElementMap['headline'] | AdUnitElementMap['subhead'] | AdUnitElementMap['cta'] {
+  return 'text' in element && element.id !== 'disclaimer'
+}
+
+export function isDisclaimerElement(
+  element: AdUnitElement,
+): element is AdUnitElementMap['disclaimer'] {
+  return element.id === 'disclaimer'
+}
+
+export function isImageElement(
+  element: AdUnitElement,
+): element is AdUnitElementMap['logo'] | AdUnitElementMap['image'] {
+  return 'imageID' in element
+}
+
+export function hasVisibility(
+  element: AdUnitElement,
+): element is AdUnitElementMap['disclaimer'] | AdUnitElementMap['disclaimerBG'] {
+  return 'visibility' in element
+}
+
+export function hasCrop(element: AdUnitElement): element is AdUnitElementMap['image'] {
+  return 'cropData' in element
+}
+
+export function isRectElement(
+  element: AdUnitElement,
+): element is Extract<AdUnitElement, RectProperties> {
+  return 'cornerRadius' in element
 }

@@ -1,4 +1,4 @@
-import type { EditableElementType, ImageElementType } from './mainTypes'
+import type { EditableElementType, ImageElementType, EditablePropertiesOf } from './mainTypes'
 
 // Layer property mapping - each element maps to an object with typed properties
 export type LayerObjectMap = {
@@ -36,3 +36,9 @@ export type Layer<T extends EditableElementType = EditableElementType> = LayerOb
 export type LayersRecord = {
   [K in EditableElementType]: LayerObjectMap[K]
 }
+
+// Get property value type from a layer
+export type LayerPropertyValueType<
+  T extends EditableElementType,
+  P extends EditablePropertiesOf<T>,
+> = LayerObjectMap[T][P & keyof LayerObjectMap[T]]

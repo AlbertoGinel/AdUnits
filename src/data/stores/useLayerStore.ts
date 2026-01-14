@@ -1,25 +1,28 @@
 import { defineStore } from 'pinia'
-import type { LayerRecord, Layer } from '../../types/mainTypes'
+import type { LayersRecord } from '../../types/LayerTypes'
+import type { EditableElementType } from '../../types/mainTypes'
+
+//type Layer = LayersRecord[EditableElementType]
 
 export const useLayerStore = defineStore('layers', {
   // State
-  state: (): { layers: LayerRecord } => ({
-    layers: {},
+  state: (): { layers: LayersRecord } => ({
+    layers: {} as LayersRecord,
   }),
 
   // Getters
   getters: {
     getLayer: (state) => {
-      return (id: string): Layer | undefined => {
+      return <T extends EditableElementType>(id: T): LayersRecord[T] | undefined => {
         return state.layers[id]
       }
     },
 
-    getAllLayers: (state) => (): LayerRecord => {
+    getAllLayers: (state) => (): LayersRecord => {
       return { ...state.layers }
     },
 
-    getLayers: (state) => (): LayerRecord => {
+    getLayers: (state) => (): LayersRecord => {
       return { ...state.layers }
     },
 
@@ -34,57 +37,37 @@ export const useLayerStore = defineStore('layers', {
     hasLayers: (state) => (): boolean => {
       return Object.keys(state.layers).length > 0
     },
-
-    getVisibleLayers: (state) => (): LayerRecord => {
-      const visibleLayers: LayerRecord = {}
-      Object.entries(state.layers).forEach(([id, layer]) => {
-        if (layer.visibility !== false) {
-          visibleLayers[id] = layer
-        }
-      })
-      return visibleLayers
-    },
   },
 
   // Actions
   actions: {
     // Setters - completely replace state
-    setLayers(newLayers: LayerRecord) {
+    setLayers(newLayers: LayersRecord) {
       this.layers = { ...newLayers }
     },
 
-    setLayer(id: string, layer: Layer) {
+    setLayer<T extends EditableElementType>(id: T, layer: LayersRecord[T]) {
       this.layers[id] = layer
     },
 
     // CRUD operations
-    addLayer(id: string, layer: Layer) {
+    addLayer<T extends EditableElementType>(id: T, layer: LayersRecord[T]) {
       this.layers[id] = layer
     },
 
-    updateLayer(id: string, updates: Partial<Layer>) {
+    updateLayer<T extends EditableElementType>(id: T, updates: Partial<LayersRecord[T]>) {
       const existing = this.layers[id]
       if (existing) {
-        this.layers[id] = { ...existing, ...updates }
+        this.layers[id] = { ...existing, ...updates } as LayersRecord[T]
       }
     },
 
-    removeLayer(id: string) {
+    removeLayer(id: EditableElementType) {
       delete this.layers[id]
     },
 
     clearLayers() {
-      this.layers = {}
-    },
-
-    toggleLayerVisibility(id: string) {
-      const layer = this.layers[id]
-      if (layer) {
-        this.layers[id] = {
-          ...layer,
-          visibility: layer.visibility === false ? true : false,
-        }
-      }
+      this.layers = {} as LayersRecord
     },
   },
 })

@@ -123,7 +123,7 @@ function createImageManager() {
         const { width, height, aspectRatio } = await cacheImage(asset.path, asset.id)
 
         imageStore.addImage({
-          id: asset.id,
+          imageId: asset.id,
           url: asset.path,
           name: metadata.name,
           altText: metadata.altText ?? `${metadata.name} altText`,
@@ -217,11 +217,11 @@ function createImageManager() {
 
     // Ensure type and name are defined with fallbacks
     const type = imageData.type || 'image'
-    const name = imageData.name || imageData.id
+    const name = imageData.name || imageData.imageId
     const altText = imageData.altText ?? `${name} altText`
 
     return {
-      id: imageData.id,
+      imageId: imageData.imageId,
       type: type as 'image' | 'logo',
       name: name,
       altText: altText,
@@ -279,7 +279,7 @@ function createImageManager() {
    */
   const getCurrentImageBulk = (): string | null => {
     const layer = layerStore.getLayer('image')
-    return layer?.defaultValue || null
+    return layer?.imageID || null
   }
 
   /**
@@ -287,7 +287,7 @@ function createImageManager() {
    */
   const getCurrentImageFocusInternal = (adUnitId: string): string | null => {
     const element = adUnitStore.getElement(adUnitId, 'image')
-    return element?.image || null
+    return element?.id || null
   }
 
   /**
@@ -304,7 +304,7 @@ function createImageManager() {
   const setCurrentImageBulk = (imageId: string): void => {
     // Normal bulk mode: update layer (respects existing locks)
     // Override handling is done in EditImages.vue before calling this
-    layerStore.updateLayer('image', { defaultValue: imageId })
+    layerStore.updateLayer('image', { imageID: imageId })
   }
 
   /**
@@ -318,7 +318,7 @@ function createImageManager() {
       return
     }
 
-    adUnitStore.updateElement(adUnitId, 'image', { image: imageId, locked: true })
+    adUnitStore.updateElement(adUnitId, 'image', { imageID: imageId, locked: true })
   }
 
   /**
@@ -364,7 +364,7 @@ function createImageManager() {
    */
   const getCurrentLogoBulk = (): string | null => {
     const layer = layerStore.getLayer('logo')
-    return layer?.defaultValue || null
+    return layer?.imageID || null
   }
 
   /**
@@ -372,14 +372,14 @@ function createImageManager() {
    */
   const getCurrentLogoFocusInternal = (adUnitId: string): string | null => {
     const element = adUnitStore.getElement(adUnitId, 'logo')
-    return element?.text || null
+    return element?.id || null
   }
 
   /**
    * Set current logo in bulk mode (internal)
    */
   const setCurrentLogoBulk = (logoId: string): void => {
-    layerStore.updateLayer('logo', { defaultValue: logoId })
+    layerStore.updateLayer('logo', { imageID: logoId })
   }
 
   /**
@@ -392,7 +392,7 @@ function createImageManager() {
       console.log(`ℹ️ Logo already set for ${adUnitId}, skipping update`)
       return
     }
-    adUnitStore.updateElement(adUnitId, 'logo', { image: logoId, locked: true })
+    adUnitStore.updateElement(adUnitId, 'logo', { imageID: logoId, locked: true })
   }
 
   /**
@@ -458,7 +458,7 @@ function createImageManager() {
 
       // Store in uploadTemp with complete metadata
       imageStore.setUploadTemp({
-        id: imageId,
+        imageId: imageId,
         url,
         name,
         altText: preservedAltText, // ✅ Preserve user's existing altText
@@ -492,7 +492,7 @@ function createImageManager() {
       const { width, height, aspectRatio } = await cacheImage(path, assetId)
 
       const imageAsset: ImageAsset = {
-        id: assetId,
+        imageId: assetId,
         url: path,
         type,
         name,

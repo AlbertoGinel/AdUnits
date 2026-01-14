@@ -1,7 +1,9 @@
 import { defineStore } from 'pinia'
-import type { AdUnitsRecord, AdUnit } from '../../types/mainTypes'
-import type { AdUnitElement, ElementType } from '../../types/adUnitElementTypes'
-import { hasVisibility, isTextElement, isImageElement } from '../../types/adUnitElementTypes'
+import type { AdUnit, AdUnitElement } from '../../types/adUnitElementTypes'
+import { hasVisibility, isImageElement, isTextElement } from '../../types/adUnitElementTypes'
+import type { ElementType, EditableElementType } from '../../types/mainTypes'
+
+export type AdUnitsRecord = Record<string, AdUnit>
 
 export const useAdUnitStore = defineStore('adUnits', {
   // State
@@ -37,10 +39,10 @@ export const useAdUnitStore = defineStore('adUnits', {
     },
 
     getAdUnitsByLockStatus: (state) => {
-      return (elementKey: string, locked: boolean = true): string[] => {
+      return (elementKey: EditableElementType, locked: boolean = true): string[] => {
         return Object.keys(state.adUnits).filter((adUnitId) => {
           const element = state.adUnits[adUnitId]?.elements?.[elementKey]
-          return element && (locked ? element.locked : !element.locked)
+          return element && 'locked' in element && (locked ? element.locked : !element.locked)
         })
       }
     },
@@ -52,7 +54,8 @@ export const useAdUnitStore = defineStore('adUnits', {
           return (
             element &&
             hasVisibility(element) &&
-            (locked ? element.visibilityLock : !element.visibilityLock)
+            'visibilityLocked' in element &&
+            (locked ? element.visibilityLocked : !element.visibilityLocked)
           )
         })
       }
@@ -73,14 +76,14 @@ export const useAdUnitStore = defineStore('adUnits', {
     getElementText: (state) => {
       return (adUnitId: string, elementKey: string): string | null => {
         const element = state.adUnits[adUnitId]?.elements?.[elementKey]
-        return element && isTextElement(element) ? element.text || '' : null
+        return element && isTextElement(element) ? element.text : null
       }
     },
 
-    getElementImage: (state) => {
+    getElementImageID: (state) => {
       return (adUnitId: string, elementKey: string): string | null => {
         const element = state.adUnits[adUnitId]?.elements?.[elementKey]
-        return element && isImageElement(element) ? element.image || '' : null
+        return element && isImageElement(element) ? element.imageID : null
       }
     },
 
@@ -100,7 +103,7 @@ export const useAdUnitStore = defineStore('adUnits', {
 
         Object.entries(state.adUnits).forEach(([adUnitId, adUnit]) => {
           Object.entries(adUnit.elements).forEach(([elementKey, element]) => {
-            if (element.type === elementType) {
+            if (element.id === elementType) {
               results.push({ adUnitId, elementKey, element })
             }
           })

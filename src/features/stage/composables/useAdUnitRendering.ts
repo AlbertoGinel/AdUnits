@@ -57,12 +57,12 @@ export function useAdUnitRendering() {
 
     const renderData = elements.map((element) => {
       // Use element tag or index as key
-      const elementId = element.type
+      const elementId = element.id
       const config = renderer.getElementConfig(element)
 
       // Add loaded image to config for image elements (logo, image - NOT background)
-      if ((element.type === 'logo' || element.type === 'image') && element.image) {
-        const loadedImage = imageManager.getImageOptimized(element.image)
+      if ((element.id === 'logo' || element.id === 'image') && element.id) {
+        const loadedImage = imageManager.getImageOptimized(element.id)
         if (loadedImage) {
           config.image = loadedImage
         }
@@ -80,8 +80,8 @@ export function useAdUnitRendering() {
         isCropping: cropping.isCropping.value,
         config,
         loadedImage:
-          (element.type === 'logo' || element.type === 'image') && element.image
-            ? imageManager.getImageOptimized(element.image)
+          (element.id === 'logo' || element.id === 'image') && element.id
+            ? imageManager.getImageOptimized(element.id)
             : null,
       }
     })

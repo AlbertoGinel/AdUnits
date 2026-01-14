@@ -69,3 +69,19 @@ export interface AppState {
   creativeId: string | null
   isInitialized: boolean
 }
+
+// Editable property names for any element type (works for both Elements and Layers)
+export type EditablePropertiesOf<T extends EditableElementType> = T extends
+  | 'headline'
+  | 'subhead'
+  | 'cta'
+  ? 'text' | 'locked'
+  : T extends 'disclaimer'
+    ? 'text' | 'visibility' | 'locked' | 'visibilityLocked'
+    : T extends 'logo'
+      ? 'imageID' | 'locked'
+      : T extends 'image'
+        ? 'imageID' | 'locked' | 'cropData'
+        : T extends 'disclaimerBG'
+          ? 'visibility' | 'locked'
+          : never
