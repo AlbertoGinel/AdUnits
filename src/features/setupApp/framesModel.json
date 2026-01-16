@@ -20,7 +20,17 @@
         }
       },
       "elements": {
-        "background": { "type": "background", "x": 0, "y": 0, "width": 592, "height": 25 },
+        "background": {
+          "type": "background",
+          "x": 0,
+          "y": 0,
+          "width": 592,
+          "height": 25,
+          "cornerRadius": 0,
+          "fill": "#ffffffff",
+          "strokeWidth": 0,
+          "strokeColor": "#000000"
+        },
         "image": { "type": "image", "x": 296, "y": 0, "width": 296, "height": 25 },
         "headline": {
           "type": "headline",
@@ -87,7 +97,17 @@
         }
       },
       "elements": {
-        "background": { "type": "background", "x": 0, "y": 0, "width": 33, "height": 20 },
+        "background": {
+          "type": "background",
+          "x": 0,
+          "y": 0,
+          "width": 33,
+          "height": 20,
+          "cornerRadius": 0,
+          "fill": "#ffffffff",
+          "strokeWidth": 0,
+          "strokeColor": "#000000"
+        },
         "logo": { "type": "logo", "x": 16.6, "y": 9.8, "width": 28.6, "height": 17 }
       }
     },
@@ -110,7 +130,17 @@
         }
       },
       "elements": {
-        "background": { "type": "background", "x": 0, "y": 0, "width": 676.21, "height": 30 },
+        "background": {
+          "type": "background",
+          "x": 0,
+          "y": 0,
+          "width": 676.21,
+          "height": 30,
+          "cornerRadius": 0,
+          "fill": "#ffffffff",
+          "strokeWidth": 0,
+          "strokeColor": "#000000"
+        },
         "image": {
           "type": "image",
           "x": 414,
@@ -189,7 +219,17 @@
         }
       },
       "elements": {
-        "background": { "type": "background", "x": 0, "y": 0, "width": 860, "height": 95 },
+        "background": {
+          "type": "background",
+          "x": 0,
+          "y": 0,
+          "width": 860,
+          "height": 95,
+          "cornerRadius": 0,
+          "fill": "#ffffffff",
+          "strokeWidth": 0,
+          "strokeColor": "#000000"
+        },
         "image": {
           "type": "image",
           "x": 457,
@@ -292,7 +332,17 @@
         }
       },
       "elements": {
-        "background": { "type": "background", "x": 0, "y": 0, "width": 449, "height": 95 },
+        "background": {
+          "type": "background",
+          "x": 0,
+          "y": 0,
+          "width": 449,
+          "height": 95,
+          "cornerRadius": 0,
+          "fill": "#ffffffff",
+          "strokeWidth": 0,
+          "strokeColor": "#000000"
+        },
         "image": {
           "type": "image",
           "x": 159,
@@ -385,7 +435,17 @@
         }
       },
       "elements": {
-        "background": { "type": "background", "x": 0, "y": 0, "width": 210, "height": 69 },
+        "background": {
+          "type": "background",
+          "x": 0,
+          "y": 0,
+          "width": 210,
+          "height": 69,
+          "cornerRadius": 0,
+          "fill": "#ffffffff",
+          "strokeWidth": 0,
+          "strokeColor": "#000000"
+        },
         "image": {
           "type": "image",
           "x": 75,
@@ -454,7 +514,17 @@
         }
       },
       "elements": {
-        "background": { "type": "background", "x": 0, "y": 0, "width": 53, "height": 69 },
+        "background": {
+          "type": "background",
+          "x": 0,
+          "y": 0,
+          "width": 53,
+          "height": 69,
+          "cornerRadius": 0,
+          "fill": "#ffffffff",
+          "strokeWidth": 0,
+          "strokeColor": "#000000"
+        },
         "logo": {
           "type": "logo",
           "x": 26.6,
@@ -484,7 +554,17 @@
       },
 
       "elements": {
-        "background": { "type": "background", "x": 0, "y": 0, "width": 245, "height": 120 },
+        "background": {
+          "type": "background",
+          "x": 0,
+          "y": 0,
+          "width": 245,
+          "height": 120,
+          "cornerRadius": 0,
+          "fill": "#ffffffff",
+          "strokeWidth": 0,
+          "strokeColor": "#000000"
+        },
         "image": {
           "type": "image",
           "x": 0,
@@ -587,7 +667,17 @@
         }
       },
       "elements": {
-        "background": { "type": "background", "x": 0, "y": 0, "width": 200, "height": 115 },
+        "background": {
+          "type": "background",
+          "x": 0,
+          "y": 0,
+          "width": 200,
+          "height": 115,
+          "cornerRadius": 0,
+          "fill": "#ffffffff",
+          "strokeWidth": 0,
+          "strokeColor": "#000000"
+        },
         "image": {
           "type": "image",
           "x": 0,
@@ -680,7 +770,17 @@
         }
       },
       "elements": {
-        "background": { "type": "background", "x": 0, "y": 0, "width": 50, "height": 50 },
+        "background": {
+          "type": "background",
+          "x": 0,
+          "y": 0,
+          "width": 50,
+          "height": 50,
+          "cornerRadius": 0,
+          "fill": "#ffffffff",
+          "strokeWidth": 0,
+          "strokeColor": "#000000"
+        },
         "logo": { "type": "logo", "x": 25, "y": 25, "width": 40, "height": 40 }
       }
     }

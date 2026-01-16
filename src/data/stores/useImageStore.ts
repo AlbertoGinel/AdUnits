@@ -61,7 +61,7 @@ export const useImageStore = defineStore('images', {
     },
 
     setImage(image: ImageAsset) {
-      this.images[image.imageId] = image
+      this.images[image.imageID] = image
     },
 
     setUploadTemp(image: ImageAsset | null) {
@@ -70,7 +70,7 @@ export const useImageStore = defineStore('images', {
 
     // CRUD operations
     addImage(image: ImageAsset) {
-      this.images[image.imageId] = image
+      this.images[image.imageID] = image
     },
 
     updateImage(id: string, updates: Partial<ImageAsset>) {
@@ -95,7 +95,7 @@ export const useImageStore = defineStore('images', {
     // Image-specific operations
     promoteUploadTempToImage() {
       if (this.uploadTemp) {
-        this.images[this.uploadTemp.imageId] = this.uploadTemp
+        this.images[this.uploadTemp.imageID] = this.uploadTemp
         this.uploadTemp = null
       }
     },

@@ -1,15 +1,17 @@
 // composables/api/useCreativeAPI.ts
 import { useMockAPI } from './mockAPI/useMockAPI'
-import { useImageManager } from '@/features/imagesManager/useImageManager'
-//import { useAppStore } from '@/data/stores/useAppStore'
-//import { useAdUnitStore } from '@/data/stores/useAdUnitStore'
-//import { useImageStore } from '@/data/stores/useImageStore'
-//import { useLayerStore } from '@/data/stores/useLayerStore'
-import type { AddImageParams } from '@/features/imagesManager/useImageManager'
 import { useSuspenseManager } from '@/features/feedbackAsync/useSuspenseManager'
 import { useNotifications } from '@/features/feedbackAsync/useNotifications'
 import { useContentTransformer } from '@/data/services/useHelperContentData'
+import { useImageService } from '@/data/services/useImageService'
 import type { CreativeContentData } from '@/types/creativeTypes'
+import type {
+  CreativeBundle,
+  AssetResponse,
+  UpdateCreativeResult,
+  InsertAssetResult,
+  DeleteAssetResult,
+} from '@/types/APITypes'
 
 /**
  * Switchable Creative API - Dev/Production environment detection
@@ -17,35 +19,6 @@ import type { CreativeContentData } from '@/types/creativeTypes'
  */
 
 // API Response Types
-export interface AssetResponse {
-  id: string
-  type: string
-  creative_id?: string
-  path: string
-  error: string
-}
-
-export interface CreativeBundle {
-  assets: AssetResponse[]
-  creativeData: CreativeContentData
-}
-
-export interface InsertAssetResult {
-  success: boolean
-  message: string
-  assetId?: string
-  path?: string
-}
-
-export interface UpdateCreativeResult {
-  success: boolean
-  message: string
-}
-
-export interface DeleteAssetResult {
-  success: boolean
-  message: string
-}
 
 // Environment detection
 const isDevelopment = import.meta.env.MODE === 'development'
@@ -53,8 +26,8 @@ const isDevelopment = import.meta.env.MODE === 'development'
 export function useCreativeAPI() {
   const suspenseManager = useSuspenseManager()
   const notifications = useNotifications()
-  const imageManager = useImageManager()
   const { exportToCreativeContentData } = useContentTransformer()
+  const imageService = useImageService()
 
   const getCreativeBundle = async (creativeId: string): Promise<CreativeBundle> => {
     try {
@@ -178,11 +151,7 @@ export function useCreativeAPI() {
    * Insert asset with simplified approach
    * Upload -> Add to Pinia -> Export -> UpdateCreative -> Clear/Cleanup
    */
-  const insertAsset = async (
-    creativeId: string,
-    file: File,
-    metadata: { type: 'image' | 'logo'; name: string; altText: string },
-  ): Promise<InsertAssetResult> => {
+  const insertAsset = async (creativeId: string, file: File): Promise<InsertAssetResult> => {
     console.log(`📤 [${isDevelopment ? 'DEV' : 'PROD'}] Inserting asset:`, file.name)
 
     suspenseManager.setAssetOperationInProgress(true)
@@ -211,23 +180,14 @@ export function useCreativeAPI() {
       }
 
       uploadedAssetId = uploadResponse.assetId
-      const uploadedPath = uploadResponse.path
+      const uploadedUrl = uploadResponse.url
       console.log('✅ Step 1 complete: Asset uploaded', uploadedAssetId)
 
-      if (!uploadedAssetId || !uploadedPath) {
-        throw new Error('Asset upload succeeded but no assetId or path returned')
+      if (!uploadedAssetId || !uploadedUrl) {
+        throw new Error('Asset upload succeeded but no assetId or url returned')
       }
 
-      // Step 2: Add image to Pinia with AddImageParams
-      console.log('Step 2: Adding to Pinia...')
-      const imageParams: AddImageParams = {
-        assetId: uploadedAssetId,
-        path: uploadedPath,
-        type: metadata.type,
-        name: metadata.name,
-        altText: metadata.altText,
-      }
-      await imageManager.addUploadedImage(imageParams)
+      imageService.promoteTempToList()
       console.log('✅ Step 2 complete: Image added to Pinia store')
 
       // Step 3: Export current data
@@ -246,7 +206,7 @@ export function useCreativeAPI() {
       if (updateResult.success) {
         // Step 5 Success: Clear uploadTemp
         console.log('Step 5: Clearing uploadTemp...')
-        imageManager.clearUploadTemp()
+        imageService.clearUploadTemp()
         console.log('✅ Step 5 complete: uploadTemp cleared')
 
         suspenseManager.setAssetOperationInProgress(false)
@@ -257,12 +217,12 @@ export function useCreativeAPI() {
           success: true,
           message: 'Asset inserted successfully',
           assetId: uploadedAssetId,
-          path: uploadedPath,
+          path: uploadedUrl,
         }
       } else {
         // Step 5 Failure: Remove from Pinia
         console.log('Step 5: Removing from Pinia due to updateCreative failure...')
-        imageManager.removeImage(uploadedAssetId)
+        imageService.removeImage(uploadedAssetId)
         console.log('✅ Step 5 complete: Image removed from Pinia')
 
         suspenseManager.setAssetOperationInProgress(false)
@@ -275,7 +235,7 @@ export function useCreativeAPI() {
       // If we added to Pinia, remove it
       if (uploadedAssetId) {
         console.log('Removing failed upload from Pinia...')
-        imageManager.removeImage(uploadedAssetId)
+        imageService.removeImage(uploadedAssetId)
       }
 
       suspenseManager.setAssetOperationInProgress(false)
@@ -314,7 +274,7 @@ export function useCreativeAPI() {
       // Remove asset from images array
       const updatedData = {
         ...originalCreativeData,
-        images: originalCreativeData.images.filter((img) => img.id !== assetId),
+        images: originalCreativeData.images.filter((img) => img.imageID !== assetId),
       }
 
       const payload = {

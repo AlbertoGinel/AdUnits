@@ -1,5 +1,5 @@
 import { computed } from 'vue'
-import { useServicesField } from '@/data/services/useServiceField'
+import { useFieldService } from '@/data/services/useFieldService'
 import { useEditTools } from '@/features/editTools/useEditTools'
 import { TEXT_ELEMENT_TYPES } from '@/types/mainTypes'
 import type { TextElementType } from '@/types/mainTypes'
@@ -13,7 +13,7 @@ export const TEXT_FIELD_CONFIGS: Record<string, string> = {
 } as const
 
 export function useEditTextField() {
-  const { getFieldValue, updateFieldValue } = useServicesField()
+  const { getFieldValue, updateFieldValue } = useFieldService()
   const { availableItems } = useEditTools()
 
   // Filter available items to only text elements that exist in the current context (excluding disclaimer)

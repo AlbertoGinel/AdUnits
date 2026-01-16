@@ -20,8 +20,8 @@ export const useAdUnitStore = defineStore('adUnits', {
     },
 
     getElement: (state) => {
-      return (adUnitId: string, elementKey: string): AdUnitElement | undefined => {
-        const adUnit = state.adUnits[adUnitId]
+      return (adUnitID: string, elementKey: string): AdUnitElement | undefined => {
+        const adUnit = state.adUnits[adUnitID]
         return adUnit?.elements[elementKey]
       }
     },
@@ -40,8 +40,8 @@ export const useAdUnitStore = defineStore('adUnits', {
 
     getAdUnitsByLockStatus: (state) => {
       return (elementKey: EditableElementType, locked: boolean = true): string[] => {
-        return Object.keys(state.adUnits).filter((adUnitId) => {
-          const element = state.adUnits[adUnitId]?.elements?.[elementKey]
+        return Object.keys(state.adUnits).filter((adUnitID) => {
+          const element = state.adUnits[adUnitID]?.elements?.[elementKey]
           return element && 'locked' in element && (locked ? element.locked : !element.locked)
         })
       }
@@ -49,13 +49,13 @@ export const useAdUnitStore = defineStore('adUnits', {
 
     getDisclaimerVisibilityByLockStatus: (state) => {
       return (locked: boolean = true): string[] => {
-        return Object.keys(state.adUnits).filter((adUnitId) => {
-          const element = state.adUnits[adUnitId]?.elements?.['disclaimer']
+        return Object.keys(state.adUnits).filter((adUnitID) => {
+          const element = state.adUnits[adUnitID]?.elements?.['disclaimer']
           return (
             element &&
             hasVisibility(element) &&
-            'visibilityLocked' in element &&
-            (locked ? element.visibilityLocked : !element.visibilityLocked)
+            'visibilityLock' in element &&
+            (locked ? element.visibilityLock : !element.visibilityLock)
           )
         })
       }
@@ -66,30 +66,34 @@ export const useAdUnitStore = defineStore('adUnits', {
     },
 
     getAdUnitElements: (state) => {
-      return (adUnitId: string): AdUnitElement[] => {
-        const adUnit = state.adUnits[adUnitId]
-        return adUnit ? Object.values(adUnit.elements) : []
+      return (adUnitID: string): AdUnitElement[] => {
+        const adUnit = state.adUnits[adUnitID]
+        if (adUnit) {
+          const elementsArray = Object.values(adUnit.elements)
+          return elementsArray
+        }
+        return []
       }
     },
 
     // Enhanced getters for better element type handling
     getElementText: (state) => {
-      return (adUnitId: string, elementKey: string): string | null => {
-        const element = state.adUnits[adUnitId]?.elements?.[elementKey]
+      return (adUnitID: string, elementKey: string): string | null => {
+        const element = state.adUnits[adUnitID]?.elements?.[elementKey]
         return element && isTextElement(element) ? element.text : null
       }
     },
 
     getElementImageID: (state) => {
-      return (adUnitId: string, elementKey: string): string | null => {
-        const element = state.adUnits[adUnitId]?.elements?.[elementKey]
+      return (adUnitID: string, elementKey: string): string | null => {
+        const element = state.adUnits[adUnitID]?.elements?.[elementKey]
         return element && isImageElement(element) ? element.imageID : null
       }
     },
 
     getElementVisibility: (state) => {
-      return (adUnitId: string, elementKey: string): boolean | null => {
-        const element = state.adUnits[adUnitId]?.elements?.[elementKey]
+      return (adUnitID: string, elementKey: string): boolean | null => {
+        const element = state.adUnits[adUnitID]?.elements?.[elementKey]
         return element && hasVisibility(element) ? (element.visibility ?? true) : null
       }
     },
@@ -98,13 +102,13 @@ export const useAdUnitStore = defineStore('adUnits', {
     getElementsByType: (state) => {
       return (
         elementType: ElementType,
-      ): Array<{ adUnitId: string; elementKey: string; element: AdUnitElement }> => {
-        const results: Array<{ adUnitId: string; elementKey: string; element: AdUnitElement }> = []
+      ): Array<{ adUnitID: string; elementKey: string; element: AdUnitElement }> => {
+        const results: Array<{ adUnitID: string; elementKey: string; element: AdUnitElement }> = []
 
-        Object.entries(state.adUnits).forEach(([adUnitId, adUnit]) => {
+        Object.entries(state.adUnits).forEach(([adUnitID, adUnit]) => {
           Object.entries(adUnit.elements).forEach(([elementKey, element]) => {
-            if (element.id === elementType) {
-              results.push({ adUnitId, elementKey, element })
+            if (element.type === elementType) {
+              results.push({ adUnitID, elementKey, element })
             }
           })
         })
@@ -125,8 +129,8 @@ export const useAdUnitStore = defineStore('adUnits', {
       this.adUnits[adUnit.id] = adUnit
     },
 
-    setElement(adUnitId: string, elementKey: string, element: AdUnitElement) {
-      const adUnit = this.adUnits[adUnitId]
+    setElement(adUnitID: string, elementKey: string, element: AdUnitElement) {
+      const adUnit = this.adUnits[adUnitID]
       if (adUnit) {
         adUnit.elements[elementKey] = element
       }
@@ -144,8 +148,8 @@ export const useAdUnitStore = defineStore('adUnits', {
       }
     },
 
-    updateElement(adUnitId: string, elementKey: string, updates: Partial<AdUnitElement>) {
-      const adUnit = this.adUnits[adUnitId]
+    updateElement(adUnitID: string, elementKey: string, updates: Partial<AdUnitElement>) {
+      const adUnit = this.adUnits[adUnitID]
       const element = adUnit?.elements[elementKey]
 
       if (adUnit && element) {
@@ -159,8 +163,8 @@ export const useAdUnitStore = defineStore('adUnits', {
       propertyName: keyof AdUnitElement,
       value: unknown,
     ) {
-      adUnitIds.forEach((adUnitId) => {
-        const adUnit = this.adUnits[adUnitId]
+      adUnitIds.forEach((adUnitID) => {
+        const adUnit = this.adUnits[adUnitID]
         const element = adUnit?.elements?.[elementKey]
 
         if (adUnit && element) {

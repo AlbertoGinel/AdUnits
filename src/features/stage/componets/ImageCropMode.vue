@@ -106,7 +106,7 @@ import { computed, ref, watchEffect, nextTick } from 'vue'
 import type Konva from 'konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
 import type { AdUnitElement } from '@/types/adUnitElementTypes'
-import { useImageManager } from '@/features/imagesManager/useImageManager'
+import { useImageManager } from '@/features/imagesManager/OLDuseImageManager'
 
 // TODO: Implement cropping composable with new store structure
 // import { useCropping } from '@/composables/Tools/useCropping'

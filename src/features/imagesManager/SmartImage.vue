@@ -26,10 +26,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import FallbackImage from './FallbackImage.vue'
-import { useImageManager } from './useImageManager'
+import { useImageStore } from '@/data/stores/useImageStore'
 
 interface Props {
-  imageId?: string
+  imageID?: string
   alt?: string
   width?: string
   height?: string
@@ -40,7 +40,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  imageId: '',
+  imageID: '',
   alt: '',
   className: '',
   showFallbackText: false,
@@ -52,19 +52,19 @@ defineEmits<{
   error: [event: Event]
 }>()
 
-const imageManager = useImageManager()
+const imageStore = useImageStore()
 
 // Check if we should show fallback
 const shouldShowFallback = computed(() => {
-  return !props.imageId || props.imageId === '' || props.imageId === '__fallback__'
+  return !props.imageID || props.imageID === '' || props.imageID === '__fallback__'
 })
 
-// Get the actual image URL
+// Get the actual image URL from store
 const imageUrl = computed(() => {
   if (shouldShowFallback.value) return ''
 
-  const imageElement = imageManager.getImageOptimized(props.imageId)
-  return imageElement?.src || ''
+  const imageAsset = imageStore.getImage(props.imageID)
+  return imageAsset?.url || ''
 })
 
 // Image styling

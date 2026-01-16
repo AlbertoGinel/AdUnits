@@ -14,7 +14,8 @@ import type {
   AdUnitData,
 } from '../../types/creativeTypes'
 import type { AdUnitElement } from '../../types/adUnitElementTypes'
-import type { Layer } from '../../types/mainTypes'
+//import type { Layer } from '../../types/mainTypes'
+import type { Layer } from '@/types/LayerTypes'
 
 /**
  * Service for transforming between NewData stores and CreativeContentData format
@@ -32,52 +33,45 @@ export function useContentTransformer() {
   function transformToCreativeElement(
     element: AdUnitElement,
     elementKey: string,
-  ): Partial<AdUnitElements[keyof AdUnitElements]> | null {
-    const baseData = { locked: element.locked || false }
-
+  ): AdUnitElements[keyof AdUnitElements] | null {
     switch (elementKey) {
       case 'image':
       case 'background':
-        // These are ImageElement types in the new system
-        if (!('image' in element)) return null
-        return {
-          ...baseData,
-          image: element.image || '',
-          ...(element.crop && { crop: element.crop }),
-        } as ImageElement
+        if (!('imageID' in element)) return null
+        const imageElement: ImageElement = {
+          imageID: element.imageID,
+          locked: 'locked' in element ? element.locked : false,
+          ...('cropData' in element && element.cropData ? { cropData: element.cropData } : {}),
+        }
+        return imageElement
 
       case 'logo':
-        // Logo is LogoElement type
-        if (!('image' in element)) return null
-        return {
-          ...baseData,
-          image: element.image || '',
-        } as LogoElement
+        if (!('imageID' in element)) return null
+        const logoElement: LogoElement = {
+          imageID: element.imageID,
+          locked: 'locked' in element ? element.locked : false,
+        }
+        return logoElement
 
       case 'headline':
       case 'subhead':
       case 'cta':
-        // These are TextElement types
         if (!('text' in element)) return null
-        return {
-          ...baseData,
-          text: element.text || '',
-        } as TextElement
+        const textElement: TextElement = {
+          text: element.text,
+          locked: 'locked' in element ? element.locked : false,
+        }
+        return textElement
 
       case 'disclaimer':
-        // Disclaimer is DisclaimerElement type
         if (!('text' in element)) return null
-        const disclaimerData: DisclaimerElement = {
-          ...baseData,
-          text: element.text || '',
+        const disclaimerElement: DisclaimerElement = {
+          text: element.text,
+          locked: 'locked' in element ? element.locked : false,
+          visibility: 'visibility' in element ? (element.visibility ?? true) : true,
+          visibilityLock: 'visibilityLock' in element ? (element.visibilityLock ?? false) : false,
         }
-        if ('visibility' in element && element.visibility !== undefined) {
-          disclaimerData.visibility = element.visibility
-        }
-        if ('visibilityLock' in element && element.visibilityLock !== undefined) {
-          disclaimerData.visibilityLock = element.visibilityLock
-        }
-        return disclaimerData
+        return disclaimerElement
 
       default:
         return null
@@ -88,20 +82,55 @@ export function useContentTransformer() {
    * Transform Layer to CreativeContentData layer format
    */
   function transformToCreativeLayer(layer: Layer): LayerData {
-    const layerData: LayerData = {
-      type: layer.type,
-      defaultValue: layer.defaultValue,
+    const layerId = layer.id
+
+    // Text elements: headline, subhead, cta
+    if (layerId === 'headline' || layerId === 'subhead' || layerId === 'cta') {
+      if (!('text' in layer)) throw new Error(`Text layer ${layerId} missing text property`)
+      return {
+        id: layerId,
+        text: layer.text,
+        locked: layer.locked,
+      }
     }
 
-    if (layer.visibility !== undefined) {
-      layerData.visibility = layer.visibility
+    // Disclaimer element
+    if (layerId === 'disclaimer') {
+      if (!('text' in layer)) throw new Error('Disclaimer layer missing text property')
+      return {
+        id: 'disclaimer',
+        text: layer.text,
+        visibility: 'visibility' in layer ? layer.visibility : true,
+        locked: layer.locked,
+        visibilityLock: 'visibilityLock' in layer ? layer.visibilityLock : false,
+      }
     }
 
-    return layerData
+    // DisclaimerBG element
+    if (layerId === 'disclaimerBG') {
+      return {
+        id: 'disclaimerBG',
+        visibility: 'visibility' in layer ? layer.visibility : true,
+        locked: layer.locked,
+      }
+    }
+
+    // Image elements: logo, image
+    if (layerId === 'logo' || layerId === 'image') {
+      if (!('imageID' in layer)) throw new Error(`Image layer ${layerId} missing imageID property`)
+      return {
+        id: layerId,
+        imageID: layer.imageID,
+        locked: layer.locked,
+      }
+    }
+
+    throw new Error(`Unknown layer type: ${layerId}`)
   }
 
   /**
    * Transform CreativeContentData elements back to AdUnitElement format
+   * Returns only the editable properties to be merged with existing elements
    */
   function transformFromCreativeElements(
     elements: AdUnitElements,
@@ -111,33 +140,21 @@ export function useContentTransformer() {
       case 'image':
         if (!elements.image) return null
         return {
-          type: 'image',
-          image: elements.image.image,
+          imageID: elements.image.imageID,
           locked: elements.image.locked,
-          ...(elements.image.crop && { crop: elements.image.crop }),
+          ...(elements.image.cropData && { cropData: elements.image.cropData }),
         }
 
       case 'logo':
         if (!elements.logo) return null
         return {
-          type: 'logo',
-          image: elements.logo.image,
+          imageID: elements.logo.imageID,
           locked: elements.logo.locked,
-        }
-
-      case 'background':
-        if (!elements.background) return null
-        return {
-          type: 'background',
-          image: elements.background.image,
-          locked: elements.background.locked,
-          ...(elements.background.crop && { crop: elements.background.crop }),
         }
 
       case 'headline':
         if (!elements.headline) return null
         return {
-          type: 'headline',
           text: elements.headline.text,
           locked: elements.headline.locked,
         }
@@ -145,7 +162,6 @@ export function useContentTransformer() {
       case 'subhead':
         if (!elements.subhead) return null
         return {
-          type: 'subhead',
           text: elements.subhead.text,
           locked: elements.subhead.locked,
         }
@@ -153,25 +169,18 @@ export function useContentTransformer() {
       case 'cta':
         if (!elements.cta) return null
         return {
-          type: 'cta',
           text: elements.cta.text,
           locked: elements.cta.locked,
         }
 
       case 'disclaimer':
         if (!elements.disclaimer) return null
-        const disclaimerElement: Partial<AdUnitElement> = {
-          type: 'disclaimer',
+        return {
           text: elements.disclaimer.text,
           locked: elements.disclaimer.locked,
+          visibility: elements.disclaimer.visibility,
+          visibilityLock: elements.disclaimer.visibilityLock,
         }
-        if (elements.disclaimer.visibility !== undefined) {
-          disclaimerElement.visibility = elements.disclaimer.visibility
-        }
-        if (elements.disclaimer.visibilityLock !== undefined) {
-          disclaimerElement.visibilityLock = elements.disclaimer.visibilityLock
-        }
-        return disclaimerElement
 
       default:
         return null
@@ -191,7 +200,7 @@ export function useContentTransformer() {
 
       // Transform images
       const images: ImageMetadata[] = Object.values(imageStore.getAllImages()).map((asset) => ({
-        id: asset.id,
+        imageID: asset.imageID,
         type: asset.type === 'logo' || asset.type === 'image' ? asset.type : 'image',
         name: asset.name || 'Unnamed',
         altText: asset.altText || `${asset.name || 'Unnamed'} altText`,
@@ -205,7 +214,7 @@ export function useContentTransformer() {
 
       // Transform ad units
       const adUnits: Record<string, AdUnitData> = {}
-      Object.entries(adUnitsStore.getAllAdUnits()).forEach(([adUnitId, adUnit]) => {
+      Object.entries(adUnitsStore.getAllAdUnits()).forEach(([adUnitID, adUnit]) => {
         const elements: AdUnitElements = {}
 
         Object.entries(adUnit.elements).forEach(([elementKey, element]) => {
@@ -228,9 +237,6 @@ export function useContentTransformer() {
               case 'cta':
                 elements.cta = transformedElement as TextElement
                 break
-              case 'background':
-                elements.background = transformedElement as ImageElement
-                break
               case 'disclaimer':
                 elements.disclaimer = transformedElement as DisclaimerElement
                 break
@@ -239,7 +245,7 @@ export function useContentTransformer() {
         })
 
         if (Object.keys(elements).length > 0) {
-          adUnits[adUnitId] = { elements }
+          adUnits[adUnitID] = { elements }
         }
       })
 
@@ -270,35 +276,66 @@ export function useContentTransformer() {
 
       // 2. Import layers
       Object.entries(creativeData.layers).forEach(([layerId, layerData]) => {
-        const layer: Layer = {
-          type: layerData.type,
-          defaultValue: layerData.defaultValue,
-          ...(layerData.visibility !== undefined && { visibility: layerData.visibility }),
+        let layer: Layer
+
+        // Text layers: headline, subhead, cta
+        if (layerData.id === 'headline' || layerData.id === 'subhead' || layerData.id === 'cta') {
+          layer = {
+            id: layerData.id,
+            text: layerData.text,
+            locked: layerData.locked,
+          }
         }
-        layerStore.setLayer(layerId, layer)
+        // Disclaimer layer
+        else if (layerData.id === 'disclaimer') {
+          const disclaimerData = layerData as Extract<LayerData, { id: 'disclaimer' }>
+          layer = {
+            id: 'disclaimer',
+            text: disclaimerData.text,
+            visibility: disclaimerData.visibility,
+            locked: disclaimerData.locked,
+            visibilityLock: disclaimerData.visibilityLock,
+          }
+        }
+        // DisclaimerBG layer
+        else if (layerData.id === 'disclaimerBG') {
+          const disclaimerBGData = layerData as Extract<LayerData, { id: 'disclaimerBG' }>
+          layer = {
+            id: 'disclaimerBG',
+            visibility: disclaimerBGData.visibility,
+            locked: disclaimerBGData.locked,
+          }
+        }
+        // Image layers: logo, image
+        else if (layerData.id === 'logo' || layerData.id === 'image') {
+          layer = {
+            id: layerData.id,
+            imageID: layerData.id,
+            locked: layerData.locked,
+          }
+        } else {
+          console.warn(`Unknown layer type: ${layerData.id}`)
+          return
+        }
+
+        layerStore.setLayer(layerId as typeof layerData.id, layer)
       })
 
       // 3. Import images (if needed - assuming images are handled separately)
       // You might want to add image import logic here if needed
 
       // 4. Import ad units - only update existing ones
-      Object.entries(creativeData.adUnits).forEach(([adUnitId, adUnitData]) => {
-        const existingAdUnit = adUnitsStore.getAdUnit(adUnitId)
+      Object.entries(creativeData.adUnits).forEach(([adUnitID, adUnitData]) => {
+        const existingAdUnit = adUnitsStore.getAdUnit(adUnitID)
         if (!existingAdUnit) {
-          console.warn(`AdUnit ${adUnitId} not found in store, skipping import`)
+          console.warn(`AdUnit ${adUnitID} not found in store, skipping import`)
           return
         }
 
+        //EDITABLE: ['headline', 'logo', 'subhead', 'cta', 'image', 'disclaimer', 'disclaimerBG'] as const,
+
         // Transform and update each element
-        const elementKeys = [
-          'image',
-          'logo',
-          'headline',
-          'subhead',
-          'cta',
-          'background',
-          'disclaimer',
-        ] as const
+        const elementKeys = ['image', 'logo', 'headline', 'subhead', 'cta', 'disclaimer'] as const
 
         elementKeys.forEach((elementKey) => {
           if (adUnitData.elements[elementKey]) {
@@ -308,10 +345,10 @@ export function useContentTransformer() {
             )
             if (transformedElement) {
               // Check if element exists in store
-              const existingElement = adUnitsStore.getElement(adUnitId, elementKey)
+              const existingElement = adUnitsStore.getElement(adUnitID, elementKey)
               if (existingElement) {
                 // Update existing element
-                adUnitsStore.updateElement(adUnitId, elementKey, transformedElement)
+                adUnitsStore.updateElement(adUnitID, elementKey, transformedElement)
               }
             }
           }

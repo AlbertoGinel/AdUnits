@@ -58,11 +58,11 @@ const MOCK_CREATIVE_DATA = {
         'Skyline-Desktop': {
           elements: {
             image: {
-              image: '6f5c3c22-9d3e-4c2c-9c7c-7bb8f6e3e3c1',
-              crop: { x: 90.506, y: 516.443, width: 2811, height: 237.416 },
+              imageID: '6f5c3c22-9d3e-4c2c-9c7c-7bb8f6e3e3c1',
+              cropData: { x: 90.506, y: 516.443, width: 2811, height: 237.416 },
               locked: false,
             },
-            logo: { image: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9', locked: false },
+            logo: { imageID: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9', locked: false },
             headline: { text: 'Sample Headline1', locked: false },
             subhead: { text: 'Sample subHeadline', locked: false },
             disclaimer: {
@@ -71,22 +71,22 @@ const MOCK_CREATIVE_DATA = {
               visibilityLock: false,
               locked: false,
             },
-            disclaimerBG: { visibility: true, visibilityLock: false },
+            disclaimerBG: { visibility: false, locked: true },
           },
         },
         'Skyline-Logo': {
           elements: {
-            logo: { image: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9', locked: false },
+            logo: { imageID: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9', locked: false },
           },
         },
         'Skyline-V2-Desktop': {
           elements: {
             image: {
-              image: '6f5c3c22-9d3e-4c2c-9c7c-7bb8f6e3e3c1',
-              crop: { x: 55.803, y: 502.517, width: 2440, height: 279.176 },
+              imageID: '6f5c3c22-9d3e-4c2c-9c7c-7bb8f6e3e3c1',
+              cropData: { x: 55.803, y: 502.517, width: 2440, height: 279.176 },
               locked: false,
             },
-            logo: { image: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9', locked: false },
+            logo: { imageID: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9', locked: false },
             headline: { text: 'Sample Headline3', locked: false },
             subhead: { text: 'Sample subHeadline', locked: false },
             disclaimer: {
@@ -95,17 +95,17 @@ const MOCK_CREATIVE_DATA = {
               visibilityLock: false,
               locked: false,
             },
-            disclaimerBG: { visibility: true, visibilityLock: false },
+            disclaimerBG: { visibility: false, locked: true },
           },
         },
         'Marquee-Desktop': {
           elements: {
             image: {
-              image: '6f5c3c22-9d3e-4c2c-9c7c-7bb8f6e3e3c1',
-              crop: { x: 219.7, y: 512.824, width: 2440, height: 575.186 },
+              imageID: '6f5c3c22-9d3e-4c2c-9c7c-7bb8f6e3e3c1',
+              cropData: { x: 219.7, y: 512.824, width: 2440, height: 575.186 },
               locked: false,
             },
-            logo: { image: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9', locked: false },
+            logo: { imageID: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9', locked: false },
             headline: { text: 'Sample Headline4', locked: false },
             subhead: { text: 'Sample subHeadline4', locked: false },
             cta: { text: 'Sample CTA', locked: false },
@@ -115,17 +115,17 @@ const MOCK_CREATIVE_DATA = {
               visibilityLock: false,
               locked: false,
             },
-            disclaimerBG: { visibility: true, visibilityLock: false },
+            disclaimerBG: { visibility: false, locked: true },
           },
         },
         'Marquee-Tablet': {
           elements: {
             image: {
-              image: '6f5c3c22-9d3e-4c2c-9c7c-7bb8f6e3e3c1',
-              crop: { x: 125.829, y: 532.912, width: 2440, height: 799.31 },
+              imageID: '6f5c3c22-9d3e-4c2c-9c7c-7bb8f6e3e3c1',
+              cropData: { x: 125.829, y: 532.912, width: 2440, height: 799.31 },
               locked: false,
             },
-            logo: { image: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9', locked: false },
+            logo: { imageID: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9', locked: false },
             headline: { text: 'Sample Headline5', locked: false },
             cta: { text: 'Sample CTA', locked: false },
             disclaimer: {
@@ -134,17 +134,17 @@ const MOCK_CREATIVE_DATA = {
               visibilityLock: false,
               locked: false,
             },
-            disclaimerBG: { visibility: true, visibilityLock: false },
+            disclaimerBG: { visibility: false, locked: true },
           },
         },
         'Marquee-Mobile': {
           elements: {
             image: {
-              image: '6f5c3c22-9d3e-4c2c-9c7c-7bb8f6e3e3c1',
-              crop: { x: 140.106, y: 405.165, width: 925.115, height: 472.837 },
+              imageID: '6f5c3c22-9d3e-4c2c-9c7c-7bb8f6e3e3c1',
+              cropData: { x: 140.106, y: 405.165, width: 925.115, height: 472.837 },
               locked: false,
             },
-            logo: { image: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9', locked: false },
+            logo: { imageID: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9', locked: false },
             headline: { text: 'Sample Headline6', locked: false },
             disclaimer: {
               text: 'Results may vary. Individual experience depends on usage patterns and system configuration. All features described are subject to change without notice. Performance claims are based on ideal conditions and may not reflect real-world usage. Limited time offer restrictions may apply. Not responsible for typographical errors in promotional materials. Service availability may be interrupted for maintenance. Some advanced features require compatible hardware and software. User agreement and terms of service apply to all usage. Commercial use may require separate licensing licensing licensing lili.',
@@ -152,22 +152,22 @@ const MOCK_CREATIVE_DATA = {
               visibilityLock: false,
               locked: false,
             },
-            disclaimerBG: { visibility: true, visibilityLock: false },
+            disclaimerBG: { visibility: false, locked: true },
           },
         },
         'Marquee-Logo': {
           elements: {
-            logo: { image: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9', locked: false },
+            logo: { imageID: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9', locked: false },
           },
         },
         'Brandbox-Desktop': {
           elements: {
             image: {
-              image: '6f5c3c22-9d3e-4c2c-9c7c-7bb8f6e3e3c1',
-              crop: { x: 189.908, y: 575.65, width: 2440, height: 597.551 },
+              imageID: '6f5c3c22-9d3e-4c2c-9c7c-7bb8f6e3e3c1',
+              cropData: { x: 189.908, y: 575.65, width: 2440, height: 597.551 },
               locked: false,
             },
-            logo: { image: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9', locked: false },
+            logo: { imageID: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9', locked: false },
             headline: { text: 'Sample Headline8', locked: false },
             cta: { text: 'Sample CTA', locked: false },
             disclaimer: {
@@ -176,17 +176,17 @@ const MOCK_CREATIVE_DATA = {
               visibilityLock: false,
               locked: false,
             },
-            disclaimerBG: { visibility: true, visibilityLock: false },
+            disclaimerBG: { visibility: false, locked: true },
           },
         },
         'Brandbox-Tablet': {
           elements: {
             image: {
-              image: '6f5c3c22-9d3e-4c2c-9c7c-7bb8f6e3e3c1',
-              crop: { x: 148.033, y: 391.642, width: 1533.55, height: 502.238 },
+              imageID: '6f5c3c22-9d3e-4c2c-9c7c-7bb8f6e3e3c1',
+              cropData: { x: 148.033, y: 391.642, width: 1533.55, height: 502.238 },
               locked: false,
             },
-            logo: { image: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9', locked: false },
+            logo: { imageID: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9', locked: false },
             headline: { text: 'Sample Headline', locked: false },
             cta: { text: 'Sample CTA', locked: false },
             disclaimer: {
@@ -195,48 +195,49 @@ const MOCK_CREATIVE_DATA = {
               visibilityLock: false,
               locked: false,
             },
-            disclaimerBG: { visibility: true, visibilityLock: false },
+            disclaimerBG: { visibility: false, locked: true },
           },
         },
         'Brandbox-Logo': {
           elements: {
-            logo: { image: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9', locked: false },
+            logo: { imageID: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9', locked: false },
           },
         },
       },
       layers: {
-        headline: { type: 'text', defaultValue: 'Sample Headline' },
-        logo: { type: 'image', defaultValue: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9' },
-        subhead: { type: 'text', defaultValue: 'Your subhead goes here' },
-        cta: { type: 'text', defaultValue: 'Sample CTA' },
-        image: { type: 'image', defaultValue: '6f5c3c22-9d3e-4c2c-9c7c-7bb8f6e3e3c1' },
+        headline: { id: 'headline', text: 'Sample Headline', locked: false },
+        logo: { id: 'logo', imageID: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9', locked: false },
+        subhead: { id: 'subhead', text: 'Your subhead goes here', locked: false },
+        cta: { id: 'cta', text: 'Sample CTA', locked: false },
+        image: { id: 'image', imageID: '6f5c3c22-9d3e-4c2c-9c7c-7bb8f6e3e3c1', locked: false },
         disclaimer: {
-          type: 'text',
-          defaultValue: 'This content is provided solely for general informational purposes.',
+          id: 'disclaimer',
+          text: 'This content is provided solely for general informational purposes.',
           visibility: true,
+          locked: false,
+          visibilityLock: false,
         },
         disclaimerBG: {
-          type: 'rect',
-          defaultValue:
-            'Results may vary. Individual experience depends on usage patterns and system configuration. All features described are subject to change without notice. Performance claims are based on ideal conditions and may not reflect real-world usage. Limited time offer restrictions may apply. Not responsible for typographical errors in promotional materials. Service availability may be interrupted for maintenance. Some advanced features require compatible hardware and software. User agreement and terms of service apply to all usage. Commercial use may require separate licensing. All trademarks and logos are property of their respective owners. No guarantee of specific outcomes or results.',
-          visibility: true,
+          id: 'disclaimerBG',
+          visibility: false,
+          locked: true,
         },
       },
       images: [
         {
-          id: '6f5c3c22-9d3e-4c2c-9c7c-7bb8f6e3e3c1',
+          imageID: '6f5c3c22-9d3e-4c2c-9c7c-7bb8f6e3e3c1',
           type: 'image',
           name: 'goodYearWheels',
           altText: 'Goodyear car wheels on lifestyle photo',
         },
         {
-          id: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9',
+          imageID: 'b2f0f8f4-1f7d-4efb-a8f1-9f4d0c1c76d9',
           type: 'logo',
           name: 'goodYearBlue',
           altText: 'Goodyear company logo in blue',
         },
         {
-          id: '0d7a2c4b-2b54-4710-8b6d-2e2df91c4923',
+          imageID: '0d7a2c4b-2b54-4710-8b6d-2e2df91c4923',
           type: 'image',
           name: 'redBackground',
           altText: 'Red gradient background texture',

@@ -33,21 +33,12 @@ export const RECT_ELEMENT_TYPES = ELEMENT_TYPES.RECT
 export const EDITABLE_ELEMENT_TYPES = ELEMENT_TYPES.TEXT
 
 // Core image and app types
-export interface ImageDimensions {
-  width: number
-  height: number
-  naturalWidth: number
-  naturalHeight: number
-  aspectRatio: number
-}
-
 export interface ImageAsset {
-  imageId: string
+  imageID: string
   url: string
   type: ImageElementType
   name: string
   altText: string
-  dimensions: ImageDimensions
 }
 
 export type ImageState = {
@@ -77,7 +68,7 @@ export type EditablePropertiesOf<T extends EditableElementType> = T extends
   | 'cta'
   ? 'text' | 'locked'
   : T extends 'disclaimer'
-    ? 'text' | 'visibility' | 'locked' | 'visibilityLocked'
+    ? 'text' | 'visibility' | 'locked' | 'visibilityLock'
     : T extends 'logo'
       ? 'imageID' | 'locked'
       : T extends 'image'

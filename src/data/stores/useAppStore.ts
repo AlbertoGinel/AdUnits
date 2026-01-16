@@ -96,9 +96,9 @@ export const useAppStore = defineStore('app', {
       this.currentAdUnitId = null
     },
 
-    switchToFocusMode(adUnitId: string) {
+    switchToFocusMode(adUnitID: string) {
       this.currentView = 'focusMode'
-      this.currentAdUnitId = adUnitId
+      this.currentAdUnitId = adUnitID
     },
 
     clearCurrentAdUnit() {

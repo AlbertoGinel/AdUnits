@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useAppStore } from '@/data/stores/useAppStore'
 import { useAdUnitStore } from '@/data/stores/useAdUnitStore'
-import type { AdUnit } from '@/types/mainTypes'
+import type { AdUnit } from '@/types/adUnitElementTypes'
 
 /**
  * View state management layer (Singleton)
@@ -62,15 +62,15 @@ export function useViewState() {
   /**
    * Switch to focus mode (show single ad unit)
    */
-  const switchToFocusMode = (adUnitId: string) => {
-    const adUnit = adUnitStore.getAdUnit(adUnitId)
+  const switchToFocusMode = (adUnitID: string) => {
+    const adUnit = adUnitStore.getAdUnit(adUnitID)
     if (!adUnit) {
-      console.warn(`Cannot focus on non-existent ad unit: ${adUnitId}`)
+      console.warn(`Cannot focus on non-existent ad unit: ${adUnitID}`)
       return
     }
 
     appStore.setCurrentView('focusMode')
-    appStore.setCurrentAdUnitId(adUnitId)
+    appStore.setCurrentAdUnitId(adUnitID)
   }
 
   /**

@@ -8,7 +8,7 @@ import type { LayerObjectMap } from '../../types/LayerTypes'
 /**
  * Service for cross-store data operations
  */
-export function useServicesField() {
+export function useFieldService() {
   const adUnitsStore = useAdUnitStore()
   const appStore = useAppStore()
   const layerStore = useLayerStore()
@@ -24,10 +24,10 @@ export function useServicesField() {
 
     if (currentView === 'focusMode') {
       // In focus mode: get from current AdUnit
-      const adUnitId = appStore.getCurrentAdUnitId()
-      if (!adUnitId) return null
+      const adUnitID = appStore.getCurrentAdUnitId()
+      if (!adUnitID) return null
 
-      const element = adUnitsStore.getElement(adUnitId, elementKey)
+      const element = adUnitsStore.getElement(adUnitID, elementKey)
       if (!element) return null
 
       // Cast to specific element type for property access
@@ -60,14 +60,14 @@ export function useServicesField() {
 
     if (currentView === 'focusMode') {
       // In focus mode: update the current AdUnit element
-      const adUnitId = appStore.getCurrentAdUnitId()
-      if (!adUnitId) throw new Error('No ad unit selected')
+      const adUnitID = appStore.getCurrentAdUnitId()
+      if (!adUnitID) throw new Error('No ad unit selected')
 
-      const element = adUnitsStore.getElement(adUnitId, elementKey)
+      const element = adUnitsStore.getElement(adUnitID, elementKey)
       if (!element) throw new Error(`Element ${elementKey} not found`)
 
       // Update with type-safe partial object
-      adUnitsStore.updateElement(adUnitId, elementKey, {
+      adUnitsStore.updateElement(adUnitID, elementKey, {
         [property]: value,
       } as Partial<typeof element>)
     } else {

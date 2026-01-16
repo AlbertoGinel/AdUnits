@@ -1,10 +1,9 @@
-import { useImageManager } from '../imagesManager/useImageManager'
 import { useCreativeAPI } from '../api/useCreativeAPI'
 import { useAppStore } from '@/data/stores/useAppStore'
 import { useAdUnitStore } from '@/data/stores/useAdUnitStore'
-//import { useImageStore } from '@/data/stores/useImageStore'
-//import { useLayerStore } from '@/data/stores/useLayerStore'
-import type { AdUnitsRecord } from '@/types/mainTypes'
+import { useImageService } from '@/data/services/useImageService'
+import { useImageUrlResolver } from '@/features/imagesManager/useImageUrlResolver'
+import type { AdUnit } from '@/types/mainTypes'
 
 import { useSuspenseManager } from '@/features/feedbackAsync/useSuspenseManager'
 import { useContentTransformer } from '@/data/services/useHelperContentData'
@@ -21,7 +20,7 @@ const loadFrameModels = async () => {
 
     return {
       stage: modelData.stage as { width: number; height: number },
-      adUnits: modelData.adUnits as AdUnitsRecord,
+      adUnits: modelData.adUnits as Record<string, AdUnit>,
     }
   } catch (error) {
     console.error('❌ Failed to load frame models:', error)
@@ -33,7 +32,8 @@ const loadFrameModels = async () => {
 let isInitialized = false
 
 export const useAppInitializer = (creativeId: string) => {
-  const imageManager = useImageManager()
+  const imageService = useImageService()
+  const imageUrlResolver = useImageUrlResolver()
   const creativeAPI = useCreativeAPI()
   const appStore = useAppStore()
   const adUnitStore = useAdUnitStore()
@@ -46,51 +46,30 @@ export const useAppInitializer = (creativeId: string) => {
    * Step 2: Initialize bundle (images and data) from API
    */
   const initializeBundle = async (creativeId: string) => {
-    // Reset image manager state
-    imageManager.clearCache()
+    // Reset image cache state
+    imageService.clearCache()
     suspenseManager.setImagesCached(false)
 
     // Fetch creative bundle from API
     const bundle = await creativeAPI.getCreativeBundle(creativeId)
 
+    // Import content data to stores
     importFromCreativeContentData(bundle.creativeData)
 
-    // Validate data integrity and cache images
-    const assetMap = new Map(bundle.assets.map((asset) => [asset.id, asset]))
-
-    // Check for mismatches
-    const validImages: Array<{
-      asset: (typeof bundle.assets)[0]
-      metadata: (typeof bundle.creativeData.images)[0]
-    }> = []
-
-    for (const imageMetadata of bundle.creativeData.images) {
-      const asset = assetMap.get(imageMetadata.id)
-
-      if (!asset) {
-        console.warn('⚠️ Image metadata without corresponding asset:', imageMetadata.id)
-        continue
-      }
-
-      if (asset.error) {
-        console.warn('⚠️ Asset has error:', asset.id, asset.error)
-        continue
-      }
-
-      validImages.push({ asset, metadata: imageMetadata })
-    }
+    // Resolve image URLs from bundle
+    const imagesToCache = imageUrlResolver.resolveImagesToCache(bundle)
 
     console.log(
-      `🔍 ImageManager: ${validImages.length}/${bundle.creativeData.images.length} images are valid`,
+      `🔍 ImageService: ${imagesToCache.length}/${bundle.creativeData.images.length} images resolved for caching`,
     )
 
-    // Cache all valid images
-    if (validImages.length > 0) {
-      await imageManager.bulkCacheImages(validImages)
+    // Cache all resolved images
+    if (imagesToCache.length > 0) {
+      await imageService.bulkCacheImages(imagesToCache)
     }
 
     // Check image loading results
-    if (!imageManager.areAllImagesReady()) {
+    if (!imageService.areAllImagesReady()) {
       console.warn('⚠️ Not all images are ready after initialization')
     }
 

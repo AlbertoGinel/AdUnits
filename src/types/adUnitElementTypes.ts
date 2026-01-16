@@ -2,7 +2,7 @@ import type { ElementType, EditableElementType, EditablePropertiesOf } from './m
 
 // Common base properties for ALL elements
 type BaseProperties = {
-  id: ElementType
+  type: ElementType
   x: number
   y: number
 }
@@ -50,20 +50,23 @@ type EditableProperties = {
 // Special properties for disclaimer
 type DisclaimerProperties = {
   visibility: boolean
-  visibilityLocked: boolean
+  visibilityLock: boolean
 }
 
 // Properties for RECT elements
 type RectProperties = {
-  locked: boolean
-  fill: string
   cornerRadius: number
   strokeColor: string
   strokeWidth: number
 }
 
-type GradientRectProperties = {
-  // Gradient properties
+// Solid fill variant
+type SolidFillProperties = {
+  fill: string
+}
+
+// Gradient fill variant
+type GradientFillProperties = {
   fillLinearGradientStartPoint: {
     x: number
     y: number
@@ -91,13 +94,16 @@ export type AdUnitElementMap = {
     DisclaimerProperties
 } & {
   // Non-editable RECT elements (background, cta-background)
-  [key in 'background' | 'cta-background']: BaseProperties & DimensionProperties & RectProperties
+  [key in 'background' | 'cta-background']: BaseProperties &
+    DimensionProperties &
+    RectProperties &
+    SolidFillProperties
 } & {
-  // DisclaimerBG (RECT element with visibility)
+  // DisclaimerBG (RECT element with visibility - can have solid OR gradient fill)
   disclaimerBG: BaseProperties &
     DimensionProperties &
     RectProperties &
-    GradientRectProperties &
+    (SolidFillProperties | GradientFillProperties) &
     EditableProperties & {
       visibility: boolean
     }
@@ -149,13 +155,13 @@ export type EditablePropertyKeys =
   | 'imageID'
   | 'visibility'
   | 'locked'
-  | 'visibilityLocked'
+  | 'visibilityLock'
   | 'cropData'
 
 // Get the value type for a specific property on a specific element
 // This looks up the actual type from the element's structure
 // What type is 'text' on headline?
-// What type is 'visibilityLocked' on disclaimer?
+// What type is 'visibilityLock' on disclaimer?
 export type ElementPropertyValueType<
   T extends EditableElementType,
   P extends EditablePropertiesOf<T>,
@@ -167,13 +173,13 @@ export type ElementPropertyValueType<
 export function isTextElement(
   element: AdUnitElement,
 ): element is AdUnitElementMap['headline'] | AdUnitElementMap['subhead'] | AdUnitElementMap['cta'] {
-  return 'text' in element && element.id !== 'disclaimer'
+  return 'text' in element && element.type !== 'disclaimer'
 }
 
 export function isDisclaimerElement(
   element: AdUnitElement,
 ): element is AdUnitElementMap['disclaimer'] {
-  return element.id === 'disclaimer'
+  return element.type === 'disclaimer'
 }
 
 export function isImageElement(

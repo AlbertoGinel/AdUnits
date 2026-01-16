@@ -11,14 +11,14 @@
 
     <!-- AdUnit Content (positioned with contentOffset) -->
     <v-group :config="contentGroupConfig">
-      <AdUnitComponent :ad-unit-id="adUnit.id" />
+      <AdUnitComponent :adUnitID="adUnit.id" />
     </v-group>
   </v-group>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { AdUnit } from '@/types/mainTypes'
+import type { AdUnit } from '@/types/adUnitElementTypes'
 import AdUnitComponent from './AdUnit.vue'
 import { useAppStore } from '@/data/stores/useAppStore'
 import { useViewState } from '@/features/stage/composables/useViewState'

@@ -89,7 +89,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useCropping, type CropData } from '@/composables/Tools/useCropping'
-import { useImageManager } from '@/features/imagesManager/useImageManager'
+import { useImageManager } from '@/features/imagesManager/OLDuseImageManager'
 import CropHandles from './CropHandles.vue'
 import CropControls from './CropControls.vue'
 
@@ -118,9 +118,9 @@ const stageHeight = ref(768)
 // Load the original image when cropping starts
 watch(
   originalImageId,
-  (imageId) => {
-    if (imageId) {
-      const imageElement = imageManager.getImageOptimized(imageId)
+  (imageID) => {
+    if (imageID) {
+      const imageElement = imageManager.getImageOptimized(imageID)
       originalImage.value = imageElement
     } else {
       originalImage.value = null

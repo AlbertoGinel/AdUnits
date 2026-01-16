@@ -13,7 +13,7 @@ export type LayerObjectMap = {
     text: string
     visibility: boolean
     locked: boolean
-    visibilityLocked: boolean
+    visibilityLock: boolean
   }
 } & {
   disclaimerBG: {

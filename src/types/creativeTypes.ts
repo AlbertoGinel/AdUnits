@@ -16,7 +16,7 @@ export type TextElement = Pick<AdUnitElementMap['headline'], 'text' | 'locked'>
 // Disclaimer - text, visibility, and both locks
 export type DisclaimerElement = Pick<
   AdUnitElementMap['disclaimer'],
-  'text' | 'locked' | 'visibility' | 'visibilityLocked'
+  'text' | 'locked' | 'visibility' | 'visibilityLock'
 >
 
 // Logo - imageID and locked
@@ -42,15 +42,14 @@ export type AdUnitElements = Partial<{
   disclaimerBG: DisclaimerBGElement
 }>
 
-// AdUnit data - only id and elements (no frameConfig, positioning, or styling)
+// AdUnit data - only elements (no id, frameConfig, positioning, or styling)
 export type AdUnitData = {
-  id: string
   elements: AdUnitElements
 }
 
 // Image metadata for DB
 export interface ImageMetadata {
-  imageId: string
+  imageID: string
   type: 'image' | 'logo'
   name: string
   altText: string
@@ -61,17 +60,4 @@ export interface CreativeContentData {
   adUnits: Record<string, AdUnitData>
   layers: Record<string, LayerData>
   images: ImageMetadata[]
-}
-
-export interface ServerAssetsModule {
-  default: {
-    status: number
-    content: Array<{
-      id: string
-      type: string
-      creative_id: string
-      path: string
-      error: string
-    }>
-  }
 }

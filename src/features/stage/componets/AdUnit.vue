@@ -1,23 +1,23 @@
 <template>
   <!-- Pure ad unit rendering at 0,0 - no frame, no positioning -->
   <v-group>
-    <template v-for="elementData in renderableElements" :key="elementData.elementId">
-      <!-- Text Elements: headline, subhead, cta, disclaimer -->
+    <template v-for="renderData in renderableElements" :key="renderData.id">
+      <!-- Text Elements -->
       <v-text
-        v-if="isTextElement(elementData.element) && elementData.visible"
-        :config="elementData.config"
+        v-if="isTextElement(renderData.element) && renderData.visible"
+        :config="renderData.config"
       />
 
-      <!-- Rectangle Elements: cta-background, disclaimerBG -->
+      <!-- Rectangle Elements -->
       <v-rect
-        v-else-if="isRectElement(elementData.element) && elementData.visible"
-        :config="elementData.config"
+        v-else-if="isRectElement(renderData.element) && renderData.visible"
+        :config="renderData.config"
       />
 
-      <!-- Image Elements: logo, image, background -->
+      <!-- Image Elements -->
       <v-image
-        v-else-if="isImageElement(elementData.element) && elementData.visible"
-        :config="elementData.config"
+        v-else-if="isImageElement(renderData.element) && renderData.visible"
+        :config="renderData.config"
       />
     </template>
   </v-group>
@@ -25,19 +25,17 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useAdUnitRendering } from '@/features/stage/composables/useAdUnitRendering'
+import { useRendering } from '@/features/stage/composables/useRendering'
 import { isTextElement, isImageElement, isRectElement } from '@/types/adUnitElementTypes'
 
 interface Props {
-  adUnitId: string
+  adUnitID: string
 }
 
 const props = defineProps<Props>()
-const rendering = useAdUnitRendering()
 
-// Get all renderable elements (all logic in composable)
-const renderableElements = computed(() => {
-  const elements = rendering.getAdUnitRenderableElements(props.adUnitId)
-  return elements
-})
+const rendering = useRendering()
+
+// Get all renderable elements (ordered, with configs, visibility handled)
+const renderableElements = computed(() => rendering.getRenderableElements(props.adUnitID))
 </script>
