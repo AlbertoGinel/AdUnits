@@ -74,5 +74,5 @@ export type EditablePropertiesOf<T extends EditableElementType> = T extends
       : T extends 'image'
         ? 'imageID' | 'locked' | 'cropData'
         : T extends 'disclaimerBG'
-          ? 'visibility' | 'locked'
+          ? 'visibility' | 'visibilityLock'
           : never

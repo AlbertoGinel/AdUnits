@@ -1,5 +1,29 @@
 import type { ElementType, EditableElementType, EditablePropertiesOf } from './mainTypes'
 
+/**
+ * Element Heritage Mapping
+ * Single source of truth for element categories
+ * Documents which base type each element extends
+ */
+export const ELEMENT_HERITAGE = {
+  // Text elements
+  headline: 'text',
+  subhead: 'text',
+  cta: 'text',
+  disclaimer: 'text', // Text element with visibility
+
+  // Rect elements
+  background: 'rect',
+  'cta-background': 'rect',
+  disclaimerBG: 'rect', // Rect element with visibility
+
+  // Image elements
+  image: 'image',
+  logo: 'image',
+} as const satisfies Record<ElementType, 'text' | 'rect' | 'image'>
+
+export type ElementCategory = (typeof ELEMENT_HERITAGE)[ElementType]
+
 // Common base properties for ALL elements
 type BaseProperties = {
   type: ElementType
@@ -104,9 +128,8 @@ export type AdUnitElementMap = {
     DimensionProperties &
     RectProperties &
     (SolidFillProperties | GradientFillProperties) &
-    EditableProperties & {
-      visibility: boolean
-    }
+    EditableProperties &
+    DisclaimerProperties
 } & {
   // Logo (IMAGE element without crop)
   logo: BaseProperties & DimensionProperties & ImageProperties & EditableProperties
@@ -169,37 +192,79 @@ export type ElementPropertyValueType<
 
 //guards
 
-// Type guards for runtime type checking
+// Type guards for runtime type checking using heritage mapping
+
+/**
+ * Check if element is a TEXT element
+ * Includes: headline, subhead, cta, disclaimer
+ */
 export function isTextElement(
   element: AdUnitElement,
-): element is AdUnitElementMap['headline'] | AdUnitElementMap['subhead'] | AdUnitElementMap['cta'] {
-  return 'text' in element && element.type !== 'disclaimer'
+): element is
+  | AdUnitElementMap['headline']
+  | AdUnitElementMap['subhead']
+  | AdUnitElementMap['cta']
+  | AdUnitElementMap['disclaimer'] {
+  return ELEMENT_HERITAGE[element.type] === 'text'
 }
 
+/**
+ * Check if element is specifically a disclaimer (text with special properties)
+ */
 export function isDisclaimerElement(
   element: AdUnitElement,
 ): element is AdUnitElementMap['disclaimer'] {
   return element.type === 'disclaimer'
 }
 
+/**
+ * Check if element is an IMAGE element
+ * Includes: image, logo
+ */
 export function isImageElement(
   element: AdUnitElement,
 ): element is AdUnitElementMap['logo'] | AdUnitElementMap['image'] {
-  return 'imageID' in element
+  return ELEMENT_HERITAGE[element.type] === 'image'
 }
 
+/**
+ * Check if element is a RECT element
+ * Includes: background, cta-background, disclaimerBG
+ */
+export function isRectElement(
+  element: AdUnitElement,
+): element is Extract<AdUnitElement, RectProperties> {
+  return ELEMENT_HERITAGE[element.type] === 'rect'
+}
+
+/**
+ * Check if element has visibility property
+ * Includes: disclaimer, disclaimerBG
+ */
 export function hasVisibility(
   element: AdUnitElement,
 ): element is AdUnitElementMap['disclaimer'] | AdUnitElementMap['disclaimerBG'] {
   return 'visibility' in element
 }
 
+/**
+ * Check if element has crop data
+ * Only: image (main image element)
+ */
 export function hasCrop(element: AdUnitElement): element is AdUnitElementMap['image'] {
   return 'cropData' in element
 }
 
-export function isRectElement(
-  element: AdUnitElement,
-): element is Extract<AdUnitElement, RectProperties> {
-  return 'cornerRadius' in element
-}
+/**
+ * Property-to-Lock Field Mapping
+ * Maps editable properties to their corresponding lock fields
+ */
+export const lockFieldMap = {
+  text: 'locked',
+  imageID: 'locked',
+  cropData: 'locked',
+  visibility: 'visibilityLock',
+} as const
+
+export type LockFieldMap = typeof lockFieldMap
+export type GetLockField<P extends keyof LockFieldMap> = LockFieldMap[P]

@@ -71,7 +71,7 @@ const MOCK_CREATIVE_DATA = {
               visibilityLock: false,
               locked: false,
             },
-            disclaimerBG: { visibility: false, locked: true },
+            disclaimerBG: { visibility: true, visibilityLock: false },
           },
         },
         'Skyline-Logo': {
@@ -95,7 +95,7 @@ const MOCK_CREATIVE_DATA = {
               visibilityLock: false,
               locked: false,
             },
-            disclaimerBG: { visibility: false, locked: true },
+            disclaimerBG: { visibility: true, visibilityLock: false },
           },
         },
         'Marquee-Desktop': {
@@ -115,7 +115,7 @@ const MOCK_CREATIVE_DATA = {
               visibilityLock: false,
               locked: false,
             },
-            disclaimerBG: { visibility: false, locked: true },
+            disclaimerBG: { visibility: true, visibilityLock: false },
           },
         },
         'Marquee-Tablet': {
@@ -134,7 +134,7 @@ const MOCK_CREATIVE_DATA = {
               visibilityLock: false,
               locked: false,
             },
-            disclaimerBG: { visibility: false, locked: true },
+            disclaimerBG: { visibility: true, visibilityLock: false },
           },
         },
         'Marquee-Mobile': {
@@ -152,7 +152,7 @@ const MOCK_CREATIVE_DATA = {
               visibilityLock: false,
               locked: false,
             },
-            disclaimerBG: { visibility: false, locked: true },
+            disclaimerBG: { visibility: true, visibilityLock: false },
           },
         },
         'Marquee-Logo': {
@@ -176,7 +176,7 @@ const MOCK_CREATIVE_DATA = {
               visibilityLock: false,
               locked: false,
             },
-            disclaimerBG: { visibility: false, locked: true },
+            disclaimerBG: { visibility: true, visibilityLock: false },
           },
         },
         'Brandbox-Tablet': {
@@ -195,7 +195,7 @@ const MOCK_CREATIVE_DATA = {
               visibilityLock: false,
               locked: false,
             },
-            disclaimerBG: { visibility: false, locked: true },
+            disclaimerBG: { visibility: true, visibilityLock: false },
           },
         },
         'Brandbox-Logo': {
@@ -219,8 +219,8 @@ const MOCK_CREATIVE_DATA = {
         },
         disclaimerBG: {
           id: 'disclaimerBG',
-          visibility: false,
-          locked: true,
+          visibility: true,
+          visibilityLock: false,
         },
       },
       images: [

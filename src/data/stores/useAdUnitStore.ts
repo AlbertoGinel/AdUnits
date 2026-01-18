@@ -1,7 +1,12 @@
 import { defineStore } from 'pinia'
 import type { AdUnit, AdUnitElement } from '../../types/adUnitElementTypes'
-import { hasVisibility, isImageElement, isTextElement } from '../../types/adUnitElementTypes'
-import type { ElementType, EditableElementType } from '../../types/mainTypes'
+import {
+  hasVisibility,
+  isImageElement,
+  isTextElement,
+  lockFieldMap,
+} from '../../types/adUnitElementTypes'
+import type { ElementType, EditableElementType, EditablePropertiesOf } from '../../types/mainTypes'
 
 export type AdUnitsRecord = Record<string, AdUnit>
 
@@ -116,6 +121,41 @@ export const useAdUnitStore = defineStore('adUnits', {
         return results
       }
     },
+
+    isLocked: (state) => {
+      return <T extends EditableElementType, P extends EditablePropertiesOf<T>>(
+        adUnitId: string,
+        elementKey: T,
+        property: P,
+      ): boolean => {
+        const element = state.adUnits[adUnitId]?.elements[elementKey]
+        if (!element) return false
+
+        const lockField = lockFieldMap[property as keyof typeof lockFieldMap]
+        if (!(lockField in element)) return false
+
+        // Type assertion: we know lockField is 'locked' or 'visibilityLock', both are boolean
+        return (element as Record<string, unknown>)[lockField] === true
+      }
+    },
+    getAdUnitsByPropertyLock: (state) => {
+      return <T extends EditableElementType, P extends EditablePropertiesOf<T>>(
+        elementKey: T,
+        property: P,
+        isLocked: boolean = true, // Default to locked
+      ): string[] => {
+        return Object.keys(state.adUnits).filter((adUnitId) => {
+          const element = state.adUnits[adUnitId]?.elements[elementKey]
+          if (!element) return false
+
+          const lockField = lockFieldMap[property as keyof typeof lockFieldMap]
+          if (!(lockField in element)) return false
+
+          const lockValue = (element as Record<string, unknown>)[lockField] === true
+          return isLocked ? lockValue : !lockValue
+        })
+      }
+    },
   },
 
   // Actions
@@ -180,6 +220,30 @@ export const useAdUnitStore = defineStore('adUnits', {
 
     clearAdUnits() {
       this.adUnits = {}
+    },
+
+    cascadeUnlock<T extends EditableElementType, P extends EditablePropertiesOf<T>>(
+      elementKey: T,
+      property: P,
+    ): void {
+      const lockField = lockFieldMap[property as keyof typeof lockFieldMap]
+      let unlockedCount = 0
+
+      Object.keys(this.adUnits).forEach((adUnitId) => {
+        const element = this.adUnits[adUnitId]?.elements[elementKey]
+
+        // Skip if element doesn't exist
+        if (!element) return
+
+        // Skip if lock field doesn't exist on this element
+        if (!(lockField in element)) return // Set lock field to false
+        ;(element as Record<string, unknown>)[lockField] = false
+        unlockedCount++
+      })
+
+      console.log(
+        `🔓 Unlocked ${String(elementKey)}.${String(property)} in ${unlockedCount} AdUnits`,
+      )
     },
   },
 })

@@ -26,7 +26,10 @@ export type LogoElement = Pick<AdUnitElementMap['logo'], 'imageID' | 'locked'>
 export type ImageElement = Pick<AdUnitElementMap['image'], 'imageID' | 'locked' | 'cropData'>
 
 // DisclaimerBG - only visibility and locked
-export type DisclaimerBGElement = Pick<AdUnitElementMap['disclaimerBG'], 'visibility' | 'locked'>
+export type DisclaimerBGElement = Pick<
+  AdUnitElementMap['disclaimerBG'],
+  'visibility' | 'visibilityLock'
+>
 
 // Layer data - use LayerObjectMap directly (no reduction needed)
 export type LayerData = LayerObjectMap[keyof LayerObjectMap]

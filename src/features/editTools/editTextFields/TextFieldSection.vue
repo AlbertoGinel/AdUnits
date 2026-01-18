@@ -6,13 +6,15 @@
       :value="fieldValue"
       @input="updateFieldValue(($event.target as HTMLInputElement)?.value || '')"
     />
+    <LockedInfo :element-key="props.type" property="text" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { TextElementType } from '@/types/adUnitElementTypes'
+import type { TextElementType } from '@/types/mainTypes'
 import { useEditTextField } from './useEditTextField'
+import LockedInfo from '../LockedInfo.vue'
 
 interface Props {
   type: TextElementType

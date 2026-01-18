@@ -19,7 +19,7 @@ export type LayerObjectMap = {
   disclaimerBG: {
     id: 'disclaimerBG'
     visibility: boolean
-    locked: boolean
+    visibilityLock: boolean
   }
 } & {
   [key in ImageElementType]: {

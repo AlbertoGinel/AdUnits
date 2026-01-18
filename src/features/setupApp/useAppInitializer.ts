@@ -3,25 +3,24 @@ import { useAppStore } from '@/data/stores/useAppStore'
 import { useAdUnitStore } from '@/data/stores/useAdUnitStore'
 import { useImageService } from '@/data/services/useImageService'
 import { useImageUrlResolver } from '@/features/imagesManager/useImageUrlResolver'
-import type { AdUnit } from '@/types/mainTypes'
 
 import { useSuspenseManager } from '@/features/feedbackAsync/useSuspenseManager'
 import { useContentTransformer } from '@/data/services/useHelperContentData'
+import type { FrameModel } from '@/types/FrameModelTypes'
+import type { AdUnit } from '@/types/adUnitElementTypes'
 
 /**
  * Load frame models from JSON file
  */
-const loadFrameModels = async () => {
+const loadFrameModels = async (): Promise<FrameModel> => {
+  // ← Return FrameModel
   try {
     const module = await import('./framesModel.json')
-    const modelData = module.default
+    const modelData = module.default as FrameModel // ✅ Clean typing!
 
     console.log('📐 Loading frame models (structure)...')
 
-    return {
-      stage: modelData.stage as { width: number; height: number },
-      adUnits: modelData.adUnits as Record<string, AdUnit>,
-    }
+    return modelData // ✅ Return entire structure
   } catch (error) {
     console.error('❌ Failed to load frame models:', error)
     throw error
@@ -96,7 +95,8 @@ export const useAppInitializer = (creativeId: string) => {
       // Initialize stores with loaded data
       appStore.setStage(stage)
       appStore.setCreativeId(creativeId)
-      adUnitStore.setAdUnits(modelAdUnits)
+      // Frame models have partial elements, will be completed with creative data
+      adUnitStore.setAdUnits(modelAdUnits as unknown as Record<string, AdUnit>)
 
       console.log('✅ Step 1: Frame models loaded and stored successfully')
 

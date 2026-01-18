@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import { useAppStore } from '@/data/stores/useAppStore'
 import { useAdUnitStore } from '@/data/stores/useAdUnitStore'
 import { useLayerStore } from '@/data/stores/useLayerStore'
-import type { ElementType } from '@/types/adUnitElementTypes'
+import type { ElementType } from '@/types/mainTypes'
 
 // Tool selection state (singleton)
 const selectedTool = ref<string>('text') //Images,Logos,Text,Extras
