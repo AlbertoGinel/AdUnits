@@ -111,7 +111,7 @@ export function useContentTransformer() {
       return {
         id: 'disclaimerBG',
         visibility: 'visibility' in layer ? layer.visibility : true,
-        locked: layer.locked,
+        visibilityLock: 'visibilityLock' in layer ? layer.visibilityLock : false, // ✅ Added missing property
       }
     }
 
@@ -303,14 +303,16 @@ export function useContentTransformer() {
           layer = {
             id: 'disclaimerBG',
             visibility: disclaimerBGData.visibility,
-            locked: disclaimerBGData.locked,
+            visibilityLock: disclaimerBGData.visibilityLock, // ✅ Use visibilityLock instead of locked
           }
         }
         // Image layers: logo, image
+        // Image layers: logo, image
         else if (layerData.id === 'logo' || layerData.id === 'image') {
+          const imageLayerData = layerData as Extract<LayerData, { id: 'logo' | 'image' }>
           layer = {
             id: layerData.id,
-            imageID: layerData.id,
+            imageID: imageLayerData.imageID, // ✅ Now TypeScript knows this has imageID
             locked: layerData.locked,
           }
         } else {
@@ -322,8 +324,22 @@ export function useContentTransformer() {
       })
 
       // 3. Import images (if needed - assuming images are handled separately)
-      // You might want to add image import logic here if needed
+      console.log('🖼️ Importing images:', creativeData.images)
+      creativeData.images.forEach((imageMetadata) => {
+        console.log('📥 Importing image:', imageMetadata)
 
+        // Create image asset for store
+        const imageAsset = {
+          imageID: imageMetadata.imageID,
+          type: imageMetadata.type,
+          name: imageMetadata.name,
+          altText: imageMetadata.altText,
+          url: '', // URL will be resolved later by imageUrlResolver
+        }
+
+        imageStore.setImage(imageAsset)
+      })
+      console.log('✅ Images imported to store')
       // 4. Import ad units - only update existing ones
       Object.entries(creativeData.adUnits).forEach(([adUnitID, adUnitData]) => {
         const existingAdUnit = adUnitsStore.getAdUnit(adUnitID)

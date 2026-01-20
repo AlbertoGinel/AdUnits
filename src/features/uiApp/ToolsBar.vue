@@ -15,14 +15,13 @@
 
     <div class="lower-tools">
       <button
-        v-for="tool in lowerTools"
-        :key="tool.id"
-        @click="handleToolSelected(tool.id)"
-        :class="{ active: selectedTool === tool.id }"
+        v-for="button in lowerTools"
+        :key="button.id"
+        @click="handleButtonClick(button.id)"
         class="tool-button"
       >
-        <div class="icon tool-icon" v-html="getIcon(tool.iconName)"></div>
-        <span class="tool-label">{{ tool.name }}</span>
+        <div class="icon tool-icon" v-html="getIcon(button.iconName)"></div>
+        <span class="tool-label">{{ button.name }}</span>
       </button>
     </div>
   </div>
@@ -37,22 +36,38 @@ const { getIcon } = useIcons()
 const { selectedTool, handleToolSelected } = useEditTools()
 
 interface Tool {
-  id: string
+  id: 'image' | 'logo' | 'text' | 'extras'
+  name: string
+  iconName: IconName
+}
+
+interface ActionButton {
+  id: 'back' | 'help'
   name: string
   iconName: IconName
 }
 
 const upperTools: Tool[] = [
-  { id: 'images', name: 'Images', iconName: 'imageTool' },
-  { id: 'logos', name: 'Logos', iconName: 'logoTool' },
+  { id: 'image', name: 'Images', iconName: 'imageTool' },
+  { id: 'logo', name: 'Logos', iconName: 'logoTool' },
   { id: 'text', name: 'Text', iconName: 'textTool' },
   { id: 'extras', name: 'Extras', iconName: 'extras' },
 ]
 
-const lowerTools: Tool[] = [
+const lowerTools: ActionButton[] = [
   { id: 'back', name: 'Back', iconName: 'back' },
   { id: 'help', name: 'Help', iconName: 'help' },
 ]
+
+const handleButtonClick = (buttonId: 'back' | 'help') => {
+  if (buttonId === 'back') {
+    // Handle back action
+    console.log('Back button clicked')
+  } else if (buttonId === 'help') {
+    // Handle help action
+    console.log('Help button clicked')
+  }
+}
 </script>
 
 <style scoped>

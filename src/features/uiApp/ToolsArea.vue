@@ -7,7 +7,7 @@
       <!-- Direct, readable component selection -->
       <EditTextsMain v-if="selectedTool === 'text'" />
 
-      <EditAssetsMain v-else-if="selectedTool === 'images' || selectedTool === 'logos'" />
+      <EditAssetsMain v-else-if="selectedTool === 'image' || selectedTool === 'logo'" />
     </template>
   </div>
 </template>
@@ -15,7 +15,7 @@
 <script setup lang="ts">
 import { useSuspenseManager } from '@/features/feedbackAsync/useSuspenseManager'
 import { useEditTools } from '@/features/editTools/useEditTools'
-import EditAssetsMain from '@/features/editTools/editAssets/EditAssetsMain.vue'
+import EditAssetsMain from '@/features/editTools/editAssets/EditAssetMain.vue'
 import EditTextsMain from '@/features/editTools/editTextFields/EditTextsMain.vue'
 //import EditTextsSkeleton from './toolsMenu/EditTextsSkeleton.vue'
 

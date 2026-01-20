@@ -5,8 +5,11 @@ import { useAdUnitStore } from '@/data/stores/useAdUnitStore'
 import { useLayerStore } from '@/data/stores/useLayerStore'
 import type { ElementType } from '@/types/mainTypes'
 
+// Define the possible tool types
+type ToolType = 'image' | 'logo' | 'text' | 'extras'
+
 // Tool selection state (singleton)
-const selectedTool = ref<string>('text') //Images,Logos,Text,Extras
+const selectedTool = ref<ToolType>('text')
 const activeSubView = ref<string>('default') //every Tool will have its options
 
 export function useEditTools() {
@@ -35,7 +38,7 @@ export function useEditTools() {
   })
 
   // Tool selection handlers
-  const handleToolSelected = (tool: string) => {
+  const handleToolSelected = (tool: ToolType) => {
     //cancelCrop()
     selectedTool.value = tool
     activeSubView.value = 'default'
