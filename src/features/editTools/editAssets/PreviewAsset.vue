@@ -6,7 +6,7 @@
     </div>
 
     <!-- Normal asset editing content -->
-    <template v-else>
+    <div v-else>
       <div class="image-section">
         <h4 class="text-caption">Lifestyle Photo</h4>
         <PreviewAssetFrame />
@@ -36,7 +36,18 @@
           Character count: {{ altText?.length || 0 }}/150
         </div>
       </div>
-    </template>
+
+      <!-- Action Buttons (only in upload mode) -->
+      <div v-if="activeSubView === 'upload'" class="action-buttons">
+        <button
+          @click="handleUploadAsset()"
+          :disabled="!hasUploadTemp"
+          class="button-action upload"
+        >
+          Upload
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -44,7 +55,10 @@
 import { useEditAssets } from './useEditAsset'
 import PreviewAssetFrame from './PreviewAssetFrame.vue'
 
-const { isFocusMode, hasAsset, isLogoMode, altText, updateAltText } = useEditAssets()
+const { isFocusMode, hasAsset, isLogoMode, altText, updateAltText, activeSubView, hasUploadTemp } =
+  useEditAssets()
+
+const handleUploadAsset = async () => {}
 </script>
 
 <style scoped>
@@ -120,5 +134,35 @@ const { isFocusMode, hasAsset, isLogoMode, altText, updateAltText } = useEditAss
 .no-elements-message p {
   margin: 0;
   font-size: 14px;
+}
+
+/* Button styles */
+.button-action {
+  padding: 8px 16px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  background: white;
+  color: #495057;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.button-action:hover:not(:disabled) {
+  background: #f8f9fa;
+  border-color: #80bdff;
+}
+
+.button-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #e9ecef;
+  color: #6c757d;
+  border-color: #dee2e6;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
 }
 </style>

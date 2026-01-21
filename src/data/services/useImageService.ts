@@ -90,20 +90,6 @@ function createImageService() {
   }
 
   /**
-   * Update image altText
-   */
-  const updateImageAltText = (imageID: string, altText: string): void => {
-    const image = imageStore.getImage(imageID)
-    if (!image) {
-      console.error(`❌ Cannot update altText: Image ${imageID} not found`)
-      return
-    }
-
-    imageStore.updateImage(imageID, { ...image, altText })
-    console.log(`✏️ Updated altText for ${imageID}: ${altText}`)
-  }
-
-  /**
    * Update image name
    */
   const updateImageName = (imageID: string, name: string): void => {
@@ -184,7 +170,6 @@ function createImageService() {
     isImageLoaded,
 
     // Updates
-    updateImageAltText,
     updateImageName,
     removeImage,
 
@@ -201,7 +186,6 @@ function createImageService() {
     setTemporaryImage: imageUpload.setTemporaryImage,
     getUploadTempImage: imageUpload.getUploadTempImage,
     hasUploadTemp: imageUpload.hasUploadTemp,
-    updateUploadTempAltText: imageUpload.updateUploadTempAltText,
     clearUploadTemp: imageUpload.clearUploadTemp,
 
     // Re-export bulk caching (used by app initializer)

@@ -1,11 +1,20 @@
 import { defineStore } from 'pinia'
 import type { ImageState, ImageAsset } from '../../types/mainTypes'
 
+// DRY: Single source of truth for empty uploadTemp
+const createEmptyUploadTemp = (): ImageAsset => ({
+  imageID: '',
+  type: 'image',
+  name: '',
+  altText: '',
+  url: '',
+})
+
 export const useImageStore = defineStore('images', {
   // State
   state: (): ImageState => ({
     images: {},
-    uploadTemp: null,
+    uploadTemp: createEmptyUploadTemp(),
   }),
 
   // Getters
@@ -44,12 +53,16 @@ export const useImageStore = defineStore('images', {
       }
     },
 
-    getUploadTemp: (state) => (): ImageAsset | null => {
+    getUploadTemp: (state) => (): ImageAsset => {
       return state.uploadTemp
     },
 
     hasUploadTemp: (state) => (): boolean => {
-      return state.uploadTemp !== null
+      const result = Boolean(state.uploadTemp?.imageID)
+      console.log('🔍 hasUploadTemp check:')
+      console.log('  - uploadTemp.imageID:', state.uploadTemp?.imageID)
+      console.log('  - result:', result)
+      return result
     },
   },
 
@@ -64,8 +77,8 @@ export const useImageStore = defineStore('images', {
       this.images[image.imageID] = image
     },
 
-    setUploadTemp(image: ImageAsset | null) {
-      this.uploadTemp = image
+    setUploadTemp(image: ImageAsset) {
+      this.uploadTemp = { ...image }
     },
 
     // CRUD operations
@@ -89,14 +102,27 @@ export const useImageStore = defineStore('images', {
     },
 
     clearUploadTemp() {
-      this.uploadTemp = null
+      // Reset to clean, empty state
+      this.uploadTemp = createEmptyUploadTemp()
+    },
+
+    updateImageAltText(imageID: string, altText: string) {
+      const existing = this.images[imageID]
+      if (existing) {
+        this.images[imageID] = { ...existing, altText }
+      }
+    },
+
+    updateUploadTempAltText(altText: string) {
+      this.uploadTemp.altText = altText
     },
 
     // Image-specific operations
     promoteUploadTempToImage() {
-      if (this.uploadTemp) {
-        this.images[this.uploadTemp.imageID] = this.uploadTemp
-        this.uploadTemp = null
+      if (this.uploadTemp.url) {
+        // Check if temp has actual content
+        this.images[this.uploadTemp.imageID] = { ...this.uploadTemp }
+        this.clearUploadTemp() // Reset instead of nullifying
       }
     },
   },

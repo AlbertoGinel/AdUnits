@@ -2,8 +2,7 @@
 //import { useEditTools } from '@/features/editTools/useEditTools'
 import { useEditAssets } from './useEditAsset'
 import PreviewAsset from './PreviewAsset.vue'
-import ChangeAsset from './ChangeAsset.vue'
-import UploadAsset from './UploadAsset.vue'
+import LibraryAsset from './LibraryAsset.vue'
 
 //const { selectedTool } = useEditTools()
 const { activeSubView, currentAssetType, goToMainEdit, goToUploadAsset } = useEditAssets()
@@ -30,17 +29,16 @@ const { activeSubView, currentAssetType, goToMainEdit, goToUploadAsset } = useEd
       <div>Change {{ currentAssetType }}</div>
 
       <PreviewAsset />
-      <ChangeAsset />
+      <LibraryAsset />
     </div>
 
     <!-- Upload Asset View -->
     <div v-if="activeSubView === 'upload'" class="upload-asset-view">
       <button @click="goToMainEdit" class="back-button">
-        Back to {{ currentAssetType === 'image' ? 'image' : 'logo' }} editor
+        Back to {{ currentAssetType }} editor
       </button>
       <div>Upload {{ currentAssetType }}</div>
       <PreviewAsset />
-      <UploadAsset />
     </div>
   </div>
 </template>

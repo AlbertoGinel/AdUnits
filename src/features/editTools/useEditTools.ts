@@ -42,12 +42,6 @@ export function useEditTools() {
     //cancelCrop()
     selectedTool.value = tool
     activeSubView.value = 'default'
-    console.log(
-      '🎯 useEditTools.handleToolSelected called with tool:',
-      tool,
-      ' activeSubView updated to:',
-      activeSubView.value,
-    )
   }
 
   const handleNavigate = (subView: string) => {

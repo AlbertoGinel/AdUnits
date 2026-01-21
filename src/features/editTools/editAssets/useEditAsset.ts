@@ -1,8 +1,11 @@
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useEditTools } from '@/features/editTools/useEditTools'
 import { useFieldService } from '@/data/services/useFieldService'
 import { useImageStore } from '@/data/stores/useImageStore'
 import { useImageService } from '@/data/services/useImageService'
+import { useAppStore } from '@/data/stores/useAppStore'
+import { useLibraryAssets } from './useLibraryAssets'
+import { useCreativeAPI } from '@/features/api/useCreativeAPI'
 
 type AssetSubView = 'main' | 'change' | 'upload'
 type ContentState = 'image-preview' | 'preview-placeholder' | 'drag-photos-here'
@@ -15,62 +18,101 @@ interface ActionButton {
   disabled?: boolean
 }
 
+// Singleton instance
+let sharedEditAssetsInstance: ReturnType<typeof createEditAssets> | null = null
+
 export function useEditAssets() {
+  if (!sharedEditAssetsInstance) {
+    sharedEditAssetsInstance = createEditAssets()
+  }
+  return sharedEditAssetsInstance
+}
+
+function createEditAssets() {
   const { selectedTool } = useEditTools()
   const { getFieldValue, updateFieldValue } = useFieldService()
   const imageStore = useImageStore()
   const imageService = useImageService()
+  const appStore = useAppStore()
+  const creativeAPI = useCreativeAPI()
 
   const activeSubView = ref<AssetSubView>('main')
 
+  // Watch for clearing uploadTemp on view/tool changes
+  watch(
+    activeSubView,
+    (newView, oldView) => {
+      if (oldView === 'upload' && newView !== 'upload') {
+        imageStore.clearUploadTemp()
+      }
+    },
+    {
+      immediate: false,
+      flush: 'sync',
+    },
+  )
+
+  watch(
+    selectedTool,
+    () => {
+      imageStore.clearUploadTemp()
+      activeSubView.value = 'main'
+    },
+    {
+      immediate: false,
+      flush: 'sync',
+    },
+  )
+
   // Image state tracking
   const isCropMode = ref(false) // Override state
-  const isFocusMode = ref(true) // Add crop capability
+  const isFocusMode = computed(() => appStore.getCurrentView() === 'focusMode')
+
+  // Upload temp state (computed once, used everywhere)
+  const hasUploadTemp = computed(() => imageStore.hasUploadTemp())
+
+  // Drag & Drop state
+  const isDragOver = ref(false)
+  const isFileProcessing = ref(false)
+  const fileInput = ref<HTMLInputElement | null>(null)
 
   // Helper computeds
   const currentAssetId = computed(() => {
-    // Only get field value for asset-related tools
-    if (selectedTool.value === 'image' || selectedTool.value === 'logo') {
-      const assetId = getFieldValue(selectedTool.value, 'imageID') || ''
-      return assetId
-    }
-    return ''
+    if (selectedTool.value !== 'image' && selectedTool.value !== 'logo') return ''
+
+    // Otherwise use field service (saved image)
+    const assetId = getFieldValue(selectedTool.value, 'imageID') || ''
+    return assetId
   })
 
+  //If there is id Id show it
   const loadedImage = computed(() => {
+    // In upload mode, prioritize temp upload
+    if (activeSubView.value === 'upload' && hasUploadTemp.value) {
+      const tempUpload = imageStore.getUploadTemp()
+      const tempImage = new Image()
+      tempImage.src = tempUpload.url
+      return tempImage
+    }
+
+    // For saved images, use imageService
     if (!currentAssetId.value) return null
-    console.log('🖼️ Getting image element for:', currentAssetId.value)
     const result = imageService.getImageElement(currentAssetId.value)
-    console.log('🖼️ getImageElement result:', result)
     return result
   })
 
   // Simple content state - what UI state to show
   const contentState = computed<ContentState>(() => {
-    if (activeSubView.value === 'upload' && !imageStore.hasUploadTemp()) {
-      return 'drag-photos-here' // Upload mode with no temporal image
+    if (activeSubView.value === 'upload') {
+      // Upload mode + has temp → Show temp image preview
+      // Upload mode + no temp → Show drag area
+      return hasUploadTemp.value ? 'image-preview' : 'drag-photos-here'
     }
 
-    // Check if we have a real image loaded
-    if (loadedImage.value) {
-      return 'image-preview' // We have a real image to show
-    }
-
-    return 'preview-placeholder' // No real image available
+    // Main/change mode + has saved image → Show saved image
+    // Main/change mode + no saved image → Show placeholder
+    return loadedImage.value ? 'image-preview' : 'preview-placeholder'
   })
-
-  // Navigation methods
-  const goToMainEdit = () => {
-    activeSubView.value = 'main'
-  }
-
-  const goToChangeAsset = () => {
-    activeSubView.value = 'change'
-  }
-
-  const goToUploadAsset = () => {
-    activeSubView.value = 'upload'
-  }
 
   // Asset management based on selectedTool
   const currentAssetType = computed(() => {
@@ -82,12 +124,33 @@ export function useEditAssets() {
   // Focus mode logic
   const hasAsset = ref(true) // TODO: Connect to actual asset existence check
 
-  // Alt text management (connected to Pinia)
-  const altText = computed(() => {
-    if (!currentAssetId.value) return ''
-
-    const imageMetadata = imageService.getImageMetadata(currentAssetId.value)
-    return imageMetadata?.altText || ''
+  // Alt text management (context-aware)
+  const altText = computed({
+    get() {
+      // In upload mode, ALWAYS use temp upload (regardless of hasUploadTemp)
+      if (activeSubView.value === 'upload') {
+        const tempUpload = imageStore.getUploadTemp()
+        return tempUpload.altText || ''
+      }
+      // Otherwise get from saved image metadata
+      if (!currentAssetId.value) {
+        return ''
+      }
+      const imageMetadata = imageService.getImageMetadata(currentAssetId.value)
+      return imageMetadata?.altText || ''
+    },
+    set(value: string) {
+      // In upload mode, ALWAYS update temp upload (regardless of hasUploadTemp)
+      if (activeSubView.value === 'upload') {
+        imageStore.updateUploadTempAltText(value)
+        return
+      }
+      // Otherwise update saved image metadata
+      if (!currentAssetId.value) {
+        return
+      }
+      imageStore.updateImageAltText(currentAssetId.value, value)
+    },
   })
 
   // Is logo mode helper
@@ -95,8 +158,11 @@ export function useEditAssets() {
     return currentAssetType.value === 'logo'
   })
 
-  // Tree/Additive Button System - COMMENTED OUT FOR TESTING
-  /*
+  // Helper computeds for buttons
+  const hasCurrentImage = computed(() => !!currentAssetId.value)
+  const hasImageToCrop = computed(() => !!currentAssetId.value) // Only crop saved images
+
+  // Tree/Additive Button System
   const getBaseButtonSet = (): ActionButton[] => {
     switch (activeSubView.value) {
       case 'main':
@@ -110,7 +176,7 @@ export function useEditAssets() {
           : []
 
       case 'upload':
-        return imageStore.hasUploadTemp
+        return hasUploadTemp.value
           ? [
               {
                 id: 'remove',
@@ -127,8 +193,7 @@ export function useEditAssets() {
   }
 
   const addFocusModeButtons = (baseButtons: ActionButton[]): ActionButton[] => {
-    if (!isFocusMode.value) return baseButtons
-
+    if (!isFocusMode.value) return baseButtons // ✅ No focus mode = no crop
     // In focus mode, ADD crop button if we have an image to crop
     if (hasImageToCrop.value && activeSubView.value === 'main') {
       return [
@@ -155,69 +220,83 @@ export function useEditAssets() {
 
     return buttonsWithFocus
   })
-  */
-
-  // Simple empty buttons for testing
-  const currentButtons = computed<ActionButton[]>(() => {
-    return [] // No buttons for testing
-  })
 
   // Button state management
   const isButtonDisabled = ref(false)
   const isButtonLoading = ref(false)
 
-  // Action methods for buttons to call directly
-  const handleChangeAsset = () => {
-    goToChangeAsset()
-    console.log('Change asset action triggered')
+  // Navigation methods
+  const goToMainEdit = () => {
+    activeSubView.value = 'main'
   }
 
-  const handleUploadAsset = () => {
-    goToUploadAsset()
-    console.log('Upload asset action triggered')
+  const goToChangeAsset = () => {
+    activeSubView.value = 'change'
+  }
+
+  const goToUploadAsset = () => {
+    activeSubView.value = 'upload'
   }
 
   const handleRemoveAsset = () => {
     // Only update field value for asset-related tools
     if (selectedTool.value === 'image' || selectedTool.value === 'logo') {
       updateFieldValue(selectedTool.value, 'imageID', '')
-      console.log('Remove asset action triggered')
     }
   }
 
   const handleRemoveTemporalImage = () => {
     // Clear the temporal upload from image store
     imageStore.clearUploadTemp()
-    console.log('Remove temporal image action triggered')
   }
 
-  const handleStartCrop = () => {
-    isCropMode.value = true
-    console.log('Start crop action triggered')
+  // Integrate library composable
+  const libraryAssets = useLibraryAssets()
+
+  // Navigation-aware apply function
+  const handleApplySelectedImage = () => {
+    libraryAssets.applySelectedImage(() => {
+      activeSubView.value = 'main' // Navigate back after applying
+    })
   }
 
-  const handleSaveCrop = () => {
-    isCropMode.value = false
-    console.log('Save crop action triggered')
+  const handleFileSelection = async (file: File) => {
+    if (!selectedTool.value || (selectedTool.value !== 'image' && selectedTool.value !== 'logo')) {
+      console.error('❌ Invalid tool for file upload')
+      return
+    }
+
+    try {
+      isFileProcessing.value = true
+      console.log('📁 Processing file:', file.name)
+
+      // TODO: Add file validation
+      // - File type checking (image/*)
+      // - Size limits (10MB)
+      // - Dimension validation (5000x5000px)
+
+      // Cache as temporary image using imageService
+      await imageService.setTemporaryImage(file, selectedTool.value)
+
+      console.log('✅ File cached successfully')
+
+      // File is now available via imageStore.uploadTemp
+      // contentState will automatically update to show preview
+    } catch (error) {
+      console.error('❌ File processing failed:', error)
+      // TODO: Show error notification
+    } finally {
+      isFileProcessing.value = false
+    }
   }
 
-  const handleCancelCrop = () => {
-    isCropMode.value = false
-    console.log('Cancel crop action triggered')
-  }
-
-  // Load assets based on current tool
-  const loadAssets = () => {
-    // This will load different assets based on selectedTool.value
-    console.log(`Loading assets for: ${currentAssetType.value}`)
-  }
-
-  // Update alt text (connects to Pinia)
+  // Update alt text (context-aware)
   const updateAltText = (value: string) => {
-    if (!currentAssetId.value) return
+    altText.value = value // Uses the computed setter logic above
+  }
 
-    imageService.updateImageAltText(currentAssetId.value, value)
-    console.log('Alt text updated in imageService:', value)
+  const handleUploadAsset = async () => {
+    creativeAPI.insertAsset()
   }
 
   return {
@@ -250,16 +329,24 @@ export function useEditAssets() {
     goToUploadAsset,
 
     // Direct actions for buttons
-    handleChangeAsset,
-    handleUploadAsset,
     handleRemoveAsset,
     handleRemoveTemporalImage,
-    handleStartCrop,
-    handleSaveCrop,
-    handleCancelCrop,
+    handleUploadAsset,
 
     // Other actions
-    loadAssets,
     updateAltText,
+
+    // File processing (for drag & drop component)
+    isDragOver,
+    isFileProcessing,
+    fileInput,
+    handleFileSelection,
+
+    // Library (from composable)
+    ...libraryAssets,
+    handleApplySelectedImage,
+
+    // Upload temp state (for components)
+    hasUploadTemp,
   }
 }

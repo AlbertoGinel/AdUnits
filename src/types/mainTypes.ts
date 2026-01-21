@@ -43,7 +43,7 @@ export interface ImageAsset {
 
 export type ImageState = {
   images: Record<string, ImageAsset>
-  uploadTemp: ImageAsset | null
+  uploadTemp: ImageAsset
 }
 
 export interface StageDimensions {
