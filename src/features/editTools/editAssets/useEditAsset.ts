@@ -76,6 +76,9 @@ function createEditAssets() {
   const isFileProcessing = ref(false)
   const fileInput = ref<HTMLInputElement | null>(null)
 
+  // File storage (original File object for upload)
+  const currentFile = ref<File | null>(null)
+
   // Helper computeds
   const currentAssetId = computed(() => {
     if (selectedTool.value !== 'image' && selectedTool.value !== 'logo') return ''
@@ -270,18 +273,21 @@ function createEditAssets() {
       isFileProcessing.value = true
       console.log('📁 Processing file:', file.name)
 
+      // Store the original File object for upload
+      currentFile.value = file
+
       // TODO: Add file validation
       // - File type checking (image/*)
       // - Size limits (10MB)
       // - Dimension validation (5000x5000px)
 
-      // Cache as temporary image using imageService
+      // Cache as temporary image using imageService (creates blob URL for preview)
       await imageService.setTemporaryImage(file, selectedTool.value)
 
       console.log('✅ File cached successfully')
 
-      // File is now available via imageStore.uploadTemp
-      // contentState will automatically update to show preview
+      // File is now available via imageStore.uploadTemp (for preview)
+      // Original file stored in currentFile.value (for upload)
     } catch (error) {
       console.error('❌ File processing failed:', error)
       // TODO: Show error notification
@@ -296,7 +302,37 @@ function createEditAssets() {
   }
 
   const handleUploadAsset = async () => {
-    creativeAPI.insertAsset()
+    try {
+      if (!hasUploadTemp.value || !currentFile.value) {
+        console.error('❌ No temp upload or file to process')
+        return
+      }
+
+      const creativeId = appStore.getCreativeId()
+      if (!creativeId) {
+        console.error('❌ No creative ID available')
+        return
+      }
+
+      console.log('🚀 Starting asset upload...')
+
+      // Use the original File object for API upload
+      const result = await creativeAPI.insertAsset(creativeId, currentFile.value)
+
+      if (result.success) {
+        console.log('✅ Asset uploaded successfully!')
+
+        // Clear file reference after successful upload
+        currentFile.value = null
+
+        // Navigate back to main view
+        activeSubView.value = 'main'
+      } else {
+        console.error('❌ Upload failed:', result.message)
+      }
+    } catch (error) {
+      console.error('❌ Upload failed:', error)
+    }
   }
 
   return {
@@ -331,7 +367,6 @@ function createEditAssets() {
     // Direct actions for buttons
     handleRemoveAsset,
     handleRemoveTemporalImage,
-    handleUploadAsset,
 
     // Other actions
     updateAltText,
@@ -341,6 +376,10 @@ function createEditAssets() {
     isFileProcessing,
     fileInput,
     handleFileSelection,
+
+    // Upload functionality
+    currentFile,
+    handleUploadAsset,
 
     // Library (from composable)
     ...libraryAssets,

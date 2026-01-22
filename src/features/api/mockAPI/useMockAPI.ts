@@ -8,6 +8,13 @@
  */
 
 import type { CreativeContentData } from '@/types/creativeTypes'
+import type {
+  AssetResponse,
+  StoredCreativeData,
+  InsertAssetResult,
+  UpdateCreativeResult,
+  DeleteAssetResult,
+} from '@/types/APITypes'
 
 /**
  * 📊 EMBEDDED DEBUG DATA - Replace external JSON files
@@ -248,25 +255,8 @@ const MOCK_CREATIVE_DATA = {
 }
 
 /**
- * Internal interfaces for mock system
+ * Internal interfaces for mock system - removed, using API types only
  */
-interface StoredAsset {
-  id: string
-  type: string
-  creative_id: string
-  path: string // URL when GET, blob when POST (asymmetric)
-  error: string
-  blob?: Blob // Only for uploaded assets in storage
-  name?: string
-  mimeType?: string
-}
-
-interface StoredCreativeData {
-  id: string
-  creative_id: string
-  version: number
-  data: CreativeContentData // ✅ Properly typed creative content
-}
 
 /**
  * Mock Database Operations (Internal)
@@ -420,19 +410,21 @@ function createMockDatabase() {
             const response = await fetch(asset.path)
             const blob = await response.blob()
 
-            // Store with blob data, not import path
-            await performStoreOperation(STORES.ASSETS, 'readwrite', (store) =>
-              store.put({
-                id: asset.id,
-                type: asset.type,
-                creative_id: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
-                path: '', // ✅ No path - data is in blob
-                error: '',
-                blob: blob,
-                name: asset.id,
-                mimeType: blob.type,
-              }),
-            )
+            // Store with blob data, not import path - AssetResponse compliant
+            const mockUrl = `mock://api/v1/assets/${asset.id}` // Mock server URL
+            const seedAsset: AssetResponse & { blob: Blob; name: string; mimeType: string } = {
+              id: asset.id,
+              type: 'picture', // ✅ Use consistent type
+              creative_id: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+              path: mockUrl, // ✅ Use mock URL as path
+              url: mockUrl, // Mock server URL where asset can be accessed
+              error: '',
+              // Internal storage fields
+              blob: blob,
+              name: asset.id, // ✅ UUID as name
+              mimeType: blob.type,
+            }
+            await performStoreOperation(STORES.ASSETS, 'readwrite', (store) => store.put(seedAsset))
             console.log(`(🌱 Seeding)   ✅ Stored blob: ${asset.id} (${blob.size} bytes)`)
           } catch (error) {
             console.error(`(🌱 Seeding)   ❌ Failed to fetch ${asset.id}:`, error)
@@ -461,13 +453,15 @@ function createMockDatabase() {
   })()
 
   /**
-   * Get all assets for a creative
+   * Get all assets for a creative (with blob data for internal use)
    */
-  const getAllAssets = async (creativeId: string): Promise<StoredAsset[]> => {
+  const getAllAssets = async (
+    creativeId: string,
+  ): Promise<(AssetResponse & { blob?: Blob; name?: string; mimeType?: string })[]> => {
     const database = await initDB()
 
     return new Promise((resolve, reject) => {
-      const assets: StoredAsset[] = []
+      const assets: (AssetResponse & { blob?: Blob; name?: string; mimeType?: string })[] = []
 
       // Get from main assets store
       const assetsTransaction = database.transaction([STORES.ASSETS], 'readonly')
@@ -478,10 +472,10 @@ function createMockDatabase() {
       assetsRequest.onsuccess = () => {
         const cursor = assetsRequest.result
         if (cursor) {
-          // Add asset data (blob field will be filtered out in return statement)
           assets.push(cursor.value)
           cursor.continue()
         } else {
+          // For fetchAssets, we need the blob data to generate URLs, so don't strip it
           resolve(assets)
         }
       }
@@ -510,19 +504,22 @@ function createMockDatabase() {
   /**
    * Insert new asset into assets store (accepts File object to simulate multipart)
    */
-  const insertAsset = async (creativeId: string, file: File): Promise<StoredAsset> => {
+  const insertAsset = async (creativeId: string, file: File): Promise<AssetResponse> => {
     // Generate new random ID for the asset
     const newAssetId = `${crypto.randomUUID()}`
 
     // Extract metadata from File object (simulating multipart processing)
-    const asset: StoredAsset = {
+    const mockUrl = `mock://api/v1/assets/${newAssetId}` // Mock URL that represents server endpoint
+    const asset: AssetResponse & { blob: File; name: string; mimeType: string } = {
       id: newAssetId,
-      type: 'image',
+      type: 'picture', // ✅ Match seeded assets type
       creative_id: creativeId,
-      path: `file://${file.name}`,
+      path: mockUrl, // ✅ Use mock URL as path (like seeded assets)
+      url: mockUrl, // Mock server URL where asset can be accessed
       error: '',
+      // Internal storage fields
       blob: file,
-      name: file.name,
+      name: newAssetId, // ✅ Use UUID as name (like seeded assets)
       mimeType: file.type,
     }
 
@@ -537,13 +534,21 @@ function createMockDatabase() {
       path: asset.path,
     })
 
-    return asset
+    // Return clean AssetResponse without internal fields
+    return {
+      id: asset.id,
+      type: asset.type,
+      creative_id: asset.creative_id,
+      path: asset.path,
+      url: asset.url,
+      error: asset.error,
+    }
   }
 
   /**
    * Get a single asset by id
    */
-  const getAssetById = async (assetId: string): Promise<StoredAsset | null> => {
+  const getAssetById = async (assetId: string): Promise<AssetResponse | null> => {
     const database = await initDB()
 
     return new Promise((resolve, reject) => {
@@ -559,7 +564,9 @@ function createMockDatabase() {
   /**
    * Update an asset (e.g., attach blob after fetching seeded file)
    */
-  const upsertAsset = async (asset: StoredAsset): Promise<void> => {
+  const upsertAsset = async (
+    asset: AssetResponse & { blob?: Blob; name?: string; mimeType?: string },
+  ): Promise<void> => {
     await performStoreOperation(STORES.ASSETS, 'readwrite', (store) => store.put(asset))
   }
 
@@ -656,7 +663,7 @@ export function useMockAPI() {
   // In-memory registry to reuse object URLs during a session
   const urlRegistry = new Map<string, string>()
 
-  const ensureBlobUrlForAsset = async (asset: StoredAsset): Promise<string> => {
+  const ensureBlobUrlForAsset = async (asset: AssetResponse & { blob?: Blob }): Promise<string> => {
     // Check if we already have a blob URL for this asset
     const existing = urlRegistry.get(asset.id)
     if (existing) return existing
@@ -706,15 +713,20 @@ export function useMockAPI() {
   /**
    * GET /api/v1/assets/creative/{id}
    */
-  const fetchAssets = async (creativeId: string) => {
+  const fetchAssets = async (
+    creativeId: string,
+  ): Promise<{
+    status: number
+    content: AssetResponse[]
+  }> => {
     try {
       console.log(`📡 Mock API: Fetching assets for creative ${creativeId}`)
 
       await mockDB.seedDatabase()
       const assets = await mockDB.getAllAssets(creativeId)
 
-      // Generate blob URLs uniformly for all assets
-      const content = await Promise.all(
+      // Generate blob URLs and return clean AssetResponse objects
+      const content: AssetResponse[] = await Promise.all(
         assets.map(async (asset) => {
           const path = await ensureBlobUrlForAsset(asset)
           return {
@@ -722,6 +734,7 @@ export function useMockAPI() {
             type: asset.type,
             creative_id: asset.creative_id,
             path,
+            url: asset.url, // Include the mock URL from stored asset
             error: asset.error,
           }
         }),
@@ -743,7 +756,16 @@ export function useMockAPI() {
   /**
    * GET /api/v1/creative_data/{creative_id}
    */
-  const fetchCreativeData = async (creativeId: string) => {
+  const fetchCreativeData = async (
+    creativeId: string,
+  ): Promise<{
+    status: number
+    creativeData: {
+      id: string
+      version: number
+      data: CreativeContentData
+    }
+  }> => {
     try {
       console.log(`📡 Mock API: Fetching creative data for ${creativeId}`)
       await mockDB.seedDatabase()
@@ -774,38 +796,28 @@ export function useMockAPI() {
    * POST /api/v1/assets
    * Insert new asset (multipart file upload simulation)
    */
-  const insertAsset = async (
-    creativeId: string,
-    file: File,
-  ): Promise<{
-    status: number
-    message: string
-    assetId: string
-    path: string
-  }> => {
+  const insertAsset = async (creativeId: string, file: File): Promise<InsertAssetResult> => {
     try {
       console.log(`📤 Mock API: Inserting asset for creative ${creativeId}`)
       console.log(`   File: ${file.name} (${file.size} bytes, ${file.type})`)
 
       const insertedAsset = await mockDB.insertAsset(creativeId, file)
-      const path = await ensureBlobUrlForAsset(insertedAsset)
+      console.log('🔍 DEBUG: insertedAsset from mockDB:', insertedAsset)
 
-      return await simulateNetworkCall(
-        {
-          status: 200,
-          message: 'Asset inserted successfully',
-          assetId: insertedAsset.id,
-          path,
-        },
-        'insertAsset',
-      )
+      const result = {
+        success: true,
+        message: 'Asset inserted successfully',
+        assetId: insertedAsset.id,
+        path: insertedAsset.url,
+      }
+      console.log('🔍 DEBUG: Final result being returned:', result)
+
+      return await simulateNetworkCall(result, 'insertAsset')
     } catch (error) {
       console.error('❌ Failed to insert asset:', error)
       return {
-        status: 500,
+        success: false,
         message: error instanceof Error ? error.message : 'Insert failed',
-        assetId: '',
-        path: '',
       }
     }
   }
@@ -813,7 +825,7 @@ export function useMockAPI() {
   /**
    * DELETE /api/v1/assets/{id}
    */
-  const deleteAsset = async (assetId: string) => {
+  const deleteAsset = async (assetId: string): Promise<DeleteAssetResult> => {
     try {
       console.log(`🗑️ Mock API: Deleting asset ${assetId}`)
       const success = await mockDB.deleteAsset(assetId)
@@ -828,7 +840,7 @@ export function useMockAPI() {
 
       return await simulateNetworkCall(
         {
-          status: success ? 200 : 404,
+          success: success,
           message: success ? 'Asset deleted' : 'Asset not found',
         },
         'deleteAsset',
@@ -845,7 +857,7 @@ export function useMockAPI() {
   const updateCreative = async (
     creativeId: string,
     payload: { version: number; data: CreativeContentData; creative_id: string },
-  ) => {
+  ): Promise<UpdateCreativeResult> => {
     try {
       console.log(`🔄 Mock API: Updating creative data for ${creativeId}`)
 
@@ -854,7 +866,7 @@ export function useMockAPI() {
 
       return await simulateNetworkCall(
         {
-          status: 200,
+          success: true,
           message: 'Creative data updated successfully',
         },
         'updateCreative',
@@ -862,7 +874,7 @@ export function useMockAPI() {
     } catch (error) {
       console.error('❌ Failed to update creative:', error)
       return {
-        status: 500,
+        success: false,
         message: error instanceof Error ? error.message : 'Update failed',
       }
     }

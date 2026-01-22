@@ -30,3 +30,10 @@ export interface DeleteAssetResult {
   success: boolean
   message: string
 }
+
+export interface StoredCreativeData {
+  id: string
+  creative_id: string
+  version: number
+  data: CreativeContentData
+}

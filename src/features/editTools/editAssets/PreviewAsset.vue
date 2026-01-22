@@ -55,10 +55,16 @@
 import { useEditAssets } from './useEditAsset'
 import PreviewAssetFrame from './PreviewAssetFrame.vue'
 
-const { isFocusMode, hasAsset, isLogoMode, altText, updateAltText, activeSubView, hasUploadTemp } =
-  useEditAssets()
-
-const handleUploadAsset = async () => {}
+const {
+  isFocusMode,
+  hasAsset,
+  isLogoMode,
+  altText,
+  updateAltText,
+  activeSubView,
+  hasUploadTemp,
+  handleUploadAsset,
+} = useEditAssets()
 </script>
 
 <style scoped>

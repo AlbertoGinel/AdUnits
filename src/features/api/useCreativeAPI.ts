@@ -4,6 +4,7 @@ import { useSuspenseManager } from '@/features/feedbackAsync/useSuspenseManager'
 import { useNotifications } from '@/features/feedbackAsync/useNotifications'
 import { useContentTransformer } from '@/data/services/useHelperContentData'
 import { useImageService } from '@/data/services/useImageService'
+import { useImageStore } from '@/data/stores/useImageStore'
 import type { CreativeContentData } from '@/types/creativeTypes'
 import type {
   CreativeBundle,
@@ -28,6 +29,7 @@ export function useCreativeAPI() {
   const notifications = useNotifications()
   const { exportToCreativeContentData } = useContentTransformer()
   const imageService = useImageService()
+  const imageStore = useImageStore()
 
   const getCreativeBundle = async (creativeId: string): Promise<CreativeBundle> => {
     try {
@@ -123,13 +125,13 @@ export function useCreativeAPI() {
 
       suspenseManager.setUpdateCreativeInProgress(false)
 
-      if (response.status === 200) {
+      if (response.status < 200 || response.status >= 300) {
+        notifications.showError('Update Failed', response.message || 'Update failed')
+        return { success: false, message: response.message || 'Update failed' }
+      } else {
         console.log('✅ Creative updated successfully')
         notifications.showSuccess('Saved!', 'Creative updated successfully')
         return { success: true, message: 'Creative updated successfully' }
-      } else {
-        notifications.showError('Update Failed', response.message || 'Update failed')
-        return { success: false, message: response.message || 'Update failed' }
       }
     } catch (error) {
       console.error('❌ Failed to update creative:', error)
@@ -173,29 +175,48 @@ export function useCreativeAPI() {
             }).then((r) => r.json())
           })()
 
-      if (uploadResponse.status !== 200) {
+      console.log('🔍 DEBUG: uploadResponse received:', uploadResponse)
+      console.log('🔍 DEBUG: uploadResponse.id:', uploadResponse.id)
+      console.log('🔍 DEBUG: uploadResponse.assetId:', uploadResponse.assetId)
+      console.log('🔍 DEBUG: uploadResponse.path:', uploadResponse.path)
+      console.log('🔍 DEBUG: uploadResponse.url:', uploadResponse.url)
+
+      if (uploadResponse.status < 200 || uploadResponse.status >= 300) {
         suspenseManager.setAssetOperationInProgress(false)
         notifications.showError('Upload Failed', uploadResponse.message || 'Upload failed')
         return { success: false, message: uploadResponse.message || 'Upload failed' }
       }
 
-      uploadedAssetId = uploadResponse.assetId
-      const uploadedUrl = uploadResponse.url
+      uploadedAssetId = uploadResponse.assetId // ✅ Correct field name from InsertAssetResult
+      const uploadedUrl = uploadResponse.path // Just use path directly
+      console.log('🔍 DEBUG: Extracted values:')
+      console.log('  - uploadedAssetId:', uploadedAssetId)
+      console.log('  - uploadedUrl:', uploadedUrl)
       console.log('✅ Step 1 complete: Asset uploaded', uploadedAssetId)
 
       if (!uploadedAssetId || !uploadedUrl) {
-        throw new Error('Asset upload succeeded but no assetId or url returned')
+        console.log('❌ DEBUG: Missing values!')
+        console.log('  - uploadedAssetId exists?', !!uploadedAssetId)
+        console.log('  - uploadedUrl exists?', !!uploadedUrl)
+        throw new Error(
+          `Asset upload succeeded but no id or path returned. Got id: ${uploadedAssetId}, path: ${uploadedUrl}`,
+        )
       }
 
-      imageService.promoteTempToList()
-      console.log('✅ Step 2 complete: Image added to Pinia store')
+      // Step 2: Move uploaded image to permanent list with real UUID
+      console.log('Step 2: Moving temp upload to permanent list with real UUID...')
+      imageService.promoteTempToList() // Pass the real UUID to override temp ID
+      console.log('✅ Step 2 complete: Image promoted to list with real UUID:', uploadedAssetId)
 
-      // Step 3: Export current data
-      console.log('Step 3: Exporting current data...')
-      const rawData = exportToCreativeContentData()
-      const currentData = JSON.parse(JSON.stringify(rawData))
-      if (!currentData) {
-        throw new Error('Cannot export creative data for update')
+      // Step 2.5: Cache the uploaded asset with its new UUID before clearing temp
+      console.log('Step 2.5: Caching uploaded asset with new UUID...')
+      if (imageStore.uploadTemp.url && uploadedAssetId) {
+        // Get the image cache service
+        const { useImageCache } = await import('@/features/imagesManager/useImageCache')
+        const imageCache = useImageCache()
+
+        // Cache the asset with its new UUID using the temp blob URL
+        await imageCache.setCacheImage(imageStore.uploadTemp.url, uploadedAssetId)
       }
       console.log('✅ Step 3 complete: Data exported')
 
@@ -204,7 +225,7 @@ export function useCreativeAPI() {
       const updateResult = await updateCreative(creativeId)
 
       if (updateResult.success) {
-        // Step 5 Success: Clear uploadTemp
+        // Step 5 Success: Clear uploadTemp (now safe since asset is cached with new UUID)
         console.log('Step 5: Clearing uploadTemp...')
         imageService.clearUploadTemp()
         console.log('✅ Step 5 complete: uploadTemp cleared')
@@ -217,7 +238,6 @@ export function useCreativeAPI() {
           success: true,
           message: 'Asset inserted successfully',
           assetId: uploadedAssetId,
-          path: uploadedUrl,
         }
       } else {
         // Step 5 Failure: Remove from Pinia
@@ -290,7 +310,7 @@ export function useCreativeAPI() {
             body: JSON.stringify(payload),
           }).then((r) => r.json())
 
-      if (updateResponse.status !== 200) {
+      if (updateResponse.status < 200 || updateResponse.status >= 300) {
         suspenseManager.setAssetOperationInProgress(false)
         notifications.showError('Update Failed', updateResponse.message || 'Creative update failed')
         return { success: false, message: updateResponse.message || 'Creative update failed' }
