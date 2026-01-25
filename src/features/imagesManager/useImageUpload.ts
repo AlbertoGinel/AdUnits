@@ -1,5 +1,4 @@
 import { useImageStore } from '@/data/stores/useImageStore'
-import { useImageCache } from './useImageCache'
 import type { ImageAsset } from '@/types/mainTypes'
 
 /**
@@ -18,7 +17,6 @@ export function useImageUpload() {
 
 function createImageUpload() {
   const imageStore = useImageStore()
-  const imageCache = useImageCache()
 
   /**
    * Cache temporary image for upload preview
@@ -33,9 +31,6 @@ function createImageUpload() {
 
       // Create blob URL
       const blobUrl = URL.createObjectURL(file)
-
-      // Cache the image element
-      await imageCache.getCacheImage(blobUrl)
 
       // Store in uploadTemp (preview state)
       const tempImage: ImageAsset = {
@@ -56,22 +51,22 @@ function createImageUpload() {
     }
   }
 
-  const promoteTempToList = (): string | null => {
-    const temp = imageStore.getUploadTemp()
-    if (temp) {
-      imageStore.addImage(temp)
-      return temp.imageID
-    } else {
-      return null
-    }
-  }
+  // In promoteTempToList - accept the URL directly:
+  const promoteTempToList = (realUUID: string, realUrl: string): string | null => {
+    const tempUpload = imageStore.getUploadTemp()
+    if (tempUpload) {
+      const newImage: ImageAsset = {
+        imageID: realUUID,
+        type: tempUpload.type,
+        name: tempUpload.name,
+        altText: tempUpload.altText,
+        url: realUrl, // ✅ Use the URL from upload response
+      }
 
-  /**
-   * Rollback promotion if upload fails
-   */
-  const rollbackPromotion = (imageID: string): void => {
-    imageStore.removeImage(imageID)
-    console.log(`⏮️ Rolled back promoted image: ${imageID}`)
+      imageStore.addImage(newImage)
+      return realUUID
+    }
+    return null
   }
 
   /**
@@ -116,7 +111,6 @@ function createImageUpload() {
   return {
     setTemporaryImage,
     promoteTempToList,
-    rollbackPromotion,
 
     getUploadTempImage,
     hasUploadTemp,

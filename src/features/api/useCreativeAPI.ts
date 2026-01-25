@@ -30,6 +30,7 @@ export function useCreativeAPI() {
   const { exportToCreativeContentData } = useContentTransformer()
   const imageService = useImageService()
   const imageStore = useImageStore()
+  const { importFromCreativeContentData } = useContentTransformer()
 
   const getCreativeBundle = async (creativeId: string): Promise<CreativeBundle> => {
     try {
@@ -54,15 +55,25 @@ export function useCreativeAPI() {
         throw error
       }
 
+      //here we have both structures
       const assets = assetsResponse.content as AssetResponse[]
       const creativeData = creativeResponse.creativeData.data as CreativeContentData
 
-      console.log('✅ Creative bundle loaded:', {
-        assets: assets.length,
-        adUnits: Object.keys(creativeData.adUnits || {}).length,
-        layers: Object.keys(creativeData.layers || {}).length,
-        images: (creativeData.images || []).length,
+      console.log('The assets: ', assets)
+      console.log('The creativeData: ', creativeData)
+
+      importFromCreativeContentData(creativeData)
+
+      // ✅ THEN merge URLs from assets into Pinia images
+      assets.forEach((asset) => {
+        const existingImage = imageStore.getImage(asset.id)
+        if (existingImage) {
+          const updatedImage = { ...existingImage, url: asset.url || asset.path }
+          imageStore.updateImage(updatedImage)
+        }
       })
+
+      console.log('✅ Creative bundle loaded using existing services')
 
       // Note: bundleReady is set by useAppInitializer after all steps complete
       notifications.showSuccess('Bundle Loaded', 'Creative loaded successfully')
@@ -151,17 +162,15 @@ export function useCreativeAPI() {
 
   /**
    * Insert asset with simplified approach
-   * Upload -> Add to Pinia -> Export -> UpdateCreative -> Clear/Cleanup
+   * Upload -> Promote -> Save -> Flush (or rollback on failure)
    */
   const insertAsset = async (creativeId: string, file: File): Promise<InsertAssetResult> => {
-    console.log(`📤 [${isDevelopment ? 'DEV' : 'PROD'}] Inserting asset:`, file.name)
+    console.log(`📤 Inserting asset: ${file.name}`)
 
     suspenseManager.setAssetOperationInProgress(true)
 
-    let uploadedAssetId: string | null = null
-
     try {
-      // Step 1: Upload asset
+      // Step 1: Upload and get ID
       console.log('Step 1: Uploading asset...')
       const uploadResponse = isDevelopment
         ? await useMockAPI().insertAsset(creativeId, file)
@@ -175,98 +184,49 @@ export function useCreativeAPI() {
             }).then((r) => r.json())
           })()
 
-      console.log('🔍 DEBUG: uploadResponse received:', uploadResponse)
-      console.log('🔍 DEBUG: uploadResponse.id:', uploadResponse.id)
-      console.log('🔍 DEBUG: uploadResponse.assetId:', uploadResponse.assetId)
-      console.log('🔍 DEBUG: uploadResponse.path:', uploadResponse.path)
-      console.log('🔍 DEBUG: uploadResponse.url:', uploadResponse.url)
-
-      if (uploadResponse.status < 200 || uploadResponse.status >= 300) {
-        suspenseManager.setAssetOperationInProgress(false)
-        notifications.showError('Upload Failed', uploadResponse.message || 'Upload failed')
-        return { success: false, message: uploadResponse.message || 'Upload failed' }
+      if (!uploadResponse.success) {
+        throw new Error(uploadResponse.message || 'Upload failed')
       }
 
-      uploadedAssetId = uploadResponse.assetId // ✅ Correct field name from InsertAssetResult
-      const uploadedUrl = uploadResponse.path // Just use path directly
-      console.log('🔍 DEBUG: Extracted values:')
-      console.log('  - uploadedAssetId:', uploadedAssetId)
-      console.log('  - uploadedUrl:', uploadedUrl)
-      console.log('✅ Step 1 complete: Asset uploaded', uploadedAssetId)
+      const uploadedAssetId = uploadResponse.assetId
+      const uploadedUrl = uploadResponse.path
 
       if (!uploadedAssetId || !uploadedUrl) {
-        console.log('❌ DEBUG: Missing values!')
-        console.log('  - uploadedAssetId exists?', !!uploadedAssetId)
-        console.log('  - uploadedUrl exists?', !!uploadedUrl)
-        throw new Error(
-          `Asset upload succeeded but no id or path returned. Got id: ${uploadedAssetId}, path: ${uploadedUrl}`,
-        )
+        throw new Error('Missing asset ID or URL from upload')
       }
 
-      // Step 2: Move uploaded image to permanent list with real UUID
-      console.log('Step 2: Moving temp upload to permanent list with real UUID...')
-      imageService.promoteTempToList() // Pass the real UUID to override temp ID
-      console.log('✅ Step 2 complete: Image promoted to list with real UUID:', uploadedAssetId)
+      console.log(`✅ Got ID: ${uploadedAssetId}`)
 
-      // Step 2.5: Cache the uploaded asset with its new UUID before clearing temp
-      console.log('Step 2.5: Caching uploaded asset with new UUID...')
-      if (imageStore.uploadTemp.url && uploadedAssetId) {
-        // Get the image cache service
-        const { useImageCache } = await import('@/features/imagesManager/useImageCache')
-        const imageCache = useImageCache()
+      // Step 2: Promote temp to permanent
+      console.log('Step 2: Promoting temp to list...')
+      imageService.promoteTempToList(uploadedAssetId, uploadedUrl)
 
-        // Cache the asset with its new UUID using the temp blob URL
-        await imageCache.setCacheImage(imageStore.uploadTemp.url, uploadedAssetId)
-      }
-      console.log('✅ Step 3 complete: Data exported')
+      // Step 3: Try to save creative
+      console.log('Step 3: Saving creative...')
+      const saveResult = await updateCreative(creativeId)
 
-      // Step 4: Update creative
-      console.log('Step 4: Updating creative...')
-      const updateResult = await updateCreative(creativeId)
-
-      if (updateResult.success) {
-        // Step 5 Success: Clear uploadTemp (now safe since asset is cached with new UUID)
-        console.log('Step 5: Clearing uploadTemp...')
+      if (saveResult.success) {
+        // Step 4a: Success - Flush temp
+        console.log('✅ Save successful - flushing temp')
         imageService.clearUploadTemp()
-        console.log('✅ Step 5 complete: uploadTemp cleared')
-
         suspenseManager.setAssetOperationInProgress(false)
-        notifications.showSuccess('Asset Uploaded', 'Image uploaded successfully')
-
-        console.log('✅ Asset insertion successful:', uploadedAssetId)
-        return {
-          success: true,
-          message: 'Asset inserted successfully',
-          assetId: uploadedAssetId,
-        }
+        return { success: true, message: 'Asset inserted successfully' }
       } else {
-        // Step 5 Failure: Remove from Pinia
-        console.log('Step 5: Removing from Pinia due to updateCreative failure...')
-        imageService.removeImage(uploadedAssetId)
-        console.log('✅ Step 5 complete: Image removed from Pinia')
-
-        suspenseManager.setAssetOperationInProgress(false)
-        notifications.showError('Update Failed', updateResult.message)
-        return { success: false, message: updateResult.message }
+        // Step 4b: Save failed - Rollback promotion
+        console.log('❌ Save failed - rolling back promotion')
+        imageStore.removeImage(uploadedAssetId)
+        throw new Error(saveResult.message || 'Save failed')
       }
     } catch (error) {
-      console.error('❌ Asset insertion failed:', error)
-
-      // If we added to Pinia, remove it
-      if (uploadedAssetId) {
-        console.log('Removing failed upload from Pinia...')
-        imageService.removeImage(uploadedAssetId)
-      }
-
+      console.error('❌ Insert failed:', error)
       suspenseManager.setAssetOperationInProgress(false)
       notifications.showError(
-        'Asset Upload Failed',
-        error instanceof Error ? error.message : 'Asset insertion failed',
+        'Upload Failed',
+        error instanceof Error ? error.message : 'Upload failed',
       )
-
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Asset insertion failed',
+        message: error instanceof Error ? error.message : 'Upload failed',
       }
     }
   }

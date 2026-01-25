@@ -53,6 +53,12 @@ export const useImageStore = defineStore('images', {
       }
     },
 
+    getImageById: (state) => {
+      return (imageID: string): ImageAsset | undefined => {
+        return state.images[imageID]
+      }
+    },
+
     getUploadTemp: (state) => (): ImageAsset => {
       return state.uploadTemp
     },
@@ -86,10 +92,20 @@ export const useImageStore = defineStore('images', {
       this.images[image.imageID] = image
     },
 
-    updateImage(id: string, updates: Partial<ImageAsset>) {
+    updateImagePartial(id: string, updates: Partial<ImageAsset>) {
       const existing = this.images[id]
       if (existing) {
         this.images[id] = { ...existing, ...updates }
+      }
+    },
+
+    // Update entire image object
+    updateImage(updatedImage: ImageAsset) {
+      if (this.images[updatedImage.imageID]) {
+        this.images[updatedImage.imageID] = updatedImage
+        console.log(`✅ Updated image in store: ${updatedImage.imageID}`)
+      } else {
+        console.warn(`⚠️ Image not found for update: ${updatedImage.imageID}`)
       }
     },
 

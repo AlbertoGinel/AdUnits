@@ -1,12 +1,15 @@
 <template>
-  <div class="image-preview">
+  <div class="image-preview" :class="{ 'grey-background': contentState === 'preview-placeholder' }">
     <!-- Dynamic content based on content state -->
     <div v-if="contentState === 'image-preview'" class="preview-imageElem">
-      <img :src="loadedImage?.src || ''" alt="Current asset" />
+      <img v-if="loadedImageUrl" :src="loadedImageUrl" alt="Current asset" />
+      <div v-else class="image-skeleton">
+        <div class="skeleton-icon">📷</div>
+      </div>
     </div>
 
     <div v-else-if="contentState === 'preview-placeholder'" class="preview-placeholder">
-      <div class="fallback-icon">📷</div>
+      <span v-html="getIcon('imageTool')"></span>
     </div>
 
     <div
@@ -60,13 +63,20 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useEditAssets } from './useEditAsset'
+
+import { useFieldService } from '@/data/services/useFieldService'
+import { useEditTools } from '@/features/editTools/useEditTools'
+import { useImageStore } from '@/data/stores/useImageStore'
+import { useIcons } from '@/features/utils/useIcons'
+
+const { getIcon } = useIcons()
 
 const {
   contentState,
-  loadedImage,
+  currentAssetType, // We'll use this to get the current asset ID
   currentButtons,
-  currentAssetType,
   isButtonDisabled,
 
   // State and navigation
@@ -83,7 +93,34 @@ const {
   // Business logic actions
   handleRemoveAsset,
   handleRemoveTemporalImage,
+  hasUploadTemp,
 } = useEditAssets()
+
+// Get current asset ID using field service
+const { getFieldValue } = useFieldService()
+const { selectedTool } = useEditTools()
+
+const currentAssetId = computed(() => {
+  if (selectedTool.value !== 'image' && selectedTool.value !== 'logo') return ''
+  return getFieldValue(selectedTool.value, 'imageID') || ''
+})
+
+// Get image URL using the async system
+const imageStore = useImageStore()
+
+const loadedImageUrl = computed(() => {
+  // In upload mode, prioritize temp upload
+  if (hasUploadTemp.value) {
+    const tempUpload = imageStore.getUploadTemp()
+    return tempUpload.url
+  }
+
+  // For saved images, get URL from image store
+  if (!currentAssetId.value) return null
+
+  const savedImage = imageStore.getImage(currentAssetId.value)
+  return savedImage?.url || null
+})
 
 // Drag & Drop handlers - defined in component (UI concerns)
 const handleDragEnter = (e: DragEvent) => {
@@ -310,6 +347,59 @@ img {
   font-weight: 500;
   backdrop-filter: blur(4px);
   transition: all 0.2s ease;
+}
+
+.image-skeleton {
+  width: 100%;
+  height: 100%;
+  min-height: 200px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.image-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: inherit;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.skeleton-icon {
+  font-size: 2rem;
+  color: #c0c0c0;
+  z-index: 1;
+  opacity: 0.6;
+}
+
+.grey-background {
+  background-color: var(--color-gray-200);
 }
 
 .btn-preview:hover {

@@ -1,12 +1,10 @@
 import { useImageStore } from '@/data/stores/useImageStore'
-import { useImageCache } from '@/features/imagesManager/useImageCache'
 import { useImageUpload } from '@/features/imagesManager/useImageUpload'
+import { useAdUnitStore } from '../stores/useAdUnitStore'
 import type { ImageAsset } from '@/types/mainTypes'
 
 /**
  * Image Service (Singleton)
- * Coordinates imageStore, imageCache, and imageUpload
- * Business logic layer for image management
  */
 
 let sharedImageService: ReturnType<typeof createImageService> | null = null
@@ -20,8 +18,8 @@ export function useImageService() {
 
 function createImageService() {
   const imageStore = useImageStore()
-  const imageCache = useImageCache()
   const imageUpload = useImageUpload()
+  const adUnitStore = useAdUnitStore()
 
   /**
    * Get full image metadata from store
@@ -36,42 +34,69 @@ function createImageService() {
   }
 
   /**
-   * Get natural dimensions from cached HTMLImageElement (SYNCHRONOUS)
-   * ⚠️ Images must be pre-cached first!
+   * Get natural dimensions from async image loading
+   * Now ASYNCHRONOUS - returns Promise!
    */
-  const getNaturalDimensions = (imageID: string): { width: number; height: number } | null => {
-    const img = imageCache.getCacheImage(imageID)
+  const getNaturalDimensions = async (
+    imageID: string,
+  ): Promise<{ width: number; height: number } | null> => {
+    try {
+      const image = imageStore.getImage(imageID)
+      if (!image?.url) return null
 
-    // Check if it's the fallback image (means not cached)
-    if (!imageCache.isImageReady(imageID)) {
-      console.warn(`⚠️ Image not cached: ${imageID}`)
+      return new Promise((resolve, reject) => {
+        const img = new Image()
+        img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight })
+        img.onerror = reject
+        img.src = image.url
+      })
+    } catch (error) {
+      console.warn(`⚠️ Failed to get dimensions for image: ${imageID}`, error)
       return null
     }
+  }
 
-    return {
-      width: img.naturalWidth,
-      height: img.naturalHeight,
+  /**
+   * Get aspect ratio from async image loading
+   * Now ASYNCHRONOUS - returns Promise!
+   */
+  const getAspectRatio = async (imageID: string): Promise<number | null> => {
+    try {
+      const dimensions = await getNaturalDimensions(imageID)
+      if (!dimensions) return null
+
+      if (dimensions.height === 0) {
+        console.warn(`⚠️ Image has zero height: ${imageID}`)
+        return null
+      }
+
+      return dimensions.width / dimensions.height
+    } catch (error) {
+      console.warn(`⚠️ Failed to get aspect ratio for image: ${imageID}`, error)
+      return null
     }
   }
 
   /**
-   * Get aspect ratio from cached HTMLImageElement (SYNCHRONOUS)
+   * Get HTMLImageElement for canvas rendering
+   * Now ASYNCHRONOUS - loads if needed!
    */
-  const getAspectRatio = (imageID: string): number | null => {
-    const img = imageCache.getCacheImage(imageID)
-    if (!imageCache.isImageReady(imageID)) return null
+  const getImageElement = async (imageID: string): Promise<HTMLImageElement> => {
+    try {
+      const image = imageStore.getImage(imageID)
+      if (!image?.url) throw new Error(`No URL found for image: ${imageID}`)
 
-    if (img.naturalHeight === 0) return null
-
-    return img.naturalWidth / img.naturalHeight
-  }
-
-  /**
-   * Get cached HTMLImageElement for canvas rendering (SYNCHRONOUS)
-   * ⚠️ Images must be pre-cached first!
-   */
-  const getImageElement = (imageID: string): HTMLImageElement => {
-    return imageCache.getCacheImage(imageID)
+      return new Promise((resolve, reject) => {
+        const img = new Image()
+        img.crossOrigin = 'anonymous'
+        img.onload = () => resolve(img)
+        img.onerror = reject
+        img.src = image.url
+      })
+    } catch (error) {
+      console.error(`❌ Failed to get image element: ${imageID}`, error)
+      throw error // Re-throw so caller can handle
+    }
   }
 
   /**
@@ -99,7 +124,9 @@ function createImageService() {
       return
     }
 
-    imageStore.updateImage(imageID, { ...image, name })
+    // ✅ Pass the complete updated image object as one argument
+    const updatedImage = { ...image, name }
+    imageStore.updateImage(updatedImage)
     console.log(`✏️ Updated name for ${imageID}: ${name}`)
   }
 
@@ -139,6 +166,15 @@ function createImageService() {
     return imageStore.getImagesCount()
   }
 
+  const canLoadImage = async (imageID: string): Promise<boolean> => {
+    try {
+      await getImageElement(imageID)
+      return true
+    } catch {
+      return false
+    }
+  }
+
   // TODO: Image validation
   const validateImageForUpload = (): { valid: boolean; error?: string } => {
     // needs a parameter like file: File
@@ -150,6 +186,69 @@ function createImageService() {
     return { valid: true }
   }
 
+  /**
+   * Initialize crop data for an image in an adUnit
+   * Gets all needed data and calculates cover crop in one clean flow
+   */
+  const initialCrop = async (adUnitID: string): Promise<void> => {
+    console.log('lets do initialCrop')
+
+    try {
+      // 1. Get image ID using clean store method
+      const imageID = adUnitStore.getImageOfAdUnit(adUnitID)
+
+      if (!imageID) {
+        console.warn(`⚠️ No image in adUnit ${adUnitID}`)
+        return
+      }
+
+      // 2. Get image element for frame dimensions
+      const imageElement = adUnitStore.getElement(adUnitID, 'image')
+      const frameWidth = imageElement?.width
+      const frameHeight = imageElement?.height
+
+      if (!frameWidth || !frameHeight) {
+        console.warn(`⚠️ No frame dimensions for adUnit ${adUnitID}`)
+        return
+      }
+
+      // 3. Get image natural dimensions
+      const imageDimensions = await getNaturalDimensions(imageID)
+
+      if (!imageDimensions) {
+        console.warn(`⚠️ Could not get image dimensions for ${imageID}`)
+        return
+      }
+
+      // 4. Calculate cover crop (maintain aspect ratio, fill frame)
+      const imageWidth = imageDimensions.width
+      const imageHeight = imageDimensions.height
+
+      const scaleX = frameWidth / imageWidth
+      const scaleY = frameHeight / imageHeight
+      const scale = Math.max(scaleX, scaleY) // Cover strategy
+
+      const cropWidth = frameWidth / scale
+      const cropHeight = frameHeight / scale
+      const cropX = (imageWidth - cropWidth) / 2
+      const cropY = (imageHeight - cropHeight) / 2
+
+      const cropData = {
+        x: cropX,
+        y: cropY,
+        width: cropWidth,
+        height: cropHeight,
+      }
+
+      // 5. Update the element with new crop
+      adUnitStore.updateElement(adUnitID, 'image', { cropData })
+
+      console.log(`✅ Initial crop set for ${adUnitID}:`, cropData)
+    } catch (error) {
+      console.error(`❌ Failed to set initial crop for ${adUnitID}:`, error)
+    }
+  }
+
   return {
     // Metadata queries
     getImageMetadata,
@@ -159,6 +258,7 @@ function createImageService() {
     getImageIds,
     hasImages,
     getImagesCount,
+    canLoadImage,
 
     // Element access (cache coordination)
     getImageElement,
@@ -169,6 +269,9 @@ function createImageService() {
     // Status checks
     isImageLoaded,
 
+    // Crop operations
+    initialCrop,
+
     // Updates
     updateImageName,
     removeImage,
@@ -176,19 +279,11 @@ function createImageService() {
     // Validation (TODO)
     validateImageForUpload,
 
-    // Re-export cache methods
-    isImageReady: imageCache.isImageReady,
-    areAllImagesReady: imageCache.areAllImagesReady,
-    clearCache: imageCache.clearCache,
-
     // Re-export upload methods
     promoteTempToList: imageUpload.promoteTempToList,
     setTemporaryImage: imageUpload.setTemporaryImage,
     getUploadTempImage: imageUpload.getUploadTempImage,
     hasUploadTemp: imageUpload.hasUploadTemp,
     clearUploadTemp: imageUpload.clearUploadTemp,
-
-    // Re-export bulk caching (used by app initializer)
-    bulkCacheImages: imageCache.bulkCacheImages,
   }
 }

@@ -9,6 +9,7 @@ import type {
   LogoElement,
   TextElement,
   DisclaimerElement,
+  DisclaimerBGElement,
   LayerData,
   ImageMetadata,
   AdUnitData,
@@ -16,6 +17,7 @@ import type {
 import type { AdUnitElement } from '../../types/adUnitElementTypes'
 //import type { Layer } from '../../types/mainTypes'
 import type { Layer } from '@/types/LayerTypes'
+import { EDITABLE_ELEMENT_TYPES } from '@/types/mainTypes'
 
 /**
  * Service for transforming between NewData stores and CreativeContentData format
@@ -72,6 +74,14 @@ export function useContentTransformer() {
           visibilityLock: 'visibilityLock' in element ? (element.visibilityLock ?? false) : false,
         }
         return disclaimerElement
+
+      case 'disclaimerBG':
+        if (!('visibility' in element)) return null
+        const disclaimerBGElement: DisclaimerBGElement = {
+          visibility: 'visibility' in element ? (element.visibility ?? true) : true,
+          visibilityLock: 'visibilityLock' in element ? (element.visibilityLock ?? false) : false,
+        }
+        return disclaimerBGElement
 
       default:
         return null
@@ -180,6 +190,13 @@ export function useContentTransformer() {
           locked: elements.disclaimer.locked,
           visibility: elements.disclaimer.visibility,
           visibilityLock: elements.disclaimer.visibilityLock,
+        }
+
+      case 'disclaimerBG':
+        if (!elements.disclaimerBG) return null
+        return {
+          visibility: elements.disclaimerBG.visibility,
+          visibilityLock: elements.disclaimerBG.visibilityLock,
         }
 
       default:
@@ -323,18 +340,19 @@ export function useContentTransformer() {
         layerStore.setLayer(layerId as typeof layerData.id, layer)
       })
 
-      // 3. Import images (if needed - assuming images are handled separately)
+      // 3. Import images - no URL needed here, URLs come from getCreativeBundle
       console.log('🖼️ Importing images:', creativeData.images)
+
       creativeData.images.forEach((imageMetadata) => {
         console.log('📥 Importing image:', imageMetadata)
 
-        // Create image asset for store
+        // Create image asset for store (URL will be populated by getCreativeBundle)
         const imageAsset = {
           imageID: imageMetadata.imageID,
           type: imageMetadata.type,
           name: imageMetadata.name,
           altText: imageMetadata.altText,
-          url: '', // URL will be resolved later by imageUrlResolver
+          url: '', // ✅ Will be populated by getCreativeBundle URL mapping
         }
 
         imageStore.setImage(imageAsset)
@@ -348,10 +366,7 @@ export function useContentTransformer() {
           return
         }
 
-        //EDITABLE: ['headline', 'logo', 'subhead', 'cta', 'image', 'disclaimer', 'disclaimerBG'] as const,
-
-        // Transform and update each element
-        const elementKeys = ['image', 'logo', 'headline', 'subhead', 'cta', 'disclaimer'] as const
+        const elementKeys = EDITABLE_ELEMENT_TYPES
 
         elementKeys.forEach((elementKey) => {
           if (adUnitData.elements[elementKey]) {

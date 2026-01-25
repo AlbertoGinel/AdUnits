@@ -1,11 +1,7 @@
 import { useCreativeAPI } from '../api/useCreativeAPI'
 import { useAppStore } from '@/data/stores/useAppStore'
 import { useAdUnitStore } from '@/data/stores/useAdUnitStore'
-import { useImageService } from '@/data/services/useImageService'
-import { useImageUrlResolver } from '@/features/imagesManager/useImageUrlResolver'
-
 import { useSuspenseManager } from '@/features/feedbackAsync/useSuspenseManager'
-import { useContentTransformer } from '@/data/services/useHelperContentData'
 import type { FrameModel } from '@/types/FrameModelTypes'
 import type { AdUnit } from '@/types/adUnitElementTypes'
 
@@ -31,13 +27,10 @@ const loadFrameModels = async (): Promise<FrameModel> => {
 let isInitialized = false
 
 export const useAppInitializer = (creativeId: string) => {
-  const imageService = useImageService()
-  const imageUrlResolver = useImageUrlResolver()
   const creativeAPI = useCreativeAPI()
   const appStore = useAppStore()
   const adUnitStore = useAdUnitStore()
   const suspenseManager = useSuspenseManager()
-  const { importFromCreativeContentData } = useContentTransformer()
 
   appStore.setCreativeId(creativeId)
 
@@ -45,34 +38,12 @@ export const useAppInitializer = (creativeId: string) => {
    * Step 2: Initialize bundle (images and data) from API
    */
   const initializeBundle = async (creativeId: string) => {
-    // Reset image cache state
-    imageService.clearCache()
-    suspenseManager.setImagesCached(false)
-
-    // Fetch creative bundle from API
+    // Fetch creative bundle from API (includes URL mapping)
     const bundle = await creativeAPI.getCreativeBundle(creativeId)
 
-    // Import content data to stores
-    importFromCreativeContentData(bundle.creativeData)
+    // All URL mapping is handled in getCreativeBundle, no caching needed
+    console.log('✅ Bundle loaded: Images will load on-demand')
 
-    // Resolve image URLs from bundle
-    const imagesToCache = imageUrlResolver.resolveImagesToCache(bundle)
-
-    console.log(
-      `🔍 ImageService: ${imagesToCache.length}/${bundle.creativeData.images.length} images resolved for caching`,
-    )
-
-    // Cache all resolved images
-    if (imagesToCache.length > 0) {
-      await imageService.bulkCacheImages(imagesToCache)
-    }
-
-    // Check image loading results
-    if (!imageService.areAllImagesReady()) {
-      console.warn('⚠️ Not all images are ready after initialization')
-    }
-
-    suspenseManager.setImagesCached(true)
     return bundle
   }
 
@@ -85,7 +56,6 @@ export const useAppInitializer = (creativeId: string) => {
     try {
       // Reset suspense states
       suspenseManager.setBundleReady(false)
-      suspenseManager.setImagesCached(false)
 
       console.log('🚀 Initializing app with creative:', creativeId)
 

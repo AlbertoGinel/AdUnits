@@ -35,6 +35,13 @@ export const useAdUnitStore = defineStore('adUnits', {
       return { ...state.adUnits }
     },
 
+    getImageOfAdUnit: (state) => {
+      return (adUnitID: string): string | null => {
+        const element = state.adUnits[adUnitID]?.elements?.image
+        return element && isImageElement(element) ? element.imageID : null
+      }
+    },
+
     getAdUnitIds: (state) => (): string[] => {
       return Object.keys(state.adUnits)
     },

@@ -1,5 +1,6 @@
 import { useAdUnitStore } from '@/data/stores/useAdUnitStore'
-import { useImageService } from '@/data/services/useImageService'
+import { useImageStore } from '@/data/stores/useImageStore'
+import { ref } from 'vue'
 import type { AdUnitElement } from '@/types/adUnitElementTypes'
 import {
   isTextElement,
@@ -13,6 +14,8 @@ export interface RenderableElement {
   element: AdUnitElement
   config: Record<string, unknown>
   visible: boolean
+  isLoaded?: boolean // For image elements: is HTMLImageElement loaded?
+  hasImageUrl?: boolean // For image elements: is URL available from async system?
 }
 
 /**
@@ -21,7 +24,10 @@ export interface RenderableElement {
  */
 export function useRendering() {
   const adUnitStore = useAdUnitStore()
-  const imageService = useImageService()
+  const imageStore = useImageStore()
+
+  // Track loaded images to avoid re-rendering on every update
+  const loadedImages = ref<Map<string, HTMLImageElement>>(new Map())
 
   const HIDE_DURING_CROP = ['logo', 'headline', 'subhead', 'cta', 'disclaimer', 'cta-background']
   const RENDER_ORDER = [
@@ -36,9 +42,56 @@ export function useRendering() {
     'subhead',
   ]
 
+  // Async image loading for Konva
+  const getImageForRendering = async (imageID: string): Promise<HTMLImageElement | null> => {
+    try {
+      // Check if already loaded
+      if (loadedImages.value.has(imageID)) {
+        return loadedImages.value.get(imageID)!
+      }
+
+      // Get image URL from store
+      const image = imageStore.getImage(imageID)
+      if (!image?.url) {
+        console.warn(`No URL found for image: ${imageID}`)
+        return null
+      }
+
+      // Load image asynchronously
+      const imageElement = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new Image()
+        img.crossOrigin = 'anonymous'
+        img.onload = () => resolve(img)
+        img.onerror = reject
+        img.src = image.url
+      })
+
+      loadedImages.value.set(imageID, imageElement)
+      return imageElement
+    } catch (error) {
+      console.warn(`Failed to load image for rendering: ${imageID}`, error)
+      return null
+    }
+  }
+
+  // Create fallback rect config for missing images
+  const createImageFallback = (element: AdUnitElement): Record<string, unknown> => {
+    return {
+      x: element.x,
+      y: element.y,
+      width: element.width,
+      height: element.height,
+      fill: '#f0f0f0', // Light gray skeleton color
+      stroke: '#e0e0e0',
+      strokeWidth: 1,
+      cornerRadius: 4,
+      name: `${element.type}-fallback`,
+    }
+  }
+
   const isCropping = false // TODO: Connect to crop mode state
 
-  // Build Konva config - minimal transformations only
+  // Build Konva config - now async for images
   const buildKonvaConfig = (element: AdUnitElement): Record<string, unknown> => {
     // Base config - all elements have these
     const config: Record<string, unknown> = {
@@ -87,17 +140,25 @@ export function useRendering() {
       return rectConfig
     }
 
-    // Image elements - load image + handle special cases
+    // Image elements - async loading with fallback
     if (isImageElement(element)) {
-      // Load image from manager
-      const loadedImage = imageService.getImageElement(element.imageID)
+      // Check if image is already loaded
+      const cachedImage = loadedImages.value.get(element.imageID)
+
+      if (!cachedImage) {
+        // Return fallback rect while image loads
+        return createImageFallback(element)
+      }
+
+      // Image is loaded, create proper image config
+      const loadedImage = cachedImage
 
       // Special case: Logo needs centering
       if (element.type === 'logo' && loadedImage) {
-        const dimensions = imageService.getNaturalDimensions(element.imageID)
+        const naturalWidth = loadedImage.naturalWidth
+        const naturalHeight = loadedImage.naturalHeight
 
-        if (dimensions) {
-          const { width: naturalWidth, height: naturalHeight } = dimensions
+        if (naturalWidth && naturalHeight) {
           const aspectRatio = naturalWidth / naturalHeight
           const maxAspectRatio = element.width / element.height
 
@@ -156,6 +217,8 @@ export function useRendering() {
         element,
         config: buildKonvaConfig(element),
         visible: isElementVisible(element),
+        isLoaded: isImageElement(element) ? loadedImages.value.has(element.imageID) : true,
+        hasImageUrl: isImageElement(element) ? !!imageStore.getImage(element.imageID)?.url : true,
       }))
       .sort((a, b) => {
         const indexA = RENDER_ORDER.indexOf(a.id)
@@ -167,7 +230,25 @@ export function useRendering() {
       })
   }
 
+  // Preload images for an ad unit (call this when ad unit becomes visible)
+  const preloadImagesForAdUnit = async (adUnitID: string): Promise<void> => {
+    const elements = adUnitStore.getAdUnitElements(adUnitID)
+    const imageElements = elements.filter(isImageElement)
+
+    // Load all images in parallel
+    const loadPromises = imageElements.map((element) => getImageForRendering(element.imageID))
+
+    try {
+      await Promise.all(loadPromises)
+      console.log(`✅ Preloaded ${imageElements.length} images for ad unit ${adUnitID}`)
+    } catch (error) {
+      console.warn(`⚠️ Some images failed to preload for ad unit ${adUnitID}`, error)
+    }
+  }
+
   return {
     getRenderableElements,
+    preloadImagesForAdUnit,
+    getImageForRendering, // For manual image loading if needed
   }
 }

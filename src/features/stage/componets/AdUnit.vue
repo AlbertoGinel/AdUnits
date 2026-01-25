@@ -14,11 +14,17 @@
         :config="renderData.config"
       />
 
-      <!-- Image Elements -->
-      <v-image
-        v-else-if="isImageElement(renderData.element) && renderData.visible"
-        :config="renderData.config"
-      />
+      <!-- Image elements: Smart switching -->
+      <template v-else-if="isImageElement(renderData.element) && renderData.visible">
+        <!-- Case 1: No URL available → Gray rectangle -->
+        <v-rect v-if="!renderData.hasImageUrl" :config="getGrayRectConfig(renderData)" />
+
+        <!-- Case 2: URL available but not loaded → Shimmer skeleton -->
+        <v-rect v-else-if="!renderData.isLoaded" :config="getShimmerConfig(renderData)" />
+
+        <!-- Case 3: Loaded → Actual image -->
+        <v-image v-else :config="renderData.config" />
+      </template>
     </template>
   </v-group>
 </template>
@@ -27,6 +33,7 @@
 import { computed } from 'vue'
 import { useRendering } from '@/features/stage/composables/useRendering'
 import { isTextElement, isImageElement, isRectElement } from '@/types/adUnitElementTypes'
+import type { RenderableElement } from '@/features/stage/composables/useRendering'
 
 interface Props {
   adUnitID: string
@@ -37,5 +44,44 @@ const props = defineProps<Props>()
 const rendering = useRendering()
 
 // Get all renderable elements (ordered, with configs, visibility handled)
-const renderableElements = computed(() => rendering.getRenderableElements(props.adUnitID))
+// This should be reactive to loading state changes
+const renderableElements = computed(() => {
+  const elements = rendering.getRenderableElements(props.adUnitID)
+
+  // Trigger async loading for any images that have URLs but aren't loaded
+  elements.forEach((element) => {
+    if (isImageElement(element.element) && element.hasImageUrl && !element.isLoaded) {
+      // Trigger loading asynchronously (don't await to keep computed sync)
+      rendering.getImageForRendering(element.element.imageID).catch(console.error)
+    }
+  })
+
+  return elements
+})
+
+// Gray rectangle config for missing images (no URL)
+const getGrayRectConfig = (renderData: RenderableElement) => ({
+  x: renderData.config.x,
+  y: renderData.config.y,
+  width: renderData.config.width,
+  height: renderData.config.height,
+  fill: '#e0e0e0',
+  strokeWidth: 0,
+  cornerRadius: 0,
+})
+
+// Shimmer skeleton config for loading images
+const getShimmerConfig = (renderData: RenderableElement) => ({
+  x: renderData.config.x,
+  y: renderData.config.y,
+  width: renderData.config.width,
+  height: renderData.config.height,
+  fill: '#f0f0f0',
+  stroke: '#e0e0e0',
+  strokeWidth: 1,
+  cornerRadius: 4,
+  opacity: 0.8,
+  // Note: Konva doesn't support CSS animations, so this is a static shimmer color
+  // For actual shimmer effect, you'd need to implement with Konva animations
+})
 </script>

@@ -14,13 +14,16 @@
           class="thumbnail-container"
           :class="{ selected: selectedLibraryImageId === upload.imageID }"
         >
+          <!-- Dynamic content based on image loading state -->
           <img
-            v-if="upload.image"
-            :src="upload.image.src"
+            v-if="getImageUrl(upload.imageID)"
+            :src="getImageUrl(upload.imageID) ?? undefined"
             :alt="upload.name"
             class="upload-thumbnail"
           />
-          <div v-else class="upload-placeholder">Loading...</div>
+          <div v-else class="image-skeleton">
+            <div class="skeleton-icon">📷</div>
+          </div>
 
           <!-- Custom check mark for selected items -->
           <div
@@ -51,6 +54,7 @@
 
 <script setup lang="ts">
 import { useEditAssets } from './useEditAsset'
+import { useImageStore } from '@/data/stores/useImageStore'
 import { useIcons } from '@/features/utils/useIcons'
 
 const {
@@ -61,6 +65,13 @@ const {
   goToUploadAsset,
 } = useEditAssets()
 const { getIcon } = useIcons()
+const imageStore = useImageStore()
+
+// Get URL for each library image from store
+const getImageUrl = (imageID: string): string | null => {
+  const image = imageStore.getImage(imageID)
+  return image?.url || null
+}
 </script>
 
 <style scoped>
@@ -126,16 +137,62 @@ const { getIcon } = useIcons()
   display: block;
 }
 
-.upload-placeholder {
+.upload-placeholder,
+.image-skeleton {
   width: 100%;
   aspect-ratio: 4/3;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #e9ecef;
   border-radius: 10px;
   font-size: 12px;
   color: #6c757d;
+}
+
+.upload-placeholder {
+  background: #e9ecef;
+}
+
+.image-skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  position: relative;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.image-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: inherit;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.skeleton-icon {
+  font-size: 1.5rem;
+  color: #c0c0c0;
+  z-index: 1;
+  opacity: 0.6;
 }
 
 .upload-name {

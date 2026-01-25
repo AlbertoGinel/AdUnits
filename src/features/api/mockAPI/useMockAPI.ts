@@ -410,14 +410,14 @@ function createMockDatabase() {
             const response = await fetch(asset.path)
             const blob = await response.blob()
 
-            // Store with blob data, not import path - AssetResponse compliant
-            const mockUrl = `mock://api/v1/assets/${asset.id}` // Mock server URL
+            // Store with blob URL - browser can load directly
+            const blobUrl = URL.createObjectURL(blob)
             const seedAsset: AssetResponse & { blob: Blob; name: string; mimeType: string } = {
               id: asset.id,
               type: 'picture', // ✅ Use consistent type
               creative_id: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
-              path: mockUrl, // ✅ Use mock URL as path
-              url: mockUrl, // Mock server URL where asset can be accessed
+              path: blobUrl, // ✅ Use blob URL - works directly in browser
+              url: blobUrl, // Blob URL that browser can load natively
               error: '',
               // Internal storage fields
               blob: blob,
@@ -426,6 +426,7 @@ function createMockDatabase() {
             }
             await performStoreOperation(STORES.ASSETS, 'readwrite', (store) => store.put(seedAsset))
             console.log(`(🌱 Seeding)   ✅ Stored blob: ${asset.id} (${blob.size} bytes)`)
+            console.log(`(🌱 Seeding)   🔗 Blob URL created: ${blobUrl}`)
           } catch (error) {
             console.error(`(🌱 Seeding)   ❌ Failed to fetch ${asset.id}:`, error)
           }
@@ -504,18 +505,18 @@ function createMockDatabase() {
   /**
    * Insert new asset into assets store (accepts File object to simulate multipart)
    */
-  const insertAsset = async (creativeId: string, file: File): Promise<AssetResponse> => {
+  const insertAssetToDB = async (creativeId: string, file: File): Promise<AssetResponse> => {
     // Generate new random ID for the asset
     const newAssetId = `${crypto.randomUUID()}`
 
-    // Extract metadata from File object (simulating multipart processing)
-    const mockUrl = `mock://api/v1/assets/${newAssetId}` // Mock URL that represents server endpoint
+    // Extract metadata from File object and create blob URL
+    const blobUrl = URL.createObjectURL(file)
     const asset: AssetResponse & { blob: File; name: string; mimeType: string } = {
       id: newAssetId,
       type: 'picture', // ✅ Match seeded assets type
       creative_id: creativeId,
-      path: mockUrl, // ✅ Use mock URL as path (like seeded assets)
-      url: mockUrl, // Mock server URL where asset can be accessed
+      path: blobUrl, // ✅ Use blob URL - works directly in browser
+      url: blobUrl, // Blob URL that browser can load natively
       error: '',
       // Internal storage fields
       blob: file,
@@ -632,7 +633,7 @@ function createMockDatabase() {
     getCreativeData,
     getAssetById,
     upsertAsset,
-    insertAsset,
+    insertAssetToDB,
     updateCreativeData,
     deleteAsset,
     clearDatabase,
@@ -660,28 +661,6 @@ const mockDB = createMockDatabase()
  * Returns responses that match real API structure
  */
 export function useMockAPI() {
-  // In-memory registry to reuse object URLs during a session
-  const urlRegistry = new Map<string, string>()
-
-  const ensureBlobUrlForAsset = async (asset: AssetResponse & { blob?: Blob }): Promise<string> => {
-    // Check if we already have a blob URL for this asset
-    const existing = urlRegistry.get(asset.id)
-    if (existing) return existing
-
-    // ✅ Get blob from database (already stored during seeding or upload)
-    const blob = asset.blob
-
-    if (!blob) {
-      console.error(`❌ No blob data for asset ${asset.id}`)
-      return '' // No fallback - blob should always exist in real database
-    }
-
-    // Create and cache object URL from blob
-    const objectUrl = URL.createObjectURL(blob)
-    urlRegistry.set(asset.id, objectUrl)
-    return objectUrl
-  }
-
   const simulateNetworkCall = async <T>(successResponse: T, operationName: string): Promise<T> => {
     const delay =
       Math.floor(Math.random() * (MOCK_CONFIG.maxDelay - MOCK_CONFIG.minDelay)) +
@@ -711,6 +690,42 @@ export function useMockAPI() {
   }
 
   /**
+   * Ensure asset has a valid blob URL, regenerating if needed
+   */
+  const ensureBlobUrlForAsset = async (
+    asset: AssetResponse & { blob?: Blob; name?: string; mimeType?: string },
+  ): Promise<string> => {
+    // Check if existing URL is still valid
+    if (asset.url && asset.url.startsWith('blob:')) {
+      try {
+        // Test if blob URL still works
+        const response = await fetch(asset.url, { method: 'HEAD' })
+        if (response.ok) {
+          console.log(`🔗 Reusing valid blob URL: ${asset.id}`)
+          return asset.url // Still valid!
+        }
+      } catch {
+        // URL is invalid, will regenerate below
+      }
+    }
+
+    // Generate fresh URL from stored blob
+    if (asset.blob) {
+      const freshUrl = URL.createObjectURL(asset.blob)
+      console.log(`🔄 Regenerated blob URL for ${asset.id}: ${freshUrl}`)
+
+      // Update stored asset with new URL
+      const updatedAsset = { ...asset, url: freshUrl }
+      await mockDB.upsertAsset(updatedAsset)
+
+      return freshUrl
+    }
+
+    console.error(`❌ No blob data for ${asset.id}`)
+    return asset.url || ''
+  }
+
+  /**
    * GET /api/v1/assets/creative/{id}
    */
   const fetchAssets = async (
@@ -725,16 +740,16 @@ export function useMockAPI() {
       await mockDB.seedDatabase()
       const assets = await mockDB.getAllAssets(creativeId)
 
-      // Generate blob URLs and return clean AssetResponse objects
+      // Ensure valid blob URLs and return clean AssetResponse objects
       const content: AssetResponse[] = await Promise.all(
         assets.map(async (asset) => {
-          const path = await ensureBlobUrlForAsset(asset)
+          const validUrl = await ensureBlobUrlForAsset(asset)
           return {
             id: asset.id,
             type: asset.type,
             creative_id: asset.creative_id,
-            path,
-            url: asset.url, // Include the mock URL from stored asset
+            path: validUrl,
+            url: validUrl, // Use the valid/regenerated URL
             error: asset.error,
           }
         }),
@@ -801,17 +816,20 @@ export function useMockAPI() {
       console.log(`📤 Mock API: Inserting asset for creative ${creativeId}`)
       console.log(`   File: ${file.name} (${file.size} bytes, ${file.type})`)
 
-      const insertedAsset = await mockDB.insertAsset(creativeId, file)
-      console.log('🔍 DEBUG: insertedAsset from mockDB:', insertedAsset)
+      const insertedAsset = await mockDB.insertAssetToDB(creativeId, file)
 
-      const result = {
+      // ✅ Ensure we have a proper UUID and blob URL
+      console.log(`✅ Generated UUID for inserted asset: ${insertedAsset.id}`)
+      console.log(`✅ Generated blob URL: ${insertedAsset.url}`)
+
+      const result: InsertAssetResult = {
         success: true,
         message: 'Asset inserted successfully',
-        assetId: insertedAsset.id,
-        path: insertedAsset.url,
+        assetId: insertedAsset.id, // ✅ This should be UUID, not temp ID
+        path: insertedAsset.url, // ✅ This should be blob URL
       }
-      console.log('🔍 DEBUG: Final result being returned:', result)
 
+      console.log('🔍 DEBUG: Final insertAsset result:', result)
       return await simulateNetworkCall(result, 'insertAsset')
     } catch (error) {
       console.error('❌ Failed to insert asset:', error)
@@ -829,14 +847,6 @@ export function useMockAPI() {
     try {
       console.log(`🗑️ Mock API: Deleting asset ${assetId}`)
       const success = await mockDB.deleteAsset(assetId)
-      // Best-effort cleanup of registry; explicit URL.revokeObjectURL is optional for this mock
-      const existing = urlRegistry.get(assetId)
-      if (existing) {
-        try {
-          URL.revokeObjectURL(existing)
-        } catch {}
-        urlRegistry.delete(assetId)
-      }
 
       return await simulateNetworkCall(
         {
@@ -888,3 +898,6 @@ export function useMockAPI() {
     updateCreative,
   }
 }
+
+// Export the mock database for Vite dev server use
+export { createMockDatabase }

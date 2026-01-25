@@ -30,7 +30,7 @@ export type NonEditableElementType = Exclude<ElementType, EditableElementType>
 export const TEXT_ELEMENT_TYPES = ELEMENT_TYPES.TEXT
 export const IMAGE_ELEMENT_TYPES = ELEMENT_TYPES.IMAGE
 export const RECT_ELEMENT_TYPES = ELEMENT_TYPES.RECT
-export const EDITABLE_ELEMENT_TYPES = ELEMENT_TYPES.TEXT
+export const EDITABLE_ELEMENT_TYPES = ELEMENT_TYPES.EDITABLE
 
 // Core image and app types
 export interface ImageAsset {

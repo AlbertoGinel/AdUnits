@@ -308,7 +308,7 @@
           "width": 403,
           "height": 47.5,
           "fillLinearGradientStartPoint": { "x": 0, "y": 0 },
-          "fillLinearGradientEndPoint": { "x": 0, "y": 100 },
+          "fillLinearGradientEndPoint": { "x": 0, "y": 23.75 },
           "fillLinearGradientColorStops": [0, "#00000000", 1, "#00000080"]
         }
       }
@@ -487,7 +487,7 @@
           "type": "disclaimerBG",
           "x": 75,
           "y": 34.5,
-          "width": 134,
+          "width": 135,
           "height": 34.5,
           "fillLinearGradientStartPoint": { "x": 0, "y": 0 },
           "fillLinearGradientEndPoint": { "x": 0, "y": 15 },
@@ -640,7 +640,7 @@
           "type": "disclaimerBG",
           "x": 0,
           "y": 30,
-          "width": 246,
+          "width": 245,
           "height": 30,
           "fillLinearGradientStartPoint": { "x": 0, "y": 0 },
           "fillLinearGradientEndPoint": { "x": 0, "y": 15 },

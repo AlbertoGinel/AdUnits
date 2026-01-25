@@ -1,6 +1,7 @@
 import { useAdUnitStore } from '../stores/useAdUnitStore'
 import { useAppStore } from '../stores/useAppStore'
 import { useLayerStore } from '../stores/useLayerStore'
+import { useImageService } from './useImageService'
 import type { EditableElementType, EditablePropertiesOf } from '../../types/mainTypes'
 import {
   type ElementPropertyValueType,
@@ -17,6 +18,7 @@ export function useFieldService() {
   const adUnitsStore = useAdUnitStore()
   const appStore = useAppStore()
   const layerStore = useLayerStore()
+  const imageService = useImageService()
 
   /**
    * Cascade update to all unlocked AdUnits
@@ -136,6 +138,11 @@ export function useFieldService() {
           [lockField]: true,
         } as Partial<typeof element>)
       }
+
+      // ✅ AUTO-CROP: If setting imageID on image element, calculate initial crop
+      if (property === 'imageID' && value && elementKey === 'image') {
+        imageService.initialCrop(adUnitID)
+      }
     } else {
       // In bulk mode: update layer store and cascade to unlocked units
       layerStore.updateLayer(elementKey, {
@@ -144,6 +151,14 @@ export function useFieldService() {
 
       // Cascade to all unlocked ad units
       cascadeUpdate(elementKey, property, value)
+
+      // ✅ AUTO-CROP: If setting imageID in bulk mode, calculate crop for all unlocked adUnits
+      if (property === 'imageID' && value && elementKey === 'image') {
+        const unlockedAdUnitIds = adUnitsStore.getAdUnitsByPropertyLock(elementKey, property, false)
+        unlockedAdUnitIds.forEach((adUnitID) => {
+          imageService.initialCrop(adUnitID)
+        })
+      }
     }
   }
 
