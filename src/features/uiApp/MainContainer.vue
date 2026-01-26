@@ -8,7 +8,7 @@
 
 <script setup lang="ts">
 import ToolsSection from './ToolsSection.vue'
-import CanvasArea from './CanvasArea.vue'
+import CanvasArea from '../canvasTool/CanvasArea.vue'
 import CanvasScreen from '../stage/componets/CanvasScreen.vue'
 </script>
 

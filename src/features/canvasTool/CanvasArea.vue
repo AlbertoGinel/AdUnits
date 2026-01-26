@@ -3,7 +3,7 @@
     <!-- Title Section -->
     <div class="title-section">
       <h3 class="canvas-title">Canvas</h3>
-      <select class="zoom-dropdown">
+      <select class="zoom-dropdown" v-model="selectedZoom" @change="handleZoomChange">
         <option value="100">100%</option>
         <option value="75">75%</option>
         <option value="50">50%</option>
@@ -16,7 +16,13 @@
     <div class="file-background-section">
       <h4 class="section-title">File background</h4>
       <div class="background-controls">
-        <input type="text" value="EDF4F7" class="hex-input" placeholder="EDF4F7" />
+        <input
+          v-model="backgroundColorInput"
+          type="text"
+          class="hex-input"
+          placeholder="color"
+          maxlength="6"
+        />
       </div>
     </div>
 
@@ -36,63 +42,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import LayerItem from './LayerItem.vue'
-import { useAppStore } from '@/data/stores/useAppStore'
-import { useLayerStore } from '@/data/stores/useLayerStore'
-import { useAdUnitStore } from '@/data/stores/useAdUnitStore'
-import type { IconName } from '@/features/utils/useIcons'
+import { useCanvasTool } from './useCanvasTool'
 
-const appStore = useAppStore()
-const layerStore = useLayerStore()
-const adUnitStore = useAdUnitStore()
-
-// Mapping for layer IDs to display names and icons
-const layerMapping: Record<string, { name: string; iconName: IconName }> = {
-  headline: { name: 'Headline', iconName: 'textTool' },
-  logo: { name: 'Logo', iconName: 'logoTool' },
-  subhead: { name: 'Subheadline', iconName: 'textTool' },
-  cta: { name: 'CTA', iconName: 'textTool' },
-  image: { name: 'Image', iconName: 'imageTool' },
-  disclaimer: { name: 'Disclaimer Text', iconName: 'textTool' },
-  disclaimerBG: { name: 'Disclaimer BG', iconName: 'vectorialCursor' },
-}
-
-// Dynamic layers list based on current view mode
-const layersList = computed(() => {
-  const currentView = appStore.getCurrentView()
-
-  if (currentView === 'bulkMode') {
-    // Bulk mode: show layers from store
-    const layers = layerStore.getLayers()
-    return Object.entries(layers)
-      .filter(([id]) => layerMapping[id]) // Filter out unmapped layers
-      .map(([id]) => {
-        const mapping = layerMapping[id]!
-        return {
-          id,
-          name: mapping.name,
-          iconName: mapping.iconName,
-        }
-      })
-  } else {
-    // Focus mode: show elements from current ad unit
-    const currentAdUnitId = appStore.getCurrentAdUnitId()
-    if (!currentAdUnitId) return []
-
-    const elements = adUnitStore.getAdUnitElements(currentAdUnitId)
-    return elements
-      .filter((element) => element.type && layerMapping[element.type]) // Filter out elements without valid types
-      .map((element) => {
-        const mapping = layerMapping[element.type]!
-        return {
-          id: element.type,
-          name: mapping.name,
-          iconName: mapping.iconName,
-        }
-      })
-  }
-})
+// All business logic is now in the composable
+const { selectedZoom, handleZoomChange, layersList, backgroundColorInput } = useCanvasTool()
 </script>
 
 <style scoped>

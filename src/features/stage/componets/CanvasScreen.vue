@@ -1,7 +1,12 @@
 ﻿<template>
   <CanvasScreenSkeleton v-if="!bundleReady" />
 
-  <div v-else ref="containerRef" class="canvas-screen">
+  <div
+    v-else
+    ref="containerRef"
+    class="canvas-screen"
+    :style="{ backgroundColor: stage.backgroundColor.value }"
+  >
     <v-stage
       :config="stage.stageConfig.value"
       class="main-stage"
@@ -33,7 +38,7 @@ const bundleReady = computed(() => suspenseManager.bundleReady.value)
 const containerRef = ref<HTMLElement | null>(null)
 
 // Stage controller (DOM-dependent)
-const stage = useKonvaStage(containerRef, bundleReady)
+const stage = useKonvaStage(containerRef)
 
 // View state management (singleton)
 const viewState = useViewState()

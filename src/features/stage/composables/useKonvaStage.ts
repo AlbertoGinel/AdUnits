@@ -1,8 +1,9 @@
 // composables/view/useKonvaStage.ts
-import { ref, reactive, computed, type Ref } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { useAppStore } from '@/data/stores/useAppStore'
 import { useAdUnitStore } from '@/data/stores/useAdUnitStore'
 import type Konva from 'konva'
+import type { Ref } from 'vue'
 
 interface Position {
   x: number
@@ -17,17 +18,42 @@ interface KonvaEvent {
 /**
  * Manages Konva stage zoom/pan with responsive container sizing
  * Ephemeral UI state (not persisted)
+ * SINGLETON - shared across all components
  */
-export function useKonvaStage(
-  containerRef: Ref<HTMLElement | null>,
-  isReady: Ref<boolean> = ref(true),
-) {
+
+// Singleton state
+let stageInstance: ReturnType<typeof createKonvaStage> | null = null
+
+export function useKonvaStage(containerRef?: Ref<HTMLElement | null>) {
+  // If already created, return existing instance (ignore any new containerRef)
+  if (stageInstance) {
+    return stageInstance
+  }
+
+  // If not created and no container provided, error
+  if (!containerRef) {
+    throw new Error(
+      '🎯 Stage not initialized - containerRef required for first use (call from CanvasScreen)',
+    )
+  }
+
+  // Create new instance with container (first time only)
+  console.log('🎯 Creating Konva stage singleton with container')
+  stageInstance = createKonvaStage(containerRef)
+  return stageInstance
+}
+
+function createKonvaStage(containerRef: Ref<HTMLElement | null>) {
   const appStore = useAppStore()
   const adUnitStore = useAdUnitStore()
 
-  // Zoom/Pan state
+  // Zoom/Pan state - shared across all components
   const scale = ref(1)
   const position = reactive<Position>({ x: 0, y: 0 })
+
+  // Background color state
+  const backgroundColor = ref('#e0e0e0')
+
   const isPanning = ref(false)
   const panStart = reactive<Position>({ x: 0, y: 0 })
 
@@ -51,7 +77,7 @@ export function useKonvaStage(
    */
   const stageConfig = computed(() => {
     // Always provide safe minimum dimensions
-    if (!isReady.value || !containerRef.value) {
+    if (!containerRef.value) {
       return {
         width: 800, // Safe minimum width
         height: 600, // Safe minimum height
@@ -223,6 +249,19 @@ export function useKonvaStage(
   /**
    * Reset zoom to 100% and center
    */
+  function setZoom(newScale: number) {
+    scale.value = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale))
+    // Center the view after zoom change
+    const { width, height } = getContainerSize()
+    const contentWidth = contentBounds.value.width
+    const contentHeight = contentBounds.value.height
+    const scaledWidth = contentWidth * scale.value
+    const scaledHeight = contentHeight * scale.value
+
+    position.x = (width - scaledWidth) / 2
+    position.y = (height - scaledHeight) / 2
+  }
+
   function resetZoom() {
     scale.value = 1
     const contentWidth = contentBounds.value.width
@@ -232,17 +271,44 @@ export function useKonvaStage(
     position.y = (height - contentHeight) / 2
   }
 
+  /**
+   * Background color management
+   */
+  const setBackgroundColor = (color: string) => {
+    // Skip empty/falsy
+    if (!color) return
+
+    const hexColor = color.startsWith('#') ? color : `#${color}`
+
+    // Skip if same
+    if (backgroundColor.value === hexColor) return
+
+    // Validate hex
+    if (!/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(hexColor)) {
+      console.warn(`Invalid color: ${color}`)
+      return
+    }
+
+    backgroundColor.value = hexColor
+  }
+
+  const getBackgroundColor = () => backgroundColor.value
+
   return {
     // State
     stageConfig,
     scale,
     position,
     isPanning,
+    backgroundColor,
 
     // Actions
     zoomToFit,
     zoomToPoint,
     resetZoom,
+    setZoom,
+    setBackgroundColor,
+    getBackgroundColor,
 
     // Event handlers
     handleWheel,

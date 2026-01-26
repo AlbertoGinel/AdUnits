@@ -1,12 +1,12 @@
 <template>
-  <div class="layer-item">
+  <div class="layer-item" @click="handleClick">
     <SingleIcon :name="iconName" size="md" class="layer-icon" />
     <span class="text-bentonville-sm-400">{{ name }}</span>
   </div>
 </template>
 
 <script setup lang="ts">
-import SingleIcon from './SingleIcon.vue'
+import SingleIcon from '../uiApp/SingleIcon.vue'
 import type { IconName } from '@/features/utils/useIcons'
 
 interface Props {
@@ -14,7 +14,16 @@ interface Props {
   name: string
 }
 
+interface Emits {
+  (e: 'click'): void
+}
+
 defineProps<Props>()
+const emit = defineEmits<Emits>()
+
+const handleClick = () => {
+  emit('click')
+}
 </script>
 
 <style scoped>
