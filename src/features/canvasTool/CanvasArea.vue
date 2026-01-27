@@ -35,6 +35,9 @@
           :key="layer.id"
           :icon-name="layer.iconName"
           :name="layer.name"
+          :id="layer.id"
+          @hover="handleLayerHover"
+          @hover-end="handleLayerHoverEnd"
         />
       </div>
     </div>
@@ -46,7 +49,14 @@ import LayerItem from './LayerItem.vue'
 import { useCanvasTool } from './useCanvasTool'
 
 // All business logic is now in the composable
-const { selectedZoom, handleZoomChange, layersList, backgroundColorInput } = useCanvasTool()
+const {
+  selectedZoom,
+  handleZoomChange,
+  layersList,
+  backgroundColorInput,
+  handleLayerHover,
+  handleLayerHoverEnd,
+} = useCanvasTool()
 </script>
 
 <style scoped>

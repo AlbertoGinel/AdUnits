@@ -8,6 +8,7 @@
     :style="{ backgroundColor: stage.backgroundColor.value }"
   >
     <v-stage
+      ref="stageRef"
       :config="stage.stageConfig.value"
       class="main-stage"
       @wheel="stage.handleWheel"
@@ -15,9 +16,26 @@
       @mousemove="stage.handleMouseMove"
       @mouseup="stage.handleMouseUp"
     >
+      <!-- ✅ Content layer (bottom) -->
       <v-layer>
         <BulkModeView v-if="viewState.isBulkMode.value" />
         <FocusModeView v-else-if="viewState.isFocusMode.value" />
+      </v-layer>
+
+      <!-- ✅ Highlight layer (always on top) -->
+      <v-layer>
+        <template
+          v-for="(overlay, index) in highlight.activeHighlights.value"
+          :key="`highlight-${overlay.x}-${overlay.y}-${index}`"
+        >
+          <v-rect
+            :config="overlay"
+            @mouseover="console.log('🔧 V-RECT RECEIVED CONFIG:', overlay)"
+            @mousedown="
+              console.log('🔧 V-RECT ACTUAL POSITION:', $event.target.x(), $event.target.y())
+            "
+          />
+        </template>
       </v-layer>
     </v-stage>
   </div>
@@ -27,18 +45,26 @@
 import { ref, computed, watch, nextTick } from 'vue'
 import { useViewState } from '@/features/stage/composables/useViewState'
 import { useKonvaStage } from '@/features/stage/composables/useKonvaStage'
+import { useElementHighlight } from '@/features/stage/composables/useElementHighlight'
 import { useSuspenseManager } from '@/features/feedbackAsync/useSuspenseManager'
 import BulkModeView from './BulkModeView.vue'
 import FocusModeView from './FocusModeView.vue'
 import CanvasScreenSkeleton from './CanvasScreenSkeleton.vue'
+import Konva from 'konva'
+
+interface VueKonvaStageRef {
+  getNode(): Konva.Stage
+}
 
 // Pure reactive state
 const suspenseManager = useSuspenseManager()
 const bundleReady = computed(() => suspenseManager.bundleReady.value)
 const containerRef = ref<HTMLElement | null>(null)
+const stageRef = ref<VueKonvaStageRef | null>(null)
 
-// Stage controller (DOM-dependent)
+// ✅ Create singletons with references (only CanvasScreen does this)
 const stage = useKonvaStage(containerRef)
+const highlight = useElementHighlight(stageRef)
 
 // View state management (singleton)
 const viewState = useViewState()

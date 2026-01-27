@@ -1,5 +1,10 @@
 <template>
-  <div class="layer-item" @click="handleClick">
+  <div
+    class="layer-item"
+    @click="handleClick"
+    @mouseenter="handleMouseEnter"
+    @mouseleave="handleMouseLeave"
+  >
     <SingleIcon :name="iconName" size="md" class="layer-icon" />
     <span class="text-bentonville-sm-400">{{ name }}</span>
   </div>
@@ -12,17 +17,28 @@ import type { IconName } from '@/features/utils/useIcons'
 interface Props {
   iconName: IconName
   name: string
+  id: string
 }
 
 interface Emits {
   (e: 'click'): void
+  (e: 'hover', id: string): void
+  (e: 'hoverEnd'): void
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const handleClick = () => {
   emit('click')
+}
+
+const handleMouseEnter = () => {
+  emit('hover', props.id)
+}
+
+const handleMouseLeave = () => {
+  emit('hoverEnd')
 }
 </script>
 

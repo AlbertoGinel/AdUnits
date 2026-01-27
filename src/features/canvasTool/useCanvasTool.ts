@@ -3,7 +3,9 @@ import { useAppStore } from '@/data/stores/useAppStore'
 import { useLayerStore } from '@/data/stores/useLayerStore'
 import { useAdUnitStore } from '@/data/stores/useAdUnitStore'
 import { useKonvaStage } from '@/features/stage/composables/useKonvaStage'
+import { useElementHighlight } from '@/features/stage/composables/useElementHighlight'
 import type { IconName } from '@/features/utils/useIcons'
+import type { EditableElementType } from '@/types/mainTypes'
 
 export interface LayerItem {
   id: string
@@ -16,6 +18,7 @@ export function useCanvasTool() {
   const layerStore = useLayerStore()
   const adUnitStore = useAdUnitStore()
   const { zoomToFit, setZoom, getBackgroundColor, setBackgroundColor } = useKonvaStage()
+  const highlight = useElementHighlight()
 
   // ===== ZOOM CONTROL LOGIC =====
 
@@ -94,6 +97,29 @@ export function useCanvasTool() {
     }
   })
 
+  // ===== LAYER HIGHLIGHT LOGIC =====
+
+  const handleLayerHover = (layerId: string) => {
+    // layerId is the EditableElementType (e.g., 'headline', 'image', etc.)
+    highlight.highlightElementsByType(layerId as EditableElementType)
+  }
+
+  const handleLayerHoverEnd = () => {
+    // ✅ Re-enable clearing highlights when hover ends
+    highlight.clearHighlights()
+  }
+
+  // ✅ DEBUGGING: Manual highlight control for investigation
+  const debugHighlightImage = () => {
+    highlight.highlightElementsByType('image')
+    console.log('🔍 DEBUG: Permanently highlighting images for zoom/pan investigation')
+  }
+
+  const debugClearHighlights = () => {
+    highlight.clearHighlights()
+    console.log('🔍 DEBUG: Manually cleared highlights')
+  }
+
   return {
     // Zoom controls
     selectedZoom,
@@ -105,6 +131,12 @@ export function useCanvasTool() {
     // Layers
     layersList,
     layerMapping,
+    handleLayerHover,
+    handleLayerHoverEnd,
+
+    // ✅ DEBUGGING: Manual highlight controls
+    debugHighlightImage,
+    debugClearHighlights,
 
     // Direct access to stage functions
     zoomToFit,
