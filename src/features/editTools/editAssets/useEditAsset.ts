@@ -6,6 +6,7 @@ import { useImageService } from '@/data/services/useImageService'
 import { useAppStore } from '@/data/stores/useAppStore'
 import { useLibraryAssets } from './useLibraryAssets'
 import { useCreativeAPI } from '@/features/api/useCreativeAPI'
+import { useCropState } from '@/features/crop/composables/useCropState'
 
 type AssetSubView = 'main' | 'change' | 'upload'
 type ContentState = 'image-preview' | 'preview-placeholder' | 'drag-photos-here'
@@ -29,12 +30,14 @@ export function useEditAssets() {
 }
 
 function createEditAssets() {
-  const { selectedTool } = useEditTools()
+  const editTools = useEditTools()
+  const { selectedTool } = editTools
   const { getFieldValue, updateFieldValue } = useFieldService()
   const imageStore = useImageStore()
   const imageService = useImageService()
   const appStore = useAppStore()
   const creativeAPI = useCreativeAPI()
+  const cropState = useCropState()
 
   const activeSubView = ref<AssetSubView>('main')
 
@@ -42,6 +45,13 @@ function createEditAssets() {
   watch(
     activeSubView,
     (newView, oldView) => {
+      // Cancel crop when changing sub-views (main → upload → change)
+      if (isCropMode.value) {
+        console.log('📋 Auto-canceling crop: sub-view changed')
+        cropState.exitCrop()
+        isCropMode.value = false
+      }
+
       if (oldView === 'upload' && newView !== 'upload') {
         imageStore.clearUploadTemp()
       }
@@ -54,9 +64,33 @@ function createEditAssets() {
 
   watch(
     selectedTool,
-    () => {
+    (newTool, oldTool) => {
+      // Cancel crop when changing tools (Images → Logos → Text → Extras, etc.)
+      if (isCropMode.value && newTool !== oldTool) {
+        console.log('🎯 Auto-canceling crop: main tool changed to', newTool)
+        cropState.exitCrop()
+        isCropMode.value = false
+      }
+
       imageStore.clearUploadTemp()
       activeSubView.value = 'main'
+    },
+    {
+      immediate: false,
+      flush: 'sync',
+    },
+  )
+
+  // Watch for app-level navigation changes
+  watch(
+    () => appStore.getCurrentView(),
+    (newView) => {
+      // Cancel crop when leaving focus mode (focus → bulk → other views)
+      if (isCropMode.value && newView !== 'focusMode') {
+        console.log('🌍 Auto-canceling crop: left focus mode')
+        cropState.exitCrop()
+        isCropMode.value = false
+      }
     },
     {
       immediate: false,
@@ -335,6 +369,26 @@ function createEditAssets() {
     }
   }
 
+  // Crop handlers
+  const handleStartCrop = () => {
+    console.log('🌾 Starting crop mode')
+    isCropMode.value = true
+    cropState.enterCrop()
+  }
+
+  const handleSaveCrop = () => {
+    console.log('💾 Saving crop')
+    isCropMode.value = false
+    cropState.exitCrop()
+    // TODO: Apply actual crop data
+  }
+
+  const handleCancelCrop = () => {
+    console.log('❌ Cancelling crop')
+    isCropMode.value = false
+    cropState.exitCrop()
+  }
+
   return {
     // State
     activeSubView,
@@ -380,6 +434,11 @@ function createEditAssets() {
     // Upload functionality
     currentFile,
     handleUploadAsset,
+
+    // Crop functionality
+    handleStartCrop,
+    handleSaveCrop,
+    handleCancelCrop,
 
     // Library (from composable)
     ...libraryAssets,

@@ -80,7 +80,7 @@ const {
   isButtonDisabled,
 
   // State and navigation
-  isCropMode,
+  //isCropMode,
   goToChangeAsset,
   goToUploadAsset,
 
@@ -94,6 +94,11 @@ const {
   handleRemoveAsset,
   handleRemoveTemporalImage,
   hasUploadTemp,
+
+  // Crop functions from composable
+  handleStartCrop: cropStart,
+  handleSaveCrop: cropSave,
+  handleCancelCrop: cropCancel,
 } = useEditAssets()
 
 // Get current asset ID using field service
@@ -169,15 +174,9 @@ const handleFileInputChange = async (e: Event) => {
 // Simple handle functions - directly in Vue
 const handleChangeAsset = () => goToChangeAsset()
 const handleUploadAsset = () => goToUploadAsset()
-const handleStartCrop = () => {
-  isCropMode.value = true
-}
-const handleSaveCrop = () => {
-  isCropMode.value = false
-}
-const handleCancelCrop = () => {
-  isCropMode.value = false
-}
+const handleStartCrop = () => cropStart() // ✅ Call actual function from composable
+const handleSaveCrop = () => cropSave() // ✅ Call actual function from composable
+const handleCancelCrop = () => cropCancel() // ✅ Call actual function from composable
 
 // Action dispatcher
 const actionMap = {

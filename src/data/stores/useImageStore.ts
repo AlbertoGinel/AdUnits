@@ -64,11 +64,7 @@ export const useImageStore = defineStore('images', {
     },
 
     hasUploadTemp: (state) => (): boolean => {
-      const result = Boolean(state.uploadTemp?.imageID)
-      console.log('🔍 hasUploadTemp check:')
-      console.log('  - uploadTemp.imageID:', state.uploadTemp?.imageID)
-      console.log('  - result:', result)
-      return result
+      return Boolean(state.uploadTemp?.imageID)
     },
   },
 

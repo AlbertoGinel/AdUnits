@@ -110,6 +110,13 @@ export const useAdUnitStore = defineStore('adUnits', {
       }
     },
 
+    getCropData: (state) => {
+      return (adUnitID: string): { x: number; y: number; width: number; height: number } | null => {
+        const element = state.adUnits[adUnitID]?.elements?.image
+        return element && 'cropData' in element ? element.cropData || null : null
+      }
+    },
+
     // Get elements by type across all ad units
     getElementsByType: (state) => {
       return (
@@ -251,6 +258,18 @@ export const useAdUnitStore = defineStore('adUnits', {
       console.log(
         `🔓 Unlocked ${String(elementKey)}.${String(property)} in ${unlockedCount} AdUnits`,
       )
+    },
+
+    setCropData(
+      adUnitID: string,
+      cropData: { x: number; y: number; width: number; height: number },
+    ) {
+      const adUnit = this.adUnits[adUnitID]
+      const imageElement = adUnit?.elements?.image
+
+      if (adUnit && imageElement && 'cropData' in imageElement) {
+        this.updateElement(adUnitID, 'image', { cropData })
+      }
     },
   },
 })
