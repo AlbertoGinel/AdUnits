@@ -34,6 +34,18 @@ function createImageService() {
   }
 
   /**
+   * Get image URL from imageID
+   */
+  const getImageUrl = (imageID: string): string | null => {
+    const image = imageStore.getImage(imageID)
+    if (!image?.url) {
+      console.warn(`⚠️ Image URL not found: ${imageID}`)
+      return null
+    }
+    return image.url
+  }
+
+  /**
    * Get natural dimensions from async image loading
    * Now ASYNCHRONOUS - returns Promise!
    */
@@ -252,6 +264,7 @@ function createImageService() {
   return {
     // Metadata queries
     getImageMetadata,
+    getImageUrl,
     getNaturalDimensions,
     getAspectRatio,
     getAllImages,
